@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { RecaptchaVerifier } from 'firebase/auth'
@@ -18,7 +18,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null)
 
-  useEffect(() => {
+  const getVerifier = () => {
+    if (recaptchaRef.current) {
+      recaptchaRef.current.clear()
+      recaptchaRef.current = null
+    }
     const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       size: 'invisible',
       callback: () => {},
@@ -26,13 +30,9 @@ export default function LoginPage() {
         recaptchaRef.current = null
       },
     })
-    verifier.render()
     recaptchaRef.current = verifier
-    return () => {
-      verifier.clear()
-      recaptchaRef.current = null
-    }
-  }, [])
+    return verifier
+  }
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,12 +43,8 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
-      if (!recaptchaRef.current) {
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
-        await verifier.render()
-        recaptchaRef.current = verifier
-      }
-      await sendOTP(rawPhone, recaptchaRef.current)
+      const verifier = getVerifier()
+      await sendOTP(rawPhone, verifier)
       setStep('otp')
       showToast('OTP পাঠানো হয়েছে', 'success')
     } catch {
@@ -84,7 +80,6 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-sm">
-      {/* reCAPTCHA container সবসময় DOM-এ থাকবে */}
       <div id="recaptcha-container" />
 
       <div className="text-center mb-8">
