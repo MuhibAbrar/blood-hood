@@ -28,7 +28,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       if (!recaptchaRef.current) {
-        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
+        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'normal' })
       }
       await sendOTP(rawPhone, recaptchaRef.current)
       setStep('otp')
