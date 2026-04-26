@@ -1,26 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #D92B2B;
+  --primary-light: #FDECEA;
+  --primary-dark: #8B1A1A;
+  --success: #1A9E6B;
+  --warning: #D97706;
+  --bg: #FAFAFA;
+  --surface: #FFFFFF;
+  --text-primary: #111111;
+  --text-secondary: #555555;
+  --border: #E5E5E5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    font-family: 'Hind Siliguri', 'Inter', sans-serif;
+    background-color: var(--bg);
+    color: var(--text-primary);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .btn-primary {
+    @apply bg-[#D92B2B] text-white font-semibold rounded-xl px-6 py-3 min-h-[44px]
+           flex items-center justify-center gap-2 transition-all
+           hover:bg-[#8B1A1A] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-[#D92B2B] text-[#D92B2B] font-semibold rounded-xl px-6 py-3
+           min-h-[44px] flex items-center justify-center gap-2 transition-all
+           hover:bg-[#FDECEA] active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply text-[#555555] font-medium rounded-xl px-4 py-3 min-h-[44px]
+           flex items-center justify-center gap-2 transition-all
+           hover:bg-gray-100 active:scale-95;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl border border-[#E5E5E5] shadow-sm;
+  }
+
+  .input-field {
+    @apply w-full bg-white border-2 border-[#E5E5E5] rounded-xl px-4 py-3
+           text-[#111111] placeholder-[#555555]/50 outline-none
+           focus:border-[#D92B2B] transition-colors min-h-[44px];
+  }
+
+  .skeleton {
+    @apply bg-gray-200 animate-pulse rounded-lg;
+  }
+
+  .badge-blood {
+    @apply inline-flex items-center justify-center w-12 h-12 rounded-full
+           font-bold text-sm shadow-md;
+  }
+
+  .badge-blood-lg {
+    @apply inline-flex items-center justify-center w-16 h-16 rounded-full
+           font-bold text-xl shadow-md;
+  }
 }
 
 @layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
   .text-balance {
     text-wrap: balance;
   }
