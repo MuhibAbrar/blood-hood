@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getDonors } from '@/lib/firestore'
+import { getDonors, getOrganizations } from '@/lib/firestore'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
 import DonorCard from '@/components/donor/DonorCard'
@@ -12,6 +12,7 @@ import type { User, BloodGroup } from '@/types'
 
 export default function DonorsPage() {
   const [donors, setDonors] = useState<User[]>([])
+  const [orgMap, setOrgMap] = useState<Record<string, string>>({})
   const [filtered, setFiltered] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -20,7 +21,14 @@ export default function DonorsPage() {
   const [availableOnly, setAvailableOnly] = useState(false)
 
   useEffect(() => {
-    getDonors().then((d) => { setDonors(d); setLoading(false) })
+    Promise.all([getDonors(), getOrganizations()]).then(([d, orgs]) => {
+      setDonors(d)
+      // Build orgId → orgName map
+      const map: Record<string, string> = {}
+      orgs.forEach(o => { map[o.id] = o.name })
+      setOrgMap(map)
+      setLoading(false)
+    })
   }, [])
 
   useEffect(() => {
@@ -34,6 +42,12 @@ export default function DonorsPage() {
     }
     setFiltered(result)
   }, [donors, bloodFilter, upazilaFilter, availableOnly, search])
+
+  // Get first org name for a donor
+  const getOrgName = (donor: User) => {
+    if (!donor.organizations?.length) return undefined
+    return orgMap[donor.organizations[0]]
+  }
 
   return (
     <div>
@@ -78,15 +92,19 @@ export default function DonorsPage() {
         )}
 
         {/* List */}
-        <div className="space-y-3">
-          {loading ? (
-            [...Array(5)].map((_, i) => <DonorCardSkeleton key={i} />)
-          ) : filtered.length === 0 ? (
-            <EmptyState icon="😔" title="কোনো ডোনার পাওয়া যায়নি" description="ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন" />
-          ) : (
-            filtered.map((d) => <DonorCard key={d.uid} donor={d} />)
-          )}
-        </div>
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
+            {[...Array(5)].map((_, i) => <DonorCardSkeleton key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState icon="😔" title="কোনো ডোনার পাওয়া যায়নি" description="ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন" />
+        ) : (
+          <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
+            {filtered.map((d) => (
+              <DonorCard key={d.uid} donor={d} orgName={getOrgName(d)} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

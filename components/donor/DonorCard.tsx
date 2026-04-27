@@ -1,39 +1,49 @@
 import Link from 'next/link'
 import type { User } from '@/types'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
-import { formatBanglaDate } from '@/lib/constants'
 
 interface DonorCardProps {
   donor: User
+  orgName?: string
 }
 
-export default function DonorCard({ donor }: DonorCardProps) {
-  const lastDate = donor.lastDonatedAt ? formatBanglaDate(donor.lastDonatedAt.toDate()) : null
+export default function DonorCard({ donor, orgName }: DonorCardProps) {
+  const lastDate = donor.lastDonatedAt
+    ? donor.lastDonatedAt.toDate().toISOString().slice(0, 10)
+    : null
 
   return (
-    <Link href={`/donors/${donor.uid}`} className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
-      <BloodGroupBadge group={donor.bloodGroup} size="md" />
+    <Link
+      href={`/donors/${donor.uid}`}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors border-b border-[#F0F0F0] last:border-0"
+    >
+      {/* Blood group */}
+      <BloodGroupBadge group={donor.bloodGroup} size="sm" />
+
+      {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-[#111111] truncate">{donor.name}</p>
-        <p className="text-sm text-[#555555] truncate">📍 {donor.upazila}</p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {lastDate ? (
-            <p className="text-xs text-[#555555]/70">শেষ দান: {lastDate}</p>
-          ) : (
-            <p className="text-xs text-[#555555]/50">এখনো দান করেননি</p>
-          )}
-          {donor.totalDonations > 0 && (
-            <span className="text-xs bg-red-50 text-[#D92B2B] font-semibold px-1.5 py-0.5 rounded-full">
-              🩸 {donor.totalDonations}বার
-            </span>
-          )}
-        </div>
+        <p className="font-semibold text-[#111111] text-sm truncate">{donor.name}</p>
+        <p className="text-xs text-[#555555] mt-0.5 truncate">
+          📍 {donor.upazila} · বয়স {donor.age}
+          {donor.totalDonations > 0 ? ` · ${donor.totalDonations} বার দান` : ''}
+        </p>
+        {orgName && (
+          <span className="inline-block mt-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium leading-4">
+            {orgName}
+          </span>
+        )}
       </div>
-      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${
-        donor.isAvailable ? 'bg-green-100 text-[#1A9E6B]' : 'bg-red-50 text-[#D92B2B]'
-      }`}>
-        {donor.isAvailable ? '● Available' : '○ Unavailable'}
-      </span>
+
+      {/* Status + date */}
+      <div className="text-right shrink-0">
+        <p className={`text-xs font-semibold flex items-center gap-1 justify-end ${donor.isAvailable ? 'text-[#1A9E6B]' : 'text-[#D92B2B]'}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${donor.isAvailable ? 'bg-[#1A9E6B]' : 'bg-[#D92B2B]'}`} />
+          {donor.isAvailable ? 'Available' : 'Unavailable'}
+        </p>
+        {lastDate && (
+          <p className="text-[10px] text-[#555555]/60 mt-0.5">{lastDate}</p>
+        )}
+      </div>
     </Link>
   )
 }
