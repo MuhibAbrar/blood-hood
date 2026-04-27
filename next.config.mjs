@@ -9,11 +9,11 @@ const pwaConfig = withPWA({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
   reactStrictMode: true,
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
-    ],
+    unoptimized: true,
   },
 }
 

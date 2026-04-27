@@ -83,3 +83,4 @@ export default function OrgDetailPage() {
     </div>
   )
 }
+export function generateStaticParams() { return [] }

@@ -167,3 +167,4 @@ export default function RequestDetailPage() {
     </div>
   )
 }
+export function generateStaticParams() { return [] }
