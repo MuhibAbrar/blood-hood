@@ -43,10 +43,38 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <StatCard label="মোট সদস্য" value={stats?.totalMembers ?? 0} icon="👥" />
-            <StatCard label="এখন Available" value={stats?.availableNow ?? 0} icon="✅" color="text-[#1A9E6B]" />
-            <StatCard label="এই মাসে দান" value={stats?.thisMonthDonations ?? 0} icon="🩸" />
-            <StatCard label="অপেক্ষারত Request" value={stats?.pendingRequests ?? 0} icon="🏥" color="text-[#D92B2B]" />
+            <StatCard
+              label="মোট সদস্য"
+              value={stats?.totalMembers ?? 0}
+              color="text-[#555555]"
+              icon={<PeopleIcon />}
+              bg="bg-purple-50"
+              iconColor="text-purple-500"
+            />
+            <StatCard
+              label="এখন Available"
+              value={stats?.availableNow ?? 0}
+              color="text-[#1A9E6B]"
+              icon={<CheckCircleIcon />}
+              bg="bg-green-50"
+              iconColor="text-[#1A9E6B]"
+            />
+            <StatCard
+              label="এই মাসে দান"
+              value={stats?.thisMonthDonations ?? 0}
+              color="text-[#D92B2B]"
+              icon={<DropIcon />}
+              bg="bg-red-50"
+              iconColor="text-[#D92B2B]"
+            />
+            <StatCard
+              label="অপেক্ষারত Request"
+              value={stats?.pendingRequests ?? 0}
+              color="text-orange-600"
+              icon={<HospitalIcon />}
+              bg="bg-orange-50"
+              iconColor="text-orange-500"
+            />
           </div>
         )}
       </div>
@@ -96,14 +124,57 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({ label, value, icon, color = 'text-[#111111]' }: { label: string; value: number; icon: string; color?: string }) {
+function StatCard({
+  label, value, color, icon, bg, iconColor,
+}: {
+  label: string; value: number; color: string
+  icon: React.ReactNode; bg: string; iconColor: string
+}) {
   return (
-    <div className="card p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xl">{icon}</span>
-        <span className={`text-2xl font-bold ${color}`}>{value}</span>
+    <div className="card p-4 flex items-center gap-3">
+      <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center shrink-0 ${iconColor}`}>
+        {icon}
       </div>
-      <p className="text-xs text-[#555555]">{label}</p>
+      <div className="min-w-0">
+        <p className={`text-2xl font-bold leading-none ${color}`}>{value}</p>
+        <p className="text-xs text-[#555555] mt-1 leading-tight">{label}</p>
+      </div>
     </div>
+  )
+}
+
+function PeopleIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
+
+function CheckCircleIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline strokeLinecap="round" strokeLinejoin="round" points="22 4 12 14.01 9 11.01" />
+    </svg>
+  )
+}
+
+function DropIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C7 8 4 12 4 15a8 8 0 0 0 16 0c0-3-3-7-8-13z" />
+    </svg>
+  )
+}
+
+function HospitalIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v6M9 10h6" />
+    </svg>
   )
 }

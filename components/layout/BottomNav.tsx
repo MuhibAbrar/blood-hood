@@ -8,7 +8,7 @@ const navItems = [
   { href: '/dashboard', label: 'হোম', icon: HomeIcon },
   { href: '/donors', label: 'খুঁজুন', icon: SearchIcon },
   { href: '/requests/new', label: 'রিকোয়েস্ট', icon: BloodIcon },
-  { href: '/notifications', label: 'আলার্ট', icon: BellIcon },
+  { href: '/requests', label: 'ডোনেট', icon: HeartIcon },
   { href: '/profile', label: 'প্রোফাইল', icon: UserIcon },
 ]
 
@@ -122,11 +122,10 @@ function BloodIcon({ className }: { className?: string }) {
   )
 }
 
-function BellIcon({ className }: { className?: string }) {
+function HeartIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   )
 }
