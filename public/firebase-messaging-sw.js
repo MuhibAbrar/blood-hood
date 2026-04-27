@@ -13,10 +13,12 @@ firebase.initializeApp({
 const messaging = firebase.messaging()
 
 // Background notification — app বন্ধ বা minimize থাকলে
-// "skip_foreground: true" থাকলে দেখাবে না (foreground এ app নিজে handle করবে)
-messaging.onBackgroundMessage((payload) => {
-  // Foreground এ app খোলা থাকলে skip করো — double notification বন্ধ
-  if (payload.data?.skip_foreground === 'true') return
+messaging.onBackgroundMessage(async (payload) => {
+  // App যদি সামনে খোলা থাকে তাহলে SW notification দেখাবে না
+  // InAppNotification component নিজেই handle করবে
+  const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+  const isAppFocused = allClients.some(c => c.focused)
+  if (isAppFocused) return
 
   const { title, body } = payload.notification ?? {}
   if (!title) return

@@ -34,16 +34,31 @@ export async function POST(req: NextRequest) {
     if (type === 'blood_request') {
       const { bloodGroup, hospital, area, patientName, urgency, requestId } = data
 
+      const compatibleGroups: Record<string, string[]> = {
+        'A+':  ['A+', 'A-', 'O+', 'O-'],
+        'A-':  ['A-', 'O-'],
+        'B+':  ['B+', 'B-', 'O+', 'O-'],
+        'B-':  ['B-', 'O-'],
+        'AB+': ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+        'AB-': ['A-', 'B-', 'AB-', 'O-'],
+        'O+':  ['O+', 'O-'],
+        'O-':  ['O-'],
+      }
+      const donors = compatibleGroups[bloodGroup] ?? [bloodGroup]
+
       const title = urgency === 'urgent'
         ? `🔴 জরুরি ${bloodGroup} রক্ত লাগবে!`
         : `🩸 ${bloodGroup} রক্তের অনুরোধ`
       const bodyText = `${patientName} — ${hospital}, ${area}`
 
-      // সব registered users-কে notify করি (batch করে)
+      // Compatible blood group-এর সব users (available/unavailable নির্বিশেষে)
       const allTokens: string[] = []
       const allUserIds: string[] = []
 
-      const usersSnap = await db.collection('users').get()
+      // Firestore 'in' query max 10 items — compatible groups already ≤8
+      const usersSnap = await db.collection('users')
+        .where('bloodGroup', 'in', donors.slice(0, 10))
+        .get()
       usersSnap.docs.forEach(d => {
         const uid = d.data().uid
         if (!uid) return
