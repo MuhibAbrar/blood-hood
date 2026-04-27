@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 
 interface TopBarProps {
   title: string
@@ -34,6 +35,8 @@ export default function TopBar({ title, back, action }: TopBarProps) {
 }
 
 export function AppBar() {
+  const { user, orgAdmin } = useAuth()
+
   return (
     <header className="sticky top-0 bg-[#D92B2B] z-40 safe-top shadow-md">
       <div className="flex items-center justify-between h-14 px-4 md:pl-4 md:pr-6">
@@ -41,12 +44,38 @@ export function AppBar() {
           <span className="text-2xl">🩸</span>
           <span className="text-white font-bold text-lg">Blood Hood</span>
         </Link>
-        <Link href="/notifications" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors">
-          <svg className="w-6 h-6 stroke-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </Link>
+
+        <div className="flex items-center gap-1">
+          {/* Org-admin panel shortcut */}
+          {orgAdmin && (
+            <Link
+              href="/org-admin"
+              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+            >
+              <span>🏢</span>
+              <span className="hidden xs:inline">সংগঠন</span>
+            </Link>
+          )}
+
+          {/* Superadmin panel shortcut */}
+          {user?.role === 'superadmin' && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+            >
+              <span>👑</span>
+              <span className="hidden xs:inline">অ্যাডমিন</span>
+            </Link>
+          )}
+
+          {/* Notifications */}
+          <Link href="/notifications" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors">
+            <svg className="w-6 h-6 stroke-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </Link>
+        </div>
       </div>
     </header>
   )
