@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
 import TopBar from '@/components/layout/TopBar'
+import HospitalInput from '@/components/ui/HospitalInput'
 import type { BloodGroup, Urgency } from '@/types'
 
 export default function NewRequestPage() {
@@ -27,6 +28,7 @@ export default function NewRequestPage() {
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
+  const setHospital = (val: string) => setForm(f => ({ ...f, hospital: val }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -109,7 +111,7 @@ export default function NewRequestPage() {
 
         <div>
           <label className="block text-sm font-medium text-[#111111] mb-1.5">হাসপাতাল *</label>
-          <input value={form.hospital} onChange={set('hospital')} placeholder="হাসপাতালের নাম" className="input-field" />
+          <HospitalInput value={form.hospital} onChange={setHospital} />
         </div>
 
         <div>
