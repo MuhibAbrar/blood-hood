@@ -99,7 +99,7 @@ export interface Notification {
   userId: string
   title: string
   body: string
-  type: 'blood_request' | 'availability_reminder' | 'camp_reminder' | 'org_approved' | 'request_fulfilled' | 'broadcast'
+  type: 'blood_request' | 'availability_reminder' | 'camp_reminder' | 'org_approved' | 'org_announcement' | 'request_fulfilled' | 'broadcast'
   read: boolean
   data: Record<string, string>
   createdAt: Timestamp

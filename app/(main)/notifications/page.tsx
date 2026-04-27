@@ -11,6 +11,7 @@ const typeIcon = (type: Notification['type']) => ({
   blood_request: '🩸',
   camp_reminder: '🏕️',
   org_announcement: '📢',
+  org_approved: '✅',
   availability_reminder: '⏰',
   request_fulfilled: '✅',
   broadcast: '📣',
