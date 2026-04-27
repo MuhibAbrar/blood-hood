@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/context/AuthContext'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getOrgMembers, removeMember, getAllUsers, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
