@@ -17,6 +17,10 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentRequests, setRecentRequests] = useState<BloodRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [broadcastTitle, setBroadcastTitle] = useState('')
+  const [broadcastBody, setBroadcastBody] = useState('')
+  const [broadcasting, setBroadcasting] = useState(false)
+  const [broadcastMsg, setBroadcastMsg] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -36,6 +40,27 @@ export default function AdminDashboard() {
     { label: 'অপেক্ষারত Request', value: stats?.pendingRequests ?? 0, icon: '⏳', color: 'bg-yellow-50 text-yellow-700', border: 'border-yellow-100' },
     { label: 'মোট দান', value: stats?.totalDonations ?? 0, icon: '💉', color: 'bg-purple-50 text-purple-700', border: 'border-purple-100' },
   ]
+
+  const handleBroadcast = async () => {
+    if (!broadcastTitle.trim()) return
+    setBroadcasting(true)
+    setBroadcastMsg('')
+    try {
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'broadcast', data: { title: broadcastTitle, body: broadcastBody } }),
+      })
+      const json = await res.json()
+      setBroadcastMsg(`✅ ${json.sent ?? 0} জন user-কে পাঠানো হয়েছে`)
+      setBroadcastTitle('')
+      setBroadcastBody('')
+    } catch {
+      setBroadcastMsg('❌ পাঠাতে ব্যর্থ হয়েছে')
+    } finally {
+      setBroadcasting(false)
+    }
+  }
 
   const quickLinks = [
     { href: '/admin/camps', label: 'নতুন ক্যাম্প', icon: '🏕️', desc: 'ক্যাম্প তৈরি ও পরিচালনা' },
@@ -88,6 +113,37 @@ export default function AdminDashboard() {
               <p className="text-xs text-[#555555] mt-1">{desc}</p>
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* Broadcast */}
+      <div>
+        <h2 className="font-semibold text-[#111111] mb-4">📣 সবাইকে Broadcast করুন</h2>
+        <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 space-y-3">
+          <input
+            type="text"
+            placeholder="শিরোনাম (title) *"
+            value={broadcastTitle}
+            onChange={e => setBroadcastTitle(e.target.value)}
+            className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]"
+          />
+          <textarea
+            placeholder="বিস্তারিত (ঐচ্ছিক)"
+            value={broadcastBody}
+            onChange={e => setBroadcastBody(e.target.value)}
+            rows={3}
+            className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B] resize-none"
+          />
+          {broadcastMsg && (
+            <p className="text-sm font-medium text-[#555555]">{broadcastMsg}</p>
+          )}
+          <button
+            onClick={handleBroadcast}
+            disabled={broadcasting || !broadcastTitle.trim()}
+            className="bg-[#D92B2B] text-white rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
+          >
+            {broadcasting ? 'পাঠানো হচ্ছে...' : '📣 সবাইকে পাঠাও'}
+          </button>
         </div>
       </div>
 

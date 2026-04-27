@@ -34,45 +34,27 @@ export async function POST(req: NextRequest) {
     if (type === 'blood_request') {
       const { bloodGroup, hospital, area, patientName, urgency, requestId } = data
 
-      const compatibleGroups: Record<string, string[]> = {
-        'A+':  ['A+', 'A-', 'O+', 'O-'],
-        'A-':  ['A-', 'O-'],
-        'B+':  ['B+', 'B-', 'O+', 'O-'],
-        'B-':  ['B-', 'O-'],
-        'AB+': ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-        'AB-': ['A-', 'B-', 'AB-', 'O-'],
-        'O+':  ['O+', 'O-'],
-        'O-':  ['O-'],
-      }
-
-      const donors = compatibleGroups[bloodGroup] ?? [bloodGroup]
-
-      const usersSnap = await db.collection('users')
-        .where('isAvailable', '==', true)
-        .where('bloodGroup', 'in', donors.slice(0, 10))
-        .get()
-
-      if (usersSnap.empty) return NextResponse.json({ success: true, sent: 0 })
-
       const title = urgency === 'urgent'
         ? `🔴 জরুরি ${bloodGroup} রক্ত লাগবে!`
         : `🩸 ${bloodGroup} রক্তের অনুরোধ`
       const bodyText = `${patientName} — ${hospital}, ${area}`
 
-      const tokens: string[] = []
-      const userIds: string[] = []
+      // সব registered users-কে notify করি (batch করে)
+      const allTokens: string[] = []
+      const allUserIds: string[] = []
 
+      const usersSnap = await db.collection('users').get()
       usersSnap.docs.forEach(d => {
+        const uid = d.data().uid
+        if (!uid) return
+        allUserIds.push(uid)
         const token = d.data().fcmToken
-        if (token) {
-          tokens.push(token)
-          userIds.push(d.data().uid)
-        }
+        if (token) allTokens.push(token)
       })
 
-      // Firestore-এ সব donors-এর জন্য notification save করি
+      // Firestore-এ সবার জন্য notification save করি
       await Promise.all(
-        userIds.map(uid =>
+        allUserIds.map(uid =>
           saveNotification(db, uid, title, bodyText, 'blood_request', {
             requestId: requestId ?? '',
             link: `/requests/${requestId}`,
@@ -81,9 +63,9 @@ export async function POST(req: NextRequest) {
       )
 
       // FCM push পাঠাই
-      if (tokens.length > 0) {
+      if (allTokens.length > 0) {
         const batches: string[][] = []
-        for (let i = 0; i < tokens.length; i += 500) batches.push(tokens.slice(i, i + 500))
+        for (let i = 0; i < allTokens.length; i += 500) batches.push(allTokens.slice(i, i + 500))
 
         let totalSent = 0
         for (const batch of batches) {
@@ -109,7 +91,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, sent: totalSent })
       }
 
-      return NextResponse.json({ success: true, sent: 0 })
+      return NextResponse.json({ success: true, sent: allUserIds.length })
     }
 
     // ── Camp reminder ─────────────────────────────────────────────────────
@@ -191,6 +173,46 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ success: true, sent: allTokens.length })
+    }
+
+    // ── Broadcast (সবাইকে) ───────────────────────────────────────────────
+    if (type === 'broadcast') {
+      const { title, body: bodyText } = data
+      if (!title) return NextResponse.json({ error: 'title required' }, { status: 400 })
+
+      const allTokens: string[] = []
+      const allUserIds: string[] = []
+
+      const usersSnap = await db.collection('users').get()
+      usersSnap.docs.forEach(d => {
+        const uid = d.data().uid
+        if (!uid) return
+        allUserIds.push(uid)
+        const token = d.data().fcmToken
+        if (token) allTokens.push(token)
+      })
+
+      await Promise.all(
+        allUserIds.map(uid =>
+          saveNotification(db, uid, title, bodyText ?? '', 'broadcast', { link: '/notifications' })
+        )
+      )
+
+      if (allTokens.length > 0) {
+        const batches: string[][] = []
+        for (let i = 0; i < allTokens.length; i += 500) batches.push(allTokens.slice(i, i + 500))
+        for (const batch of batches) {
+          await messaging.sendEachForMulticast({
+            tokens: batch,
+            notification: { title, body: bodyText ?? '' },
+            data: { type: 'broadcast', link: '/notifications' },
+            android: { notification: { sound: 'default' } },
+            webpush: { fcmOptions: { link: '/notifications' } },
+          })
+        }
+      }
+
+      return NextResponse.json({ success: true, sent: allUserIds.length })
     }
 
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
