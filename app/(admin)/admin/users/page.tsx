@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAllUsers, updateUser, deleteUserDoc } from '@/lib/firestore'
+import { getAllUsers, deleteUserDoc } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { User, UserRole } from '@/types'
