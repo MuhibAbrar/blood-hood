@@ -159,7 +159,7 @@ export default function AdminOrgsPage() {
               </div>
               <div className="flex items-center gap-4 mb-4 text-center">
                 <div className="flex-1 bg-[#FAFAFA] rounded-xl py-2">
-                  <p className="font-bold text-[#D92B2B] text-lg">{org.memberIds.length}</p>
+                  <p className="font-bold text-[#D92B2B] text-lg">{new Set([...org.memberIds, ...org.adminIds]).size}</p>
                   <p className="text-xs text-[#555555]">সদস্য</p>
                 </div>
                 <div className="flex-1 bg-[#FAFAFA] rounded-xl py-2">

@@ -47,7 +47,7 @@ export const getDonors = async (filters?: {
   area?: string
   isAvailable?: boolean
 }): Promise<User[]> => {
-  let q = query(collection(db, 'users'), where('role', 'in', ['donor', 'admin']))
+  let q = query(collection(db, 'users'), where('role', 'in', ['donor', 'admin', 'superadmin']))
   if (filters?.bloodGroup) q = query(q, where('bloodGroup', '==', filters.bloodGroup))
   if (filters?.area) q = query(q, where('area', '==', filters.area))
   if (filters?.isAvailable !== undefined) q = query(q, where('isAvailable', '==', filters.isAvailable))

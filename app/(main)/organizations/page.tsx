@@ -38,7 +38,7 @@ export default function OrganizationsPage() {
                   {org.isVerified && <span className="text-blue-600 text-xs">✓</span>}
                 </div>
                 <p className="text-sm text-[#555555]">{typeLabel(org.type)} · {org.area}</p>
-                <p className="text-xs text-[#555555]/70">{org.memberIds.length} সদস্য · {org.totalDonations} দান</p>
+                <p className="text-xs text-[#555555]/70">{new Set([...org.memberIds, ...org.adminIds]).size} সদস্য · {org.totalDonations} দান</p>
               </div>
             </Link>
           ))

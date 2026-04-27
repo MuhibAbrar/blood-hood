@@ -82,7 +82,7 @@ export default function OrgAnnouncementsPage() {
         <div>
           <h1 className="text-2xl font-bold text-[#111111]">ঘোষণা</h1>
           <p className="text-[#555555] text-sm mt-1">
-            প্রকাশ করলে {org?.memberIds.length ?? 0} জন সদস্যকে notification পাঠানো হবে
+            প্রকাশ করলে {org ? new Set([...org.memberIds, ...org.adminIds]).size : 0} জন সদস্যকে notification পাঠানো হবে
           </p>
         </div>
         <button
@@ -149,7 +149,7 @@ export default function OrgAnnouncementsPage() {
                 />
               </div>
               <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
-                📱 এই ঘোষণা প্রকাশ হলে <span className="font-bold">{org?.memberIds.length} জন</span> সদস্যের phone-এ notification যাবে
+                📱 এই ঘোষণা প্রকাশ হলে <span className="font-bold">{org ? new Set([...org.memberIds, ...org.adminIds]).size : 0} জন</span> সদস্যের phone-এ notification যাবে
               </div>
             </div>
             <div className="px-6 py-4 border-t border-[#E5E5E5] flex gap-3">
