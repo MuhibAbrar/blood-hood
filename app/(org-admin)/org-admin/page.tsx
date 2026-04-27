@@ -17,11 +17,13 @@ export default function OrgAdminDashboard() {
 
   useEffect(() => {
     if (!orgAdmin) return
-    Promise.all([getCampsByOrg(orgAdmin.id), getAnnouncements(orgAdmin.id)]).then(([c, a]) => {
-      setCamps(c)
-      setAnnouncements(a)
-      setLoading(false)
-    })
+    Promise.all([getCampsByOrg(orgAdmin.id), getAnnouncements(orgAdmin.id)])
+      .then(([c, a]) => {
+        setCamps(c)
+        setAnnouncements(a)
+      })
+      .catch(e => console.error('dashboard load error', e))
+      .finally(() => setLoading(false))
   }, [orgAdmin])
 
   const upcomingCamps = camps.filter(c => c.status === 'upcoming')

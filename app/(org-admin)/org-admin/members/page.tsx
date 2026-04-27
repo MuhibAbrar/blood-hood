@@ -25,16 +25,27 @@ export default function OrgMembersPage() {
   const [processingReq, setProcessingReq] = useState<string | null>(null)
 
   const load = async (o: Organization) => {
-    const [allU, m, jr] = await Promise.all([
-      getAllUsers(),
-      getOrgMembers(Array.from(new Set([...o.memberIds, ...o.adminIds]))),
-      getJoinRequests(o.id),
-    ])
-    setAllUsers(allU)
-    m.sort((a, b) => b.totalDonations - a.totalDonations)
-    setMembers(m)
-    setJoinRequests(jr)
-    setLoading(false)
+    try {
+      const allIds = Array.from(new Set([...o.memberIds, ...o.adminIds]))
+      const [allU, m] = await Promise.all([
+        getAllUsers(),
+        getOrgMembers(allIds),
+      ])
+      setAllUsers(allU)
+      m.sort((a, b) => b.totalDonations - a.totalDonations)
+      setMembers(m)
+    } catch (e) {
+      console.error('load members error', e)
+    } finally {
+      setLoading(false)
+    }
+    // Load join requests separately so member list always shows
+    try {
+      const jr = await getJoinRequests(o.id)
+      setJoinRequests(jr)
+    } catch (e) {
+      console.error('load joinRequests error', e)
+    }
   }
 
   useEffect(() => {

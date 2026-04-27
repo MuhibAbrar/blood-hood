@@ -271,13 +271,15 @@ export const removeMember = async (orgId: string, uid: string) => {
 }
 
 export const getCampsByOrg = async (orgId: string): Promise<Camp[]> => {
-  const snap = await getDocs(query(collection(db, 'camps'), where('organizationId', '==', orgId), orderBy('date', 'desc')))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Camp))
+  const snap = await getDocs(query(collection(db, 'camps'), where('organizationId', '==', orgId)))
+  const camps = snap.docs.map(d => ({ id: d.id, ...d.data() } as Camp))
+  return camps.sort((a, b) => b.date.toMillis() - a.date.toMillis())
 }
 
 export const getAnnouncements = async (orgId: string): Promise<Announcement[]> => {
-  const snap = await getDocs(query(collection(db, 'announcements'), where('orgId', '==', orgId), orderBy('createdAt', 'desc')))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement))
+  const snap = await getDocs(query(collection(db, 'announcements'), where('orgId', '==', orgId)))
+  const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement))
+  return list.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
 }
 
 export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'createdAt'>): Promise<string> => {
@@ -337,11 +339,11 @@ export const getJoinRequests = async (orgId: string): Promise<JoinRequest[]> => 
   const q = query(
     collection(db, 'joinRequests'),
     where('orgId', '==', orgId),
-    where('status', '==', 'pending'),
-    orderBy('createdAt', 'desc')
+    where('status', '==', 'pending')
   )
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest))
+  const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest))
+  return list.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
 }
 
 export const acceptJoinRequest = async (request: JoinRequest): Promise<void> => {
