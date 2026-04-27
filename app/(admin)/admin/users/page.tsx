@@ -6,15 +6,27 @@ import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { User, UserRole } from '@/types'
 
+const roles: { value: UserRole; label: string; icon: string; badge: string }[] = [
+  { value: 'donor', label: 'ডোনার', icon: '🩸', badge: 'bg-gray-100 text-[#555555]' },
+  { value: 'admin', label: 'অ্যাডমিন', icon: '🛡️', badge: 'bg-blue-50 text-blue-700' },
+  { value: 'superadmin', label: 'সুপার অ্যাডমিন', icon: '👑', badge: 'bg-yellow-50 text-yellow-700' },
+]
+
 export default function AdminUsersPage() {
   const { showToast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null)
+  const [roleModal, setRoleModal] = useState<User | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  const load = () => getAllUsers().then((u) => { setUsers(u); setLoading(false) })
+  const load = async () => {
+    const u = await getAllUsers()
+    setUsers(u)
+    setLoading(false)
+  }
+
   useEffect(() => { load() }, [])
 
   const filtered = users.filter(u =>
@@ -24,11 +36,13 @@ export default function AdminUsersPage() {
   )
 
   const handleRoleChange = async (user: User, role: UserRole) => {
+    if (user.role === role) { setRoleModal(null); return }
     setActionLoading(user.uid + '_role')
     try {
       await updateUser(user.uid, { role })
+      setRoleModal(null)
       await load()
-      showToast(`${user.name}-এর role পরিবর্তন হয়েছে`, 'success')
+      showToast(`${user.name}-এর role পরিবর্তন হয়েছে ✓`, 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
@@ -41,7 +55,7 @@ export default function AdminUsersPage() {
     try {
       await updateUser(user.uid, { isVerified: !user.isVerified })
       await load()
-      showToast(user.isVerified ? 'যাচাই বাতিল করা হয়েছে' : 'যাচাই করা হয়েছে', 'success')
+      showToast(user.isVerified ? 'যাচাই বাতিল করা হয়েছে' : '✓ যাচাই করা হয়েছে', 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
@@ -64,8 +78,9 @@ export default function AdminUsersPage() {
     }
   }
 
-  const roleBadge = (role: UserRole) =>
-    ({ donor: 'bg-gray-100 text-[#555555]', admin: 'bg-blue-50 text-blue-700', superadmin: 'bg-yellow-50 text-yellow-700' })[role]
+  const getRoleBadge = (role: UserRole) => roles.find(r => r.value === role)?.badge ?? 'bg-gray-100 text-[#555555]'
+  const getRoleLabel = (role: UserRole) => roles.find(r => r.value === role)?.label ?? role
+  const getRoleIcon = (role: UserRole) => roles.find(r => r.value === role)?.icon ?? '🩸'
 
   return (
     <div className="space-y-6">
@@ -120,18 +135,20 @@ export default function AdminUsersPage() {
                       <span className="bg-red-100 text-[#D92B2B] text-xs font-bold px-2 py-0.5 rounded-full">{u.bloodGroup}</span>
                     </td>
                     <td className="px-5 py-3 text-sm text-[#555555]">{u.upazila}</td>
+
+                    {/* Role — clickable badge */}
                     <td className="px-5 py-3">
-                      <select
-                        value={u.role}
-                        disabled={actionLoading === u.uid + '_role'}
-                        onChange={e => handleRoleChange(u, e.target.value as UserRole)}
-                        className={`text-xs font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D92B2B] ${roleBadge(u.role)}`}
+                      <button
+                        onClick={() => setRoleModal(u)}
+                        disabled={!!actionLoading}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:opacity-80 flex items-center gap-1.5 ${getRoleBadge(u.role)}`}
                       >
-                        <option value="donor">ডোনার</option>
-                        <option value="admin">অ্যাডমিন</option>
-                        <option value="superadmin">সুপার অ্যাডমিন</option>
-                      </select>
+                        <span>{getRoleIcon(u.role)}</span>
+                        {getRoleLabel(u.role)}
+                        <span className="opacity-50 text-[10px]">▾</span>
+                      </button>
                     </td>
+
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <button
@@ -161,6 +178,55 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {/* Role change modal */}
+      {roleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="px-6 py-5 border-b border-[#E5E5E5]">
+              <div className="flex items-center gap-3">
+                <DefaultAvatar gender={roleModal.gender} size={40} />
+                <div>
+                  <h3 className="font-bold text-[#111111]">{roleModal.name}</h3>
+                  <p className="text-xs text-[#555555]">Role পরিবর্তন করুন</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 space-y-2">
+              {roles.map(({ value, label, icon, badge }) => (
+                <button
+                  key={value}
+                  onClick={() => handleRoleChange(roleModal, value)}
+                  disabled={!!actionLoading}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all border-2 ${
+                    roleModal.role === value
+                      ? 'border-[#D92B2B] bg-red-50'
+                      : 'border-transparent hover:border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${badge} flex items-center gap-1.5`}>
+                    <span>{icon}</span> {label}
+                  </span>
+                  {roleModal.role === value && (
+                    <span className="ml-auto text-[#D92B2B] text-sm font-bold">✓ বর্তমান</span>
+                  )}
+                  {actionLoading === roleModal.uid + '_role' && roleModal.role !== value && (
+                    <span className="ml-auto text-xs text-[#555555]">...</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => setRoleModal(null)}
+                className="w-full py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium hover:bg-gray-50"
+              >
+                বাতিল
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirm modal */}
       {confirmDelete && (
