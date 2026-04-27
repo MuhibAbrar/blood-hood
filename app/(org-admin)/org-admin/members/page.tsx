@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getOrgByAdmin, getOrgMembers, removeMember, getAllUsers, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
+import { getOrgMembers, removeMember, getAllUsers, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { Organization, User, JoinRequest } from '@/types'
 
 export default function OrgMembersPage() {
-  const { user } = useAuth()
+  const { user, orgAdmin } = useAuth()
   const { showToast } = useToast()
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<User[]>([])
@@ -24,24 +24,25 @@ export default function OrgMembersPage() {
   const [adding, setAdding] = useState<string | null>(null)
   const [processingReq, setProcessingReq] = useState<string | null>(null)
 
-  const load = async () => {
-    if (!user) return
-    const [o, allU] = await Promise.all([getOrgByAdmin(user.uid), getAllUsers()])
-    if (!o) return
-    setOrg(o)
-    setAllUsers(allU)
-    const [m, jr] = await Promise.all([
+  const load = async (o: Organization) => {
+    const [allU, m, jr] = await Promise.all([
+      getAllUsers(),
       getOrgMembers(Array.from(new Set([...o.memberIds, ...o.adminIds]))),
       getJoinRequests(o.id),
     ])
+    setAllUsers(allU)
     m.sort((a, b) => b.totalDonations - a.totalDonations)
     setMembers(m)
     setJoinRequests(jr)
     setLoading(false)
   }
 
+  useEffect(() => {
+    if (!orgAdmin) return
+    setOrg(orgAdmin)
+    load(orgAdmin)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load() }, [user])
+  }, [orgAdmin])
 
   const filtered = members.filter(m =>
     m.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -60,7 +61,7 @@ export default function OrgMembersPage() {
     setAdding(u.uid)
     try {
       await joinOrganization(org.id, u.uid)
-      await load()
+      await load(org)
       showToast(`${u.name}-কে যোগ করা হয়েছে ✓`, 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
@@ -70,10 +71,11 @@ export default function OrgMembersPage() {
   }
 
   const handleAccept = async (req: JoinRequest) => {
+    if (!org) return
     setProcessingReq(req.id)
     try {
       await acceptJoinRequest(req)
-      await load()
+      await load(org)
       showToast(`${req.userName}-কে সদস্য করা হয়েছে ✓`, 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
@@ -83,10 +85,11 @@ export default function OrgMembersPage() {
   }
 
   const handleReject = async (req: JoinRequest) => {
+    if (!org) return
     setProcessingReq(req.id)
     try {
       await rejectJoinRequest(req.id)
-      await load()
+      await load(org)
       showToast('অনুরোধ বাতিল করা হয়েছে', 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
@@ -101,7 +104,7 @@ export default function OrgMembersPage() {
     try {
       await removeMember(org.id, confirmRemove.uid)
       setConfirmRemove(null)
-      await load()
+      await load(org)
       showToast(`${confirmRemove.name}-কে সরিয়ে দেওয়া হয়েছে`, 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
