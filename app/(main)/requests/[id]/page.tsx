@@ -102,7 +102,7 @@ export default function RequestDetailPage() {
     setFulfilling(true)
     try {
       const donorUid = selectedDonor === 'anonymous' ? null : selectedDonor.uid
-      await fulfillRequest(request.id, donorUid)
+      await fulfillRequest(request.id, donorUid, { bloodGroup: request.bloodGroup, hospital: request.hospital })
       showToast('অনুরোধ পূর্ণ হয়েছে! ধন্যবাদ 🩸', 'success')
       setShowFulfillModal(false)
       await reload()
