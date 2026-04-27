@@ -33,11 +33,17 @@ export default function NotificationsPage() {
 
   const load = async () => {
     if (!user) return
-    const n = await getNotifications(user.uid)
-    setNotifications(n)
-    setLoading(false)
+    try {
+      const n = await getNotifications(user.uid)
+      setNotifications(n)
+    } catch (err) {
+      console.error('Notifications fetch error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [user])
 
   const unreadCount = notifications.filter(n => !n.read).length

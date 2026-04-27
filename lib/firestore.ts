@@ -312,6 +312,9 @@ export const recordCampDonation = async (campId: string, donorId: string, orgId:
 // --- Notifications ---
 
 export const getNotifications = async (uid: string): Promise<Notification[]> => {
+  // NOTE: Requires Firestore composite index: userId (ASC) + createdAt (DESC)
+  // If this throws, go to Firebase Console → Firestore → Indexes → Add composite index
+  // Collection: notifications, Fields: userId Ascending, createdAt Descending
   const q = query(
     collection(db, 'notifications'),
     where('userId', '==', uid),
