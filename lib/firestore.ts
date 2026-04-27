@@ -19,7 +19,7 @@ import {
   QuerySnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement } from '@/types'
 
 // --- Users ---
 
@@ -72,6 +72,24 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
     fulfilledAt: null,
     createdAt: Timestamp.now(),
   })
+
+  // Notify compatible donors (fire-and-forget)
+  fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'blood_request',
+      data: {
+        requestId: ref.id,
+        bloodGroup: data.bloodGroup,
+        hospital: data.hospital,
+        area: data.area,
+        patientName: data.patientName,
+        urgency: data.urgency,
+      },
+    }),
+  }).catch(() => {}) // silently ignore if notification fails
+
   return ref.id
 }
 
@@ -220,6 +238,75 @@ export const updateOrganization = async (id: string, data: Partial<Organization>
 
 export const deleteOrganization = async (id: string) => {
   await deleteDoc(doc(db, 'organizations', id))
+}
+
+// --- Org Admin ---
+
+export const getOrgByAdmin = async (uid: string): Promise<Organization | null> => {
+  const q = query(collection(db, 'organizations'), where('adminIds', 'array-contains', uid))
+  const snap = await getDocs(q)
+  if (snap.empty) return null
+  return { id: snap.docs[0].id, ...snap.docs[0].data() } as Organization
+}
+
+export const getOrgMembers = async (memberIds: string[]): Promise<User[]> => {
+  if (!memberIds.length) return []
+  const results: User[] = []
+  for (let i = 0; i < memberIds.length; i += 10) {
+    const batch = memberIds.slice(i, i + 10)
+    const snap = await getDocs(query(collection(db, 'users'), where('uid', 'in', batch)))
+    snap.docs.forEach(d => results.push(d.data() as User))
+  }
+  return results
+}
+
+export const removeMember = async (orgId: string, uid: string) => {
+  await updateDoc(doc(db, 'organizations', orgId), {
+    memberIds: (await getDoc(doc(db, 'organizations', orgId))).data()?.memberIds.filter((id: string) => id !== uid) ?? [],
+  })
+  await updateDoc(doc(db, 'users', uid), {
+    organizations: (await getDoc(doc(db, 'users', uid))).data()?.organizations.filter((id: string) => id !== orgId) ?? [],
+  })
+}
+
+export const getCampsByOrg = async (orgId: string): Promise<Camp[]> => {
+  const snap = await getDocs(query(collection(db, 'camps'), where('organizationId', '==', orgId), orderBy('date', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Camp))
+}
+
+export const getAnnouncements = async (orgId: string): Promise<Announcement[]> => {
+  const snap = await getDocs(query(collection(db, 'announcements'), where('orgId', '==', orgId), orderBy('createdAt', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement))
+}
+
+export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'createdAt'>): Promise<string> => {
+  const ref = await addDoc(collection(db, 'announcements'), { ...data, createdAt: Timestamp.now() })
+  return ref.id
+}
+
+export const deleteAnnouncement = async (id: string) => {
+  await deleteDoc(doc(db, 'announcements', id))
+}
+
+export const checkInCamp = async (campId: string, uid: string) => {
+  await updateDoc(doc(db, 'camps', campId), {
+    checkedIn: arrayUnion(uid),
+  })
+}
+
+export const recordCampDonation = async (campId: string, donorId: string, orgId: string) => {
+  await updateDoc(doc(db, 'camps', campId), {
+    donatedUids: arrayUnion(donorId),
+    totalCollected: increment(1),
+  })
+  await updateDoc(doc(db, 'organizations', orgId), {
+    totalDonations: increment(1),
+  })
+  await updateDoc(doc(db, 'users', donorId), {
+    totalDonations: increment(1),
+    lastDonatedAt: Timestamp.now(),
+    isAvailable: false,
+  })
 }
 
 // --- Stats ---

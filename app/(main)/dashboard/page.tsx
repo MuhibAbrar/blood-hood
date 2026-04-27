@@ -94,6 +94,10 @@ export default function DashboardPage() {
             <span className="text-3xl">🏫</span>
             <p className="text-sm font-semibold text-[#111111] text-center">সংগঠন</p>
           </Link>
+          <Link href="/leaderboard" className="card p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow col-span-2">
+            <span className="text-3xl">🏆</span>
+            <p className="text-sm font-semibold text-[#111111] text-center">লিডারবোর্ড — সেরা দাতারা</p>
+          </Link>
         </div>
       </div>
 

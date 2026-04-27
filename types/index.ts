@@ -85,6 +85,15 @@ export interface Camp {
   createdAt: Timestamp
 }
 
+export interface Announcement {
+  id: string
+  orgId: string
+  title: string
+  message: string
+  createdBy: string
+  createdAt: Timestamp
+}
+
 export interface Notification {
   id: string
   userId: string
