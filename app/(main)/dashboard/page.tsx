@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/context/AuthContext'
 import { getPlatformStats, subscribeToRequests } from '@/lib/firestore'
-import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
+import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { StatCardSkeleton, RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { BloodRequest } from '@/types'
@@ -18,7 +17,6 @@ interface Stats {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
@@ -33,29 +31,8 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 py-4 space-y-6">
-      {/* Greeting */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[#555555] text-sm">স্বাগতম,</p>
-          <h2 className="text-xl font-bold text-[#111111]">{user?.name ?? 'রক্তযোদ্ধা'}</h2>
-        </div>
-        {user && <BloodGroupBadge group={user.bloodGroup} size="lg" />}
-      </div>
-
-      {/* Availability status */}
-      {user && (
-        <div className={`rounded-2xl p-4 flex items-center justify-between ${user.isAvailable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-[#D92B2B]/20'}`}>
-          <div>
-            <p className="font-semibold text-[#111111]">আপনার অবস্থা</p>
-            <p className={`text-sm font-medium ${user.isAvailable ? 'text-[#1A9E6B]' : 'text-[#D92B2B]'}`}>
-              {user.isAvailable ? '● এখন রক্ত দিতে পারবেন' : '○ এখন Unavailable'}
-            </p>
-          </div>
-          <Link href="/profile" className="btn-ghost text-sm border border-[#E5E5E5] bg-white">
-            পরিবর্তন
-          </Link>
-        </div>
-      )}
+      {/* Donor hero card */}
+      <DonorHeroCard />
 
       {/* Stats */}
       <div>
