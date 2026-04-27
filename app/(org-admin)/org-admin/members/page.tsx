@@ -8,7 +8,7 @@ import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { Organization, User, JoinRequest } from '@/types'
 
 export default function OrgMembersPage() {
-  const { user, orgAdmin } = useAuth()
+  const { orgAdmin } = useAuth()
   const { showToast } = useToast()
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<User[]>([])
