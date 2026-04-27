@@ -31,7 +31,7 @@ export default function OrgMembersPage() {
     setOrg(o)
     setAllUsers(allU)
     const [m, jr] = await Promise.all([
-      getOrgMembers([...new Set([...o.memberIds, ...o.adminIds])]),
+      getOrgMembers(Array.from(new Set([...o.memberIds, ...o.adminIds]))),
       getJoinRequests(o.id),
     ])
     m.sort((a, b) => b.totalDonations - a.totalDonations)
