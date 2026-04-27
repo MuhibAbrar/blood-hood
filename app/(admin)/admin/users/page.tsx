@@ -64,8 +64,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const roleLabel = (role: UserRole) =>
-    ({ donor: 'ডোনার', admin: 'অ্যাডমিন', superadmin: 'সুপার অ্যাডমিন' })[role]
   const roleBadge = (role: UserRole) =>
     ({ donor: 'bg-gray-100 text-[#555555]', admin: 'bg-blue-50 text-blue-700', superadmin: 'bg-yellow-50 text-yellow-700' })[role]
 

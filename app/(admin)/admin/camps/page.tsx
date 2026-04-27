@@ -210,7 +210,7 @@ export default function AdminCampsPage() {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
             <span className="text-4xl block mb-3">🗑️</span>
             <h3 className="font-bold text-[#111111] text-lg mb-2">ক্যাম্প মুছে ফেলবেন?</h3>
-            <p className="text-[#555555] text-sm mb-5">"{confirmDelete.title}" মুছে গেলে আর ফিরে পাওয়া যাবে না।</p>
+            <p className="text-[#555555] text-sm mb-5">&ldquo;{confirmDelete.title}&rdquo; মুছে গেলে আর ফিরে পাওয়া যাবে না।</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium">বাতিল</button>
               <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold">মুছুন</button>
