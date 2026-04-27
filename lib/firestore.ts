@@ -19,7 +19,7 @@ import {
   QuerySnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement, Notification } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement, Notification, JoinRequest } from '@/types'
 
 // --- Users ---
 
@@ -308,6 +308,61 @@ export const recordCampDonation = async (campId: string, donorId: string, orgId:
     lastDonatedAt: Timestamp.now(),
     isAvailable: false,
   })
+}
+
+// --- Join Requests ---
+
+export const requestJoinOrg = async (orgId: string, user: User): Promise<void> => {
+  // Check if already pending
+  const existing = await getDocs(query(
+    collection(db, 'joinRequests'),
+    where('orgId', '==', orgId),
+    where('userId', '==', user.uid),
+    where('status', '==', 'pending')
+  ))
+  if (!existing.empty) return // Already requested
+
+  await addDoc(collection(db, 'joinRequests'), {
+    orgId,
+    userId: user.uid,
+    userName: user.name,
+    userPhone: user.phone,
+    userBloodGroup: user.bloodGroup,
+    status: 'pending',
+    createdAt: Timestamp.now(),
+  })
+}
+
+export const getJoinRequests = async (orgId: string): Promise<JoinRequest[]> => {
+  const q = query(
+    collection(db, 'joinRequests'),
+    where('orgId', '==', orgId),
+    where('status', '==', 'pending'),
+    orderBy('createdAt', 'desc')
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest))
+}
+
+export const acceptJoinRequest = async (request: JoinRequest): Promise<void> => {
+  await joinOrganization(request.orgId, request.userId)
+  await updateDoc(doc(db, 'joinRequests', request.id), { status: 'accepted' })
+}
+
+export const rejectJoinRequest = async (requestId: string): Promise<void> => {
+  await updateDoc(doc(db, 'joinRequests', requestId), { status: 'rejected' })
+}
+
+export const getUserJoinRequest = async (orgId: string, userId: string): Promise<JoinRequest | null> => {
+  const q = query(
+    collection(db, 'joinRequests'),
+    where('orgId', '==', orgId),
+    where('userId', '==', userId),
+    where('status', '==', 'pending')
+  )
+  const snap = await getDocs(q)
+  if (snap.empty) return null
+  return { id: snap.docs[0].id, ...snap.docs[0].data() } as JoinRequest
 }
 
 // --- Notifications ---

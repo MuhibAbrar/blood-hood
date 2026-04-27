@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getOrgByAdmin, getOrgMembers, removeMember, getAllUsers, joinOrganization } from '@/lib/firestore'
+import { getOrgByAdmin, getOrgMembers, removeMember, getAllUsers, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import type { Organization, User } from '@/types'
+import type { Organization, User, JoinRequest } from '@/types'
 
 export default function OrgMembersPage() {
   const { user } = useAuth()
@@ -17,9 +17,12 @@ export default function OrgMembersPage() {
   const [search, setSearch] = useState('')
   const [removing, setRemoving] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<User | null>(null)
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
+  const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members')
   const [showAddModal, setShowAddModal] = useState(false)
   const [addSearch, setAddSearch] = useState('')
   const [adding, setAdding] = useState<string | null>(null)
+  const [processingReq, setProcessingReq] = useState<string | null>(null)
 
   const load = async () => {
     if (!user) return
@@ -27,9 +30,13 @@ export default function OrgMembersPage() {
     if (!o) return
     setOrg(o)
     setAllUsers(allU)
-    const m = await getOrgMembers([...new Set([...o.memberIds, ...o.adminIds])])
+    const [m, jr] = await Promise.all([
+      getOrgMembers([...new Set([...o.memberIds, ...o.adminIds])]),
+      getJoinRequests(o.id),
+    ])
     m.sort((a, b) => b.totalDonations - a.totalDonations)
     setMembers(m)
+    setJoinRequests(jr)
     setLoading(false)
   }
 
@@ -62,6 +69,32 @@ export default function OrgMembersPage() {
     }
   }
 
+  const handleAccept = async (req: JoinRequest) => {
+    setProcessingReq(req.id)
+    try {
+      await acceptJoinRequest(req)
+      await load()
+      showToast(`${req.userName}-কে সদস্য করা হয়েছে ✓`, 'success')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setProcessingReq(null)
+    }
+  }
+
+  const handleReject = async (req: JoinRequest) => {
+    setProcessingReq(req.id)
+    try {
+      await rejectJoinRequest(req.id)
+      await load()
+      showToast('অনুরোধ বাতিল করা হয়েছে', 'success')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setProcessingReq(null)
+    }
+  }
+
   const handleRemove = async () => {
     if (!confirmRemove || !org) return
     setRemoving(confirmRemove.uid)
@@ -78,32 +111,95 @@ export default function OrgMembersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1">
           <h1 className="text-xl font-bold text-[#111111]">সদস্য</h1>
-          <p className="text-[#555555] text-sm mt-0.5">মোট {members.length} জন · দানের সংখ্যা অনুযায়ী সাজানো</p>
+          <p className="text-[#555555] text-sm mt-0.5">মোট {members.length} জন</p>
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="নাম বা ফোন..."
-            className="border border-[#E5E5E5] rounded-xl px-3 py-2 text-sm flex-1 sm:w-44 focus:outline-none focus:border-[#1A9E6B] bg-white"
-          />
-          <button
-            onClick={() => { setShowAddModal(true); setAddSearch('') }}
-            className="bg-[#1A9E6B] text-white px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap hover:bg-[#158a5c] transition-colors"
-          >
-            + যোগ করুন
-          </button>
-        </div>
+        <button
+          onClick={() => { setShowAddModal(true); setAddSearch('') }}
+          className="bg-[#1A9E6B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#158a5c] transition-colors self-start sm:self-auto"
+        >
+          + সদস্য যোগ করুন
+        </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${activeTab === 'members' ? 'bg-[#1A9E6B] text-white' : 'bg-white border border-[#E5E5E5] text-[#555555]'}`}
+        >
+          সদস্য তালিকা ({members.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('requests')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors relative ${activeTab === 'requests' ? 'bg-[#1A9E6B] text-white' : 'bg-white border border-[#E5E5E5] text-[#555555]'}`}
+        >
+          যোগ দেওয়ার অনুরোধ
+          {joinRequests.length > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#D92B2B] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {joinRequests.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Search (members tab only) */}
+      {activeTab === 'members' && (
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="নাম, ফোন বা রক্তের গ্রুপ দিয়ে খুঁজুন..."
+          className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B] bg-white"
+        />
+      )}
+
+      {/* Join Requests tab */}
+      {activeTab === 'requests' && (
+        <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
+          {joinRequests.length === 0 ? (
+            <div className="p-12 text-center">
+              <span className="text-4xl block mb-3">📭</span>
+              <p className="text-[#555555]">কোনো পেন্ডিং অনুরোধ নেই</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#F0F0F0]">
+              {joinRequests.map(req => (
+                <div key={req.id} className="flex items-center gap-3 px-4 py-4">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-lg shrink-0">👤</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[#111111] text-sm">{req.userName}</p>
+                    <p className="text-xs text-[#555555]">{req.userPhone} · {req.userBloodGroup}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => handleReject(req)}
+                      disabled={processingReq === req.id}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-[#D92B2B] hover:bg-red-100 font-medium"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      onClick={() => handleAccept(req)}
+                      disabled={processingReq === req.id}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium"
+                    >
+                      {processingReq === req.id ? '...' : '✓ অনুমোদন'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Members list */}
-      <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
+      {activeTab === 'members' && <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
             {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}
@@ -164,7 +260,7 @@ export default function OrgMembersPage() {
             })}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Add member modal */}
       {showAddModal && (

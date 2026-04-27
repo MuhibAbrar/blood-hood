@@ -94,6 +94,17 @@ export interface Announcement {
   createdAt: Timestamp
 }
 
+export interface JoinRequest {
+  id: string
+  orgId: string
+  userId: string
+  userName: string
+  userPhone: string
+  userBloodGroup: string
+  status: 'pending' | 'accepted' | 'rejected'
+  createdAt: Timestamp
+}
+
 export interface Notification {
   id: string
   userId: string
