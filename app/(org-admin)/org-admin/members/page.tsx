@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getOrgMembers, removeMember, getAllUsers, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { Organization, User, JoinRequest } from '@/types'
 
 export default function OrgMembersPage() {
-  const { orgAdmin } = useAuth()
+  const { org: orgAdmin } = useOrgAdmin()
   const { showToast } = useToast()
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<User[]>([])

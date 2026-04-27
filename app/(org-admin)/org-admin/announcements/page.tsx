@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getOrgByAdmin, getAnnouncements, createAnnouncement, deleteAnnouncement } from '@/lib/firestore'
+import { useOrgAdmin } from '@/context/OrgAdminContext'
+import { getAnnouncements, createAnnouncement, deleteAnnouncement } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
-import type { Organization, Announcement } from '@/types'
+import type { Announcement } from '@/types'
 
 export default function OrgAnnouncementsPage() {
   const { user } = useAuth()
+  const { org } = useOrgAdmin()
   const { showToast } = useToast()
-  const [org, setOrg] = useState<Organization | null>(null)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -20,20 +21,19 @@ export default function OrgAnnouncementsPage() {
   const [notifying, setNotifying] = useState(false)
 
   const load = async () => {
-    if (!user) return
-    const o = await getOrgByAdmin(user.uid)
-    if (!o) return
-    setOrg(o)
-    const a = await getAnnouncements(o.id)
+    if (!org) return
+    const a = await getAnnouncements(org.id)
     setAnnouncements(a)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [user])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [org])
 
   const handleSave = async () => {
     if (!form.title || !form.message) { showToast('সব তথ্য পূরণ করুন', 'error'); return }
     if (!user || !org) return
+
     setSaving(true)
     try {
       await createAnnouncement({ orgId: org.id, title: form.title, message: form.message, createdBy: user.uid })

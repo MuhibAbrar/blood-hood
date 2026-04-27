@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { OrgAdminContext } from '@/context/OrgAdminContext'
 import { logout } from '@/lib/auth'
 import { getOrgByAdmin } from '@/lib/firestore'
 import type { Organization } from '@/types'
@@ -26,15 +27,17 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
   const [orgLoading, setOrgLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  const fetchOrg = async (uid: string) => {
+    const o = await getOrgByAdmin(uid)
+    if (!o) { router.replace('/dashboard'); return }
+    setOrg(o)
+    setOrgLoading(false)
+  }
+
   useEffect(() => {
     if (!loading && !user) { router.replace('/login'); return }
-    if (!loading && user) {
-      getOrgByAdmin(user.uid).then(o => {
-        if (!o) { router.replace('/dashboard'); return }
-        setOrg(o)
-        setOrgLoading(false)
-      })
-    }
+    if (!loading && user) fetchOrg(user.uid)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, router])
 
   useEffect(() => { setSidebarOpen(false) }, [pathname])
@@ -115,6 +118,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
   )
 
   return (
+    <OrgAdminContext.Provider value={{ org, reload: () => user ? fetchOrg(user.uid) : Promise.resolve() }}>
     <div className="min-h-screen bg-[#F4F6F9]">
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -144,5 +148,6 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
         <div className="p-4 md:p-8">{children}</div>
       </div>
     </div>
+    </OrgAdminContext.Provider>
   )
 }

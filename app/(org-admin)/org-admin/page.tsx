@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getCampsByOrg, getAnnouncements } from '@/lib/firestore'
 import { formatBanglaDate } from '@/lib/constants'
 import type { Camp, Announcement } from '@/types'
 
 export default function OrgAdminDashboard() {
-  const { user, orgAdmin } = useAuth()
+  const { user } = useAuth()
+  const { org: orgAdmin } = useOrgAdmin()
   const [camps, setCamps] = useState<Camp[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)

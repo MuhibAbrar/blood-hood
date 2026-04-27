@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getOrgByAdmin, getCampsByOrg, createCamp, updateCamp, deleteCamp, getOrgMembers, recordCampDonation } from '@/lib/firestore'
+import { useOrgAdmin } from '@/context/OrgAdminContext'
+import { getCampsByOrg, createCamp, updateCamp, deleteCamp, getOrgMembers, recordCampDonation } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { KHULNA_UPAZILAS, formatBanglaDate } from '@/lib/constants'
 import { Timestamp } from 'firebase/firestore'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import type { Organization, Camp, User, CampStatus } from '@/types'
+import type { Camp, User, CampStatus } from '@/types'
 
 const emptyForm = { title: '', date: '', venue: '', area: '', status: 'upcoming' as CampStatus }
 
 export default function OrgCampsPage() {
   const { user } = useAuth()
+  const { org } = useOrgAdmin()
   const { showToast } = useToast()
-  const [org, setOrg] = useState<Organization | null>(null)
   const [camps, setCamps] = useState<Camp[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -28,16 +29,14 @@ export default function OrgCampsPage() {
   const [donating, setDonating] = useState<string | null>(null)
 
   const load = async () => {
-    if (!user) return
-    const o = await getOrgByAdmin(user.uid)
-    if (!o) return
-    setOrg(o)
-    const c = await getCampsByOrg(o.id)
+    if (!org) return
+    const c = await getCampsByOrg(org.id)
     setCamps(c)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [user])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [org])
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (camp: Camp) => {
