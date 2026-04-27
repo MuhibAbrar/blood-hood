@@ -23,7 +23,12 @@ export default function BottomNav() {
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] safe-bottom z-50 md:hidden">
         <div className="flex items-center justify-around h-16">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href.replace('/new', '')))
+            const active =
+              href === '/requests/new'
+                ? pathname === '/requests/new'
+                : href === '/requests'
+                ? pathname.startsWith('/requests') && pathname !== '/requests/new'
+                : pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
             return (
               <Link
                 key={href}
@@ -43,7 +48,12 @@ export default function BottomNav() {
       {/* Desktop side nav */}
       <nav className="hidden md:flex fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-[#E5E5E5] flex-col gap-1 p-3 z-40 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href.replace('/new', '')))
+          const active =
+            href === '/requests/new'
+              ? pathname === '/requests/new'
+              : href === '/requests'
+              ? pathname.startsWith('/requests') && pathname !== '/requests/new'
+              : pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (
             <Link
               key={href}

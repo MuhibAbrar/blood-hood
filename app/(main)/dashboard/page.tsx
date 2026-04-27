@@ -83,26 +83,21 @@ export default function DashboardPage() {
       <div>
         <h3 className="font-semibold text-[#111111] mb-3">দ্রুত অ্যাকশন</h3>
         <div className="grid grid-cols-2 gap-3">
-          <Link href="/requests/new" className="card p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow">
-            <span className="text-3xl">🩸</span>
-            <p className="text-sm font-semibold text-[#111111] text-center">রক্তের অনুরোধ</p>
-          </Link>
-          <Link href="/donors" className="card p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow">
-            <span className="text-3xl">🔍</span>
-            <p className="text-sm font-semibold text-[#111111] text-center">ডোনার খুঁজুন</p>
-          </Link>
-          <Link href="/camps" className="card p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow">
-            <span className="text-3xl">🏕️</span>
-            <p className="text-sm font-semibold text-[#111111] text-center">ক্যাম্প দেখুন</p>
-          </Link>
-          <Link href="/organizations" className="card p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow">
-            <span className="text-3xl">🏫</span>
-            <p className="text-sm font-semibold text-[#111111] text-center">সংগঠন</p>
-          </Link>
-          <Link href="/leaderboard" className="card p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow col-span-2">
-            <span className="text-3xl">🏆</span>
-            <p className="text-sm font-semibold text-[#111111] text-center">লিডারবোর্ড — সেরা দাতারা</p>
-          </Link>
+          <QuickAction href="/requests/new" label="রক্তের অনুরোধ" bg="bg-red-50" iconColor="text-[#D92B2B]"
+            icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2C7 8 4 12 4 15a8 8 0 0 0 16 0c0-3-3-7-8-13z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 12v4M10 14h4" /></svg>}
+          />
+          <QuickAction href="/donors" label="ডোনার খুঁজুন" bg="bg-blue-50" iconColor="text-blue-600"
+            icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" /></svg>}
+          />
+          <QuickAction href="/camps" label="ক্যাম্প দেখুন" bg="bg-green-50" iconColor="text-[#1A9E6B]"
+            icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17l5-8 4 6 3-4 4 6" /><path strokeLinecap="round" strokeLinejoin="round" d="M2 20h20" /></svg>}
+          />
+          <QuickAction href="/organizations" label="সংগঠন" bg="bg-purple-50" iconColor="text-purple-600"
+            icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21V7l9-4 9 4v14" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 21V12h6v9" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 7.5h.01M15 7.5h.01" /></svg>}
+          />
+          <QuickAction href="/leaderboard" label="লিডারবোর্ড — সেরা দাতারা" bg="bg-yellow-50" iconColor="text-yellow-600" wide
+            icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8 21H5a2 2 0 0 1-2-2v-1a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v1a2 2 0 0 1-2 2h-3" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.9 3.8 4.2.6-3 2.9.7 4.2L12 12.3l-3.8 2.2.7-4.2-3-2.9 4.2-.6z" /></svg>}
+          />
         </div>
       </div>
 
@@ -140,6 +135,23 @@ function StatCard({
         <p className="text-xs text-[#555555] mt-1 leading-tight">{label}</p>
       </div>
     </div>
+  )
+}
+
+function QuickAction({ href, label, icon, bg, iconColor, wide }: {
+  href: string; label: string; icon: React.ReactNode
+  bg: string; iconColor: string; wide?: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      className={`card p-4 flex flex-col items-center gap-3 hover:shadow-md transition-all group ${wide ? 'col-span-2 flex-row justify-center gap-4' : ''}`}
+    >
+      <div className={`w-14 h-14 rounded-2xl ${bg} ${iconColor} flex items-center justify-center transition-transform group-hover:scale-110`}>
+        {icon}
+      </div>
+      <p className="text-sm font-semibold text-[#111111] text-center">{label}</p>
+    </Link>
   )
 }
 
