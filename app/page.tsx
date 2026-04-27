@@ -1,6 +1,35 @@
+'use client'
+
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 
 export default function LandingPage() {
+  const { firebaseUser, user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && firebaseUser && user) {
+      router.replace('/dashboard')
+    }
+  }, [loading, firebaseUser, user, router])
+
+  // Auth check হচ্ছে
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#D92B2B] to-[#8B1A1A] flex items-center justify-center">
+        <div className="text-center">
+          <span className="text-8xl block mb-6">🩸</span>
+          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+        </div>
+      </div>
+    )
+  }
+
+  // Already logged in — redirect হচ্ছে
+  if (firebaseUser && user) return null
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#D92B2B] to-[#8B1A1A] flex flex-col">
       {/* Hero */}

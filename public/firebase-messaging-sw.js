@@ -1,7 +1,6 @@
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js')
 
-// Service Worker-এ env vars কাজ করে না, তাই hardcode করতে হয়
 firebase.initializeApp({
   apiKey: 'AIzaSyBvjuVfrvTQynZE5CP1GfALbWmnekfJow0',
   authDomain: 'blood-hood-f4e66.firebaseapp.com',
@@ -13,27 +12,34 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging()
 
-// Background notification (app বন্ধ থাকলে)
+// Background notification — app বন্ধ বা minimize থাকলে
+// "skip_foreground: true" থাকলে দেখাবে না (foreground এ app নিজে handle করবে)
 messaging.onBackgroundMessage((payload) => {
+  // Foreground এ app খোলা থাকলে skip করো — double notification বন্ধ
+  if (payload.data?.skip_foreground === 'true') return
+
   const { title, body } = payload.notification ?? {}
   if (!title) return
+
   self.registration.showNotification(title, {
     body: body ?? '',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
     data: payload.data ?? {},
-    vibrate: [200, 100, 200],
+    vibrate: [300, 100, 300],
+    requireInteraction: false,
+    silent: false,
   })
 })
 
-// Notification click → app খুলবে
+// Notification click → সঠিক page-এ নিয়ে যাবে
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data?.link ?? '/'
+  const url = event.notification.data?.link ?? '/dashboard'
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
+        if ('focus' in client) {
           client.navigate(url)
           return client.focus()
         }
