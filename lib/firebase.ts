@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getMessaging, isSupported } from 'firebase/messaging'
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? 'placeholder',
@@ -17,7 +17,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 if (typeof window !== 'undefined') {
   initializeAppCheck(app, {
-    provider: new ReCaptchaEnterpriseProvider('6LeOmsssAAAAAN9ft8Vsx1OFOUVdi1nJ1Ypg2nz0'),
+    provider: new ReCaptchaV3Provider('6LepocssAAAAALDFQA8UafQnIB3dj8uhEsPdbYKP'),
     isTokenAutoRefreshEnabled: true,
   })
 }
