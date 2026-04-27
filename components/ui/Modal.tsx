@@ -19,9 +19,9 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+    <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white w-full md:max-w-md rounded-t-3xl md:rounded-2xl p-6 shadow-xl">
+      <div className="relative bg-white w-full md:max-w-md rounded-t-3xl md:rounded-2xl p-6 shadow-xl pb-[calc(1.5rem+4rem)] md:pb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[#111111]">{title}</h2>
           <button
