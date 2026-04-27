@@ -35,11 +35,20 @@ export default function AdminUsersPage() {
     u.bloodGroup.includes(search)
   )
 
+  const adminUpdate = async (uid: string, data: object) => {
+    const res = await fetch('/api/admin/update-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, data }),
+    })
+    if (!res.ok) throw new Error('Update failed')
+  }
+
   const handleRoleChange = async (user: User, role: UserRole) => {
     if (user.role === role) { setRoleModal(null); return }
     setActionLoading(user.uid + '_role')
     try {
-      await updateUser(user.uid, { role })
+      await adminUpdate(user.uid, { role })
       setRoleModal(null)
       await load()
       showToast(`${user.name}-এর role পরিবর্তন হয়েছে ✓`, 'success')
@@ -53,7 +62,7 @@ export default function AdminUsersPage() {
   const handleVerify = async (user: User) => {
     setActionLoading(user.uid + '_verify')
     try {
-      await updateUser(user.uid, { isVerified: !user.isVerified })
+      await adminUpdate(user.uid, { isVerified: !user.isVerified })
       await load()
       showToast(user.isVerified ? 'যাচাই বাতিল করা হয়েছে' : '✓ যাচাই করা হয়েছে', 'success')
     } catch {

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
   { href: '/dashboard', label: 'হোম', icon: HomeIcon },
@@ -13,6 +14,8 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const { user, orgAdmin } = useAuth()
+  const isSuperAdmin = user?.role === 'superadmin'
 
   return (
     <>
@@ -38,7 +41,7 @@ export default function BottomNav() {
       </nav>
 
       {/* Desktop side nav */}
-      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-[#E5E5E5] flex-col gap-1 p-3 z-40">
+      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-[#E5E5E5] flex-col gap-1 p-3 z-40 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href.replace('/new', '')))
           return (
@@ -46,9 +49,7 @@ export default function BottomNav() {
               key={href}
               href={href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
-                active
-                  ? 'bg-red-50 text-[#D92B2B]'
-                  : 'text-[#555555] hover:bg-gray-100'
+                active ? 'bg-red-50 text-[#D92B2B]' : 'text-[#555555] hover:bg-gray-100'
               }`}
             >
               <Icon className={`w-5 h-5 shrink-0 ${active ? 'stroke-[#D92B2B]' : 'stroke-[#555555]'}`} />
@@ -56,6 +57,40 @@ export default function BottomNav() {
             </Link>
           )
         })}
+
+        {/* Org Admin Panel link */}
+        {orgAdmin && (
+          <div className="mt-2 pt-2 border-t border-[#E5E5E5]">
+            <p className="text-[10px] font-semibold text-[#555555]/60 px-4 mb-1 uppercase tracking-wide">সংগঠন</p>
+            <Link
+              href="/org-admin"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                pathname.startsWith('/org-admin') ? 'bg-green-50 text-green-700' : 'text-[#555555] hover:bg-gray-100'
+              }`}
+            >
+              <span className="text-lg shrink-0">🏢</span>
+              <div className="min-w-0">
+                <span className="text-sm block truncate">{orgAdmin.name}</span>
+                <span className="text-[10px] text-[#555555]/60">অ্যাডমিন প্যানেল</span>
+              </div>
+            </Link>
+          </div>
+        )}
+
+        {/* Superadmin Panel link */}
+        {isSuperAdmin && (
+          <div className="mt-2 pt-2 border-t border-[#E5E5E5]">
+            <Link
+              href="/admin"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                pathname.startsWith('/admin') ? 'bg-yellow-50 text-yellow-700' : 'text-[#555555] hover:bg-gray-100'
+              }`}
+            >
+              <span className="text-lg shrink-0">👑</span>
+              <span className="text-sm">সুপার অ্যাডমিন</span>
+            </Link>
+          </div>
+        )}
       </nav>
     </>
   )

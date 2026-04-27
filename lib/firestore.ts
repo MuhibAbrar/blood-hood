@@ -94,10 +94,11 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
 }
 
 export const getBloodRequests = async (status?: BloodRequest['status']): Promise<BloodRequest[]> => {
-  let q = query(collection(db, 'bloodRequests'), orderBy('createdAt', 'desc'))
-  if (status) q = query(q, where('status', '==', status))
+  // Fetch all sorted by createdAt, then filter client-side to avoid composite index
+  const q = query(collection(db, 'bloodRequests'), orderBy('createdAt', 'desc'))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
+  const all = snap.docs.map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
+  return status ? all.filter(r => r.status === status) : all
 }
 
 export const getBloodRequest = async (id: string): Promise<BloodRequest | null> => {
