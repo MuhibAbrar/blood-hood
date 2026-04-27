@@ -1,47 +1,141 @@
-import Link from 'next/link'
-import type { BloodRequest } from '@/types'
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
+import { respondToRequest } from '@/lib/firestore'
+import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
-import { daysSince } from '@/lib/constants'
+import type { BloodRequest } from '@/types'
 
 interface RequestCardProps {
   request: BloodRequest
 }
 
+function timeAgo(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  const mins = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (mins < 2) return 'এইমাত্র'
+  if (mins < 60) return `${mins} মিনিট আগে`
+  if (hours < 24) return `${hours} ঘণ্টা আগে`
+  return `${days} দিন আগে`
+}
+
 export default function RequestCard({ request }: RequestCardProps) {
-  const daysAgo = daysSince(request.createdAt.toDate())
+  const router = useRouter()
+  const { user } = useAuth()
+  const { showToast } = useToast()
+  const [responding, setResponding] = useState(false)
+  const [responded, setResponded] = useState(
+    user ? request.respondedBy.includes(user.uid) : false
+  )
+
+  const isOwner = user?.uid === request.requestedBy
   const isUrgent = request.urgency === 'urgent'
 
+  const handleRespond = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!user) { router.push('/login'); return }
+    setResponding(true)
+    try {
+      await respondToRequest(request.id, user.uid)
+      setResponded(true)
+      showToast('সাড়া দেওয়া হয়েছে! এখন কল করুন 📞', 'success')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setResponding(false)
+    }
+  }
+
   return (
-    <Link
-      href={`/requests/${request.id}`}
-      className={`card p-4 flex flex-col gap-3 hover:shadow-md transition-shadow ${
-        isUrgent ? 'border-[#D92B2B] border-2' : ''
+    <div
+      onClick={() => router.push(`/requests/${request.id}`)}
+      className={`card p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow ${
+        isUrgent && request.status === 'open' ? 'border-l-4 border-l-[#D92B2B]' : ''
       }`}
     >
+      {/* Header: blood group + name + urgency + time */}
       <div className="flex items-start gap-3">
-        <BloodGroupBadge group={request.bloodGroup} size="lg" />
+        <BloodGroupBadge group={request.bloodGroup} size="md" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-[#111111]">{request.patientName}</p>
-            {isUrgent && (
-              <span className="text-xs bg-[#D92B2B] text-white px-2 py-0.5 rounded-full font-semibold animate-pulse">
-                🔴 জরুরি
+            <p className="font-bold text-[#111111]">{request.patientName}</p>
+            {isUrgent && request.status === 'open' && (
+              <span className="text-[10px] bg-[#D92B2B] text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
+                জরুরি
               </span>
             )}
           </div>
-          <p className="text-sm text-[#555555] mt-0.5 truncate">🏥 {request.hospital}</p>
-          <p className="text-sm text-[#555555] truncate">📍 {request.area}</p>
-          <p className="text-xs text-[#555555]/70 mt-1">{daysAgo === 0 ? 'আজকে' : `${daysAgo} দিন আগে`}</p>
+          <p className="text-xs text-[#555555]/60 mt-0.5">{timeAgo(request.createdAt.toDate())}</p>
         </div>
+        {/* Responders count */}
+        {request.respondedBy.length > 0 && (
+          <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-semibold shrink-0">
+            👥 {request.respondedBy.length} জন
+          </span>
+        )}
       </div>
-      {request.status === 'open' && (
-        <div className="btn-primary w-full text-sm">সাহায্য করব</div>
-      )}
+
+      {/* Details */}
+      <div className="space-y-1.5">
+        <p className="text-sm text-[#555555] flex items-center gap-2">
+          <span className="text-base">🏥</span>
+          <span className="truncate">{request.hospital}{request.area ? `, ${request.area}` : ''}</span>
+        </p>
+        <p className="text-sm text-[#555555] flex items-center gap-2">
+          <span className="text-base">📞</span>
+          <span className="font-medium text-[#111111]">{request.contactPhone}</span>
+        </p>
+        {request.note && (
+          <p className="text-sm text-[#555555] bg-[#F8F8F8] rounded-xl px-3 py-2 leading-relaxed">
+            {request.note}
+          </p>
+        )}
+      </div>
+
+      {/* Fulfilled / Cancelled status */}
       {request.status === 'fulfilled' && (
         <div className="text-center py-2 bg-green-50 rounded-xl text-[#1A9E6B] text-sm font-semibold">
-          ✓ পূর্ণ হয়েছে
+          ✓ রক্তের ব্যবস্থা হয়েছে
         </div>
       )}
-    </Link>
+      {request.status === 'cancelled' && (
+        <div className="text-center py-2 bg-gray-100 rounded-xl text-[#555555] text-sm font-medium">
+          বাতিল হয়েছে
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {request.status === 'open' && (
+        <div onClick={e => e.stopPropagation()} className="flex gap-2">
+          {isOwner ? (
+            <button
+              onClick={() => router.push(`/requests/${request.id}`)}
+              className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors"
+            >
+              পূর্ণ হয়েছে ✓
+            </button>
+          ) : responded ? (
+            <a
+              href={`tel:${request.contactPhone}`}
+              className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-bold text-center hover:bg-[#b82424] transition-colors"
+            >
+              📞 কল করুন
+            </a>
+          ) : (
+            <button
+              onClick={handleRespond}
+              disabled={responding}
+              className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-60"
+            >
+              {responding ? 'হচ্ছে...' : '🩸 আমি সাহায্য করব'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
