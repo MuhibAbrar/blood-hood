@@ -19,7 +19,7 @@ import {
   QuerySnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement, Notification } from '@/types'
 
 // --- Users ---
 
@@ -307,6 +307,29 @@ export const recordCampDonation = async (campId: string, donorId: string, orgId:
     lastDonatedAt: Timestamp.now(),
     isAvailable: false,
   })
+}
+
+// --- Notifications ---
+
+export const getNotifications = async (uid: string): Promise<Notification[]> => {
+  const q = query(
+    collection(db, 'notifications'),
+    where('userId', '==', uid),
+    orderBy('createdAt', 'desc'),
+    limit(50)
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
+}
+
+export const markNotificationRead = async (id: string) => {
+  await updateDoc(doc(db, 'notifications', id), { read: true })
+}
+
+export const markAllNotificationsRead = async (uid: string) => {
+  const q = query(collection(db, 'notifications'), where('userId', '==', uid), where('read', '==', false))
+  const snap = await getDocs(q)
+  await Promise.all(snap.docs.map(d => updateDoc(d.ref, { read: true })))
 }
 
 // --- Stats ---
