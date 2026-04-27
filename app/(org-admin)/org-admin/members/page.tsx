@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getOrgByAdmin, getOrgMembers, removeMember } from '@/lib/firestore'
+import { getOrgByAdmin, getOrgMembers, removeMember, getAllUsers, joinOrganization } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { Organization, User } from '@/types'
@@ -12,23 +12,28 @@ export default function OrgMembersPage() {
   const { showToast } = useToast()
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<User[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [removing, setRemoving] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<User | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addSearch, setAddSearch] = useState('')
+  const [adding, setAdding] = useState<string | null>(null)
 
   const load = async () => {
     if (!user) return
-    const o = await getOrgByAdmin(user.uid)
+    const [o, allU] = await Promise.all([getOrgByAdmin(user.uid), getAllUsers()])
     if (!o) return
     setOrg(o)
-    const m = await getOrgMembers(o.memberIds)
-    // Sort by totalDonations desc (leaderboard)
+    setAllUsers(allU)
+    const m = await getOrgMembers([...new Set([...o.memberIds, ...o.adminIds])])
     m.sort((a, b) => b.totalDonations - a.totalDonations)
     setMembers(m)
     setLoading(false)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [user])
 
   const filtered = members.filter(m =>
@@ -36,6 +41,26 @@ export default function OrgMembersPage() {
     m.phone.includes(search) ||
     m.bloodGroup.includes(search)
   )
+
+  const addableUsers = allUsers.filter(u =>
+    !org?.memberIds.includes(u.uid) &&
+    !org?.adminIds.includes(u.uid) &&
+    (u.name.toLowerCase().includes(addSearch.toLowerCase()) || u.phone.includes(addSearch))
+  ).slice(0, 10)
+
+  const handleAdd = async (u: User) => {
+    if (!org) return
+    setAdding(u.uid)
+    try {
+      await joinOrganization(org.id, u.uid)
+      await load()
+      showToast(`${u.name}-কে যোগ করা হয়েছে ✓`, 'success')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setAdding(null)
+    }
+  }
 
   const handleRemove = async () => {
     if (!confirmRemove || !org) return
@@ -54,74 +79,145 @@ export default function OrgMembersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#111111]">সদস্য</h1>
-          <p className="text-[#555555] text-sm mt-1">মোট {members.length} জন · দানের সংখ্যা অনুযায়ী সাজানো</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-[#111111]">সদস্য</h1>
+          <p className="text-[#555555] text-sm mt-0.5">মোট {members.length} জন · দানের সংখ্যা অনুযায়ী সাজানো</p>
         </div>
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="নাম, ফোন বা রক্তের গ্রুপ..."
-          className="border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm w-56 focus:outline-none focus:border-[#1A9E6B] bg-white"
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="নাম বা ফোন..."
+            className="border border-[#E5E5E5] rounded-xl px-3 py-2 text-sm flex-1 sm:w-44 focus:outline-none focus:border-[#1A9E6B] bg-white"
+          />
+          <button
+            onClick={() => { setShowAddModal(true); setAddSearch('') }}
+            className="bg-[#1A9E6B] text-white px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap hover:bg-[#158a5c] transition-colors"
+          >
+            + যোগ করুন
+          </button>
+        </div>
       </div>
 
+      {/* Members list */}
       <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
-            {[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}
+            {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-[#555555]">কোনো সদস্য পাওয়া যায়নি</div>
+          <div className="p-12 text-center">
+            <span className="text-4xl block mb-3">👥</span>
+            <p className="text-[#555555]">কোনো সদস্য নেই</p>
+            <button onClick={() => { setShowAddModal(true); setAddSearch('') }} className="mt-3 text-sm text-[#1A9E6B] font-medium hover:underline">
+              + প্রথম সদস্য যোগ করুন
+            </button>
+          </div>
         ) : (
           <div className="divide-y divide-[#F0F0F0]">
-            {filtered.map((m, idx) => (
-              <div key={m.uid} className="flex items-center gap-4 px-5 py-4 hover:bg-[#FAFAFA] transition-colors">
-                {/* Rank */}
-                <div className={`w-8 text-center font-bold text-sm shrink-0 ${
-                  idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-600' : 'text-[#555555]'
-                }`}>
-                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
-                </div>
-
-                <DefaultAvatar gender={m.gender} size={40} />
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-[#111111] text-sm">{m.name}</p>
-                    {m.isVerified && <span className="text-blue-500 text-xs">✓</span>}
-                    <span className="bg-red-100 text-[#D92B2B] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{m.bloodGroup}</span>
+            {filtered.map((m, idx) => {
+              const isAdmin = org?.adminIds.includes(m.uid)
+              return (
+                <div key={m.uid} className="flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors">
+                  {/* Rank */}
+                  <div className="w-7 text-center font-bold text-sm shrink-0">
+                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : <span className="text-[#555555] text-xs">#{idx + 1}</span>}
                   </div>
-                  <p className="text-xs text-[#555555]">{m.phone} · {m.upazila}</p>
-                </div>
 
-                <div className="text-center shrink-0">
-                  <p className="font-bold text-[#D92B2B] text-lg">{m.totalDonations}</p>
-                  <p className="text-[10px] text-[#555555]">দান</p>
-                </div>
+                  <DefaultAvatar gender={m.gender} size={38} />
 
-                <div className="shrink-0">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-semibold text-[#111111] text-sm">{m.name}</p>
+                      {m.isVerified && <span className="text-blue-500 text-xs">✓</span>}
+                      <span className="bg-red-100 text-[#D92B2B] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{m.bloodGroup}</span>
+                      {isAdmin && <span className="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">অ্যাডমিন</span>}
+                    </div>
+                    <p className="text-xs text-[#555555] truncate">{m.phone} · {m.upazila}</p>
+                  </div>
+
+                  <div className="text-center shrink-0 hidden sm:block">
+                    <p className="font-bold text-[#D92B2B]">{m.totalDonations}</p>
+                    <p className="text-[10px] text-[#555555]">দান</p>
+                  </div>
+
+                  <span className={`text-[10px] px-2 py-1 rounded-full font-medium shrink-0 hidden sm:inline ${
                     m.isAvailable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-[#555555]'
                   }`}>
-                    {m.isAvailable ? '● Available' : '○ Unavailable'}
+                    {m.isAvailable ? '● আছেন' : '○ নেই'}
                   </span>
-                </div>
 
-                <button
-                  onClick={() => setConfirmRemove(m)}
-                  disabled={removing === m.uid}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-[#D92B2B] hover:bg-red-100 font-medium transition-colors shrink-0"
-                >
-                  সরান
-                </button>
-              </div>
-            ))}
+                  {!isAdmin && (
+                    <button
+                      onClick={() => setConfirmRemove(m)}
+                      disabled={removing === m.uid}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-[#D92B2B] hover:bg-red-100 font-medium transition-colors shrink-0"
+                    >
+                      সরান
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
+
+      {/* Add member modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="px-6 py-5 border-b border-[#E5E5E5] flex items-center justify-between shrink-0">
+              <h3 className="font-bold text-[#111111]">সদস্য যোগ করুন</h3>
+              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#555555]">✕</button>
+            </div>
+            <div className="px-6 py-4 shrink-0">
+              <input
+                autoFocus
+                type="text"
+                placeholder="নাম বা ফোন নম্বর দিয়ে খুঁজুন..."
+                value={addSearch}
+                onChange={e => setAddSearch(e.target.value)}
+                className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]"
+              />
+            </div>
+            <div className="overflow-y-auto flex-1 px-4 pb-4">
+              {addSearch.length < 2 ? (
+                <p className="text-center text-sm text-[#555555] py-8">কমপক্ষে ২ অক্ষর লিখুন</p>
+              ) : addableUsers.length === 0 ? (
+                <p className="text-center text-sm text-[#555555] py-8">কাউকে পাওয়া যায়নি</p>
+              ) : (
+                <div className="space-y-2">
+                  {addableUsers.map(u => (
+                    <div key={u.uid} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                      <DefaultAvatar gender={u.gender} size={36} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#111111]">{u.name}</p>
+                        <p className="text-xs text-[#555555]">{u.phone} · {u.bloodGroup}</p>
+                      </div>
+                      <button
+                        onClick={() => handleAdd(u)}
+                        disabled={adding === u.uid}
+                        className="text-xs bg-[#1A9E6B] text-white px-3 py-1.5 rounded-lg font-medium hover:bg-[#158a5c] transition-colors shrink-0"
+                      >
+                        {adding === u.uid ? '...' : '+ যোগ'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-[#E5E5E5] shrink-0">
+              <button onClick={() => setShowAddModal(false)} className="w-full py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium hover:bg-gray-50">
+                বন্ধ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm remove modal */}
       {confirmRemove && (
@@ -134,7 +230,7 @@ export default function OrgMembersPage() {
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmRemove(null)} className="flex-1 py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium">বাতিল</button>
-              <button onClick={handleRemove} className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold">সরান</button>
+              <button onClick={handleRemove} disabled={!!removing} className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold">সরান</button>
             </div>
           </div>
         </div>
