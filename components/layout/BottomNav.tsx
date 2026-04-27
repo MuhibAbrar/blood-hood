@@ -15,25 +15,49 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] safe-bottom z-50 md:hidden">
-      <div className="flex items-center justify-around h-16">
+    <>
+      {/* Mobile bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E5E5] safe-bottom z-50 md:hidden">
+        <div className="flex items-center justify-around h-16">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href.replace('/new', '')))
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
+                  active ? 'text-[#D92B2B]' : 'text-[#555555]'
+                }`}
+              >
+                <Icon className={`w-6 h-6 ${active ? 'stroke-[#D92B2B]' : 'stroke-[#555555]'}`} />
+                <span className={`text-[10px] font-medium ${active ? 'font-semibold' : ''}`}>{label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* Desktop side nav */}
+      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-[#E5E5E5] flex-col gap-1 p-3 z-40">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href.replace('/new', '')))
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-                active ? 'text-[#D92B2B]' : 'text-[#555555]'
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                active
+                  ? 'bg-red-50 text-[#D92B2B]'
+                  : 'text-[#555555] hover:bg-gray-100'
               }`}
             >
-              <Icon className={`w-6 h-6 ${active ? 'stroke-[#D92B2B]' : 'stroke-[#555555]'}`} />
-              <span className={`text-[10px] font-medium ${active ? 'font-semibold' : ''}`}>{label}</span>
+              <Icon className={`w-5 h-5 shrink-0 ${active ? 'stroke-[#D92B2B]' : 'stroke-[#555555]'}`} />
+              <span className="text-sm">{label}</span>
             </Link>
           )
         })}
-      </div>
-    </nav>
+      </nav>
+    </>
   )
 }
 
