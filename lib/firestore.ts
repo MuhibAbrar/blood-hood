@@ -5,6 +5,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -168,6 +169,57 @@ export const registerForCamp = async (campId: string, uid: string) => {
   await updateDoc(doc(db, 'camps', campId), {
     registeredDonors: arrayUnion(uid),
   })
+}
+
+// --- Admin: Users ---
+
+export const getAllUsers = async (): Promise<User[]> => {
+  const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')))
+  return snap.docs.map((d) => d.data() as User)
+}
+
+export const deleteUserDoc = async (uid: string) => {
+  await deleteDoc(doc(db, 'users', uid))
+}
+
+// --- Admin: Camps ---
+
+export const createCamp = async (data: Omit<Camp, 'id' | 'createdAt' | 'registeredDonors' | 'totalCollected'>): Promise<string> => {
+  const ref = await addDoc(collection(db, 'camps'), {
+    ...data,
+    registeredDonors: [],
+    totalCollected: 0,
+    createdAt: Timestamp.now(),
+  })
+  return ref.id
+}
+
+export const updateCamp = async (id: string, data: Partial<Camp>) => {
+  await updateDoc(doc(db, 'camps', id), data)
+}
+
+export const deleteCamp = async (id: string) => {
+  await deleteDoc(doc(db, 'camps', id))
+}
+
+// --- Admin: Organizations ---
+
+export const createOrganization = async (data: Omit<Organization, 'id' | 'createdAt' | 'memberIds' | 'totalDonations'>): Promise<string> => {
+  const ref = await addDoc(collection(db, 'organizations'), {
+    ...data,
+    memberIds: [],
+    totalDonations: 0,
+    createdAt: Timestamp.now(),
+  })
+  return ref.id
+}
+
+export const updateOrganization = async (id: string, data: Partial<Organization>) => {
+  await updateDoc(doc(db, 'organizations', id), data)
+}
+
+export const deleteOrganization = async (id: string) => {
+  await deleteDoc(doc(db, 'organizations', id))
 }
 
 // --- Stats ---
