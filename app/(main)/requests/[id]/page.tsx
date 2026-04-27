@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { getBloodRequest, getDonors, respondToRequest, fulfillRequest, cancelRequest } from '@/lib/firestore'
+import { getBloodRequest, getDonors, respondToRequest, fulfillRequest, cancelRequest, getUsersByUids, getUserByPhone } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { getCompatibleDonors } from '@/lib/bloodCompatibility'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
+import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import DonorCard from '@/components/donor/DonorCard'
 import TopBar from '@/components/layout/TopBar'
-import { daysSince } from '@/lib/constants'
+import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { BloodRequest, User } from '@/types'
 
@@ -22,6 +23,15 @@ export default function RequestDetailPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [showPhone, setShowPhone] = useState(false)
+
+  // Fulfill modal state
+  const [showFulfillModal, setShowFulfillModal] = useState(false)
+  const [responders, setResponders] = useState<User[]>([])
+  const [selectedDonor, setSelectedDonor] = useState<User | 'anonymous' | null>(null)
+  const [phoneSearch, setPhoneSearch] = useState('')
+  const [phoneSearchResult, setPhoneSearchResult] = useState<User | null | 'not_found'>(null)
+  const [searchingPhone, setSearchingPhone] = useState(false)
+  const [fulfilling, setFulfilling] = useState(false)
 
   const reload = async () => {
     if (!id) return
@@ -57,17 +67,49 @@ export default function RequestDetailPage() {
     }
   }
 
-  const handleFulfill = async () => {
-    if (!request || !user) return
-    setActionLoading(true)
+  const openFulfillModal = async () => {
+    if (!request) return
+    setSelectedDonor(null)
+    setPhoneSearch('')
+    setPhoneSearchResult(null)
+    // Fetch responders' user data
+    const users = await getUsersByUids(request.respondedBy)
+    setResponders(users)
+    setShowFulfillModal(true)
+  }
+
+  const handlePhoneSearch = async () => {
+    if (phoneSearch.trim().length < 11) {
+      showToast('পুরো নম্বর দিন (১১ সংখ্যা)', 'error')
+      return
+    }
+    setSearchingPhone(true)
+    setPhoneSearchResult(null)
     try {
-      await fulfillRequest(request.id, user.uid)
-      showToast('সফলভাবে সম্পন্ন হয়েছে!', 'success')
+      const found = await getUserByPhone(phoneSearch.trim())
+      setPhoneSearchResult(found ?? 'not_found')
+      if (found) setSelectedDonor(found)
+      else showToast('এই নম্বরে কোনো ব্যবহারকারী পাওয়া যায়নি', 'info')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setSearchingPhone(false)
+    }
+  }
+
+  const handleConfirmFulfill = async () => {
+    if (!request || selectedDonor === null) return
+    setFulfilling(true)
+    try {
+      const donorUid = selectedDonor === 'anonymous' ? null : selectedDonor.uid
+      await fulfillRequest(request.id, donorUid)
+      showToast('অনুরোধ পূর্ণ হয়েছে! ধন্যবাদ 🩸', 'success')
+      setShowFulfillModal(false)
       await reload()
     } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন', 'error')
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
-      setActionLoading(false)
+      setFulfilling(false)
     }
   }
 
@@ -95,7 +137,9 @@ export default function RequestDetailPage() {
               <h2 className="text-lg font-bold text-[#111111]">{request.patientName}</h2>
               <p className="text-[#555555] text-sm mt-1">🏥 {request.hospital}</p>
               <p className="text-[#555555] text-sm">📍 {request.area}</p>
-              <p className="text-xs text-[#555555]/70 mt-1">{daysAgo === 0 ? 'আজকে' : `${daysAgo} দিন আগে`} — {request.respondedBy.length} জন সাড়া দিয়েছেন</p>
+              <p className="text-xs text-[#555555]/70 mt-1">
+                {daysAgo === 0 ? 'আজকে' : `${daysAgo} দিন আগে`} — {request.respondedBy.length} জন সাড়া দিয়েছেন
+              </p>
             </div>
           </div>
           {request.note && (
@@ -106,7 +150,10 @@ export default function RequestDetailPage() {
         {/* Status */}
         {request.status === 'fulfilled' && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
-            <p className="text-[#1A9E6B] font-semibold">✓ এই অনুরোধ পূর্ণ হয়েছে</p>
+            <p className="text-[#1A9E6B] font-semibold text-lg">✓ এই অনুরোধ পূর্ণ হয়েছে</p>
+            {request.fulfilledAt && (
+              <p className="text-xs text-[#555555] mt-1">{formatBanglaDate(request.fulfilledAt.toDate())}</p>
+            )}
           </div>
         )}
         {request.status === 'cancelled' && (
@@ -115,7 +162,7 @@ export default function RequestDetailPage() {
           </div>
         )}
 
-        {/* Actions */}
+        {/* Donor actions */}
         {request.status === 'open' && user && !isOwner && (
           <div className="space-y-3">
             {!alreadyResponded && !showPhone ? (
@@ -133,7 +180,7 @@ export default function RequestDetailPage() {
         {/* Owner actions */}
         {isOwner && request.status === 'open' && (
           <div className="flex gap-3">
-            <button onClick={handleFulfill} disabled={actionLoading} className="btn-primary flex-1">
+            <button onClick={openFulfillModal} disabled={actionLoading} className="btn-primary flex-1">
               ✓ পূর্ণ হয়েছে
             </button>
             <button
@@ -164,6 +211,149 @@ export default function RequestDetailPage() {
           </div>
         )}
       </div>
+
+      {/* ===== Fulfill Modal ===== */}
+      {showFulfillModal && (
+        <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !fulfilling && setShowFulfillModal(false)} />
+          <div className="relative bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col pb-[env(safe-area-inset-bottom)]">
+            {/* Header */}
+            <div className="px-5 pt-5 pb-4 border-b border-[#E5E5E5] shrink-0">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-[#111111] text-lg">কে রক্ত দিয়েছেন?</h3>
+                <button onClick={() => setShowFulfillModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#555555]">✕</button>
+              </div>
+              <p className="text-xs text-[#555555] mt-1">সাড়া দেওয়া তালিকা থেকে বা ফোন নম্বর দিয়ে খুঁজুন</p>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+
+              {/* Responders list */}
+              {responders.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-[#111111] mb-2">
+                    🙋 সাড়া দিয়েছেন ({responders.length} জন)
+                  </p>
+                  <div className="space-y-2">
+                    {responders.map(r => (
+                      <button
+                        key={r.uid}
+                        onClick={() => setSelectedDonor(selectedDonor !== 'anonymous' && selectedDonor?.uid === r.uid ? null : r)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                          selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === r.uid
+                            ? 'border-[#1A9E6B] bg-green-50'
+                            : 'border-[#E5E5E5] hover:border-gray-300'
+                        }`}
+                      >
+                        <DefaultAvatar gender={r.gender} size={36} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-[#111111]">{r.name}</p>
+                          <p className="text-xs text-[#555555]">{r.phone} · <span className="font-bold text-[#D92B2B]">{r.bloodGroup}</span></p>
+                        </div>
+                        {selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === r.uid && (
+                          <span className="text-[#1A9E6B] text-lg shrink-0">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {responders.length === 0 && (
+                <div className="bg-yellow-50 rounded-xl p-3 text-sm text-yellow-700">
+                  কেউ এখনো সাড়া দেননি। নিচে ফোন নম্বর দিয়ে খুঁজুন।
+                </div>
+              )}
+
+              {/* Phone search */}
+              <div>
+                <p className="text-sm font-semibold text-[#111111] mb-2">📞 ফোন নম্বর দিয়ে খুঁজুন</p>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    value={phoneSearch}
+                    onChange={e => { setPhoneSearch(e.target.value); setPhoneSearchResult(null) }}
+                    placeholder="01XXXXXXXXX (পুরো নম্বর)"
+                    className="input-field flex-1"
+                    maxLength={11}
+                  />
+                  <button
+                    onClick={handlePhoneSearch}
+                    disabled={searchingPhone || phoneSearch.length < 11}
+                    className="px-4 py-2.5 bg-[#1A9E6B] text-white rounded-xl text-sm font-semibold disabled:opacity-50 shrink-0"
+                  >
+                    {searchingPhone ? '...' : 'খুঁজুন'}
+                  </button>
+                </div>
+
+                {/* Phone search result */}
+                {phoneSearchResult && phoneSearchResult !== 'not_found' && (
+                  <button
+                    onClick={() => setSelectedDonor(selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid ? null : phoneSearchResult)}
+                    className={`mt-2 w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                      selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid
+                        ? 'border-[#1A9E6B] bg-green-50'
+                        : 'border-[#E5E5E5] hover:border-gray-300'
+                    }`}
+                  >
+                    <DefaultAvatar gender={phoneSearchResult.gender} size={36} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[#111111]">{phoneSearchResult.name}</p>
+                      <p className="text-xs text-[#555555]">{phoneSearchResult.phone} · <span className="font-bold text-[#D92B2B]">{phoneSearchResult.bloodGroup}</span></p>
+                    </div>
+                    {selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid && (
+                      <span className="text-[#1A9E6B] text-lg shrink-0">✓</span>
+                    )}
+                  </button>
+                )}
+
+                {phoneSearchResult === 'not_found' && (
+                  <p className="mt-2 text-xs text-[#555555] bg-gray-50 rounded-xl px-3 py-2">
+                    এই নম্বরে কোনো অ্যাকাউন্ট নেই। &quot;অন্য কেউ&quot; অপশন বেছে নিন।
+                  </p>
+                )}
+              </div>
+
+              {/* Anonymous option */}
+              <button
+                onClick={() => setSelectedDonor(selectedDonor === 'anonymous' ? null : 'anonymous')}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                  selectedDonor === 'anonymous'
+                    ? 'border-[#D92B2B] bg-red-50'
+                    : 'border-[#E5E5E5] hover:border-gray-300'
+                }`}
+              >
+                <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-lg shrink-0">👤</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-[#111111]">অন্য কেউ দান করেছেন</p>
+                  <p className="text-xs text-[#555555]">App এ নেই এমন কেউ রক্ত দিয়েছেন</p>
+                </div>
+                {selectedDonor === 'anonymous' && <span className="text-[#D92B2B] text-lg shrink-0">✓</span>}
+              </button>
+
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-[#E5E5E5] shrink-0">
+              {selectedDonor !== null && (
+                <p className="text-xs text-center text-[#555555] mb-3">
+                  {selectedDonor === 'anonymous'
+                    ? '👤 অন্য কেউ রক্ত দিয়েছেন হিসেবে চিহ্নিত হবে'
+                    : `✓ ${(selectedDonor as User).name} রক্ত দিয়েছেন হিসেবে চিহ্নিত হবে`
+                  }
+                </p>
+              )}
+              <button
+                onClick={handleConfirmFulfill}
+                disabled={selectedDonor === null || fulfilling}
+                className="w-full py-3 rounded-xl bg-[#1A9E6B] text-white font-semibold disabled:opacity-40 transition-opacity"
+              >
+                {fulfilling ? 'সম্পন্ন হচ্ছে...' : '🩸 নিশ্চিত করুন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

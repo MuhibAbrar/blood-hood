@@ -112,12 +112,37 @@ export const respondToRequest = async (requestId: string, donorUid: string) => {
   })
 }
 
-export const fulfillRequest = async (requestId: string, donorUid: string) => {
+export const fulfillRequest = async (requestId: string, donorUid: string | null) => {
   await updateDoc(doc(db, 'bloodRequests', requestId), {
     status: 'fulfilled',
     fulfilledBy: donorUid,
     fulfilledAt: Timestamp.now(),
   })
+  // If a known donor is selected, update their donation stats
+  if (donorUid) {
+    await updateDoc(doc(db, 'users', donorUid), {
+      totalDonations: increment(1),
+      lastDonatedAt: Timestamp.now(),
+      isAvailable: false,
+    })
+  }
+}
+
+export const getUsersByUids = async (uids: string[]): Promise<User[]> => {
+  if (!uids.length) return []
+  const results: User[] = []
+  for (let i = 0; i < uids.length; i += 10) {
+    const batch = uids.slice(i, i + 10)
+    const snap = await getDocs(query(collection(db, 'users'), where('uid', 'in', batch)))
+    snap.docs.forEach(d => results.push(d.data() as User))
+  }
+  return results
+}
+
+export const getUserByPhone = async (phone: string): Promise<User | null> => {
+  const snap = await getDocs(query(collection(db, 'users'), where('phone', '==', phone)))
+  if (snap.empty) return null
+  return snap.docs[0].data() as User
 }
 
 export const cancelRequest = async (requestId: string) => {
