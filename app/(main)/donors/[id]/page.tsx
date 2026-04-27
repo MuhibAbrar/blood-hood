@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { getUser, getDonationsByUser } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
+import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import TopBar from '@/components/layout/TopBar'
 import { DonorCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { formatBanglaDate, daysSince } from '@/lib/constants'
@@ -38,6 +39,11 @@ export default function DonorProfilePage() {
       <div className="px-4 py-6 space-y-5">
         {/* Profile header */}
         <div className="card p-6 flex flex-col items-center text-center gap-3">
+          {donor.profilePhoto ? (
+            <img src={donor.profilePhoto} alt="প্রোফাইল" className="w-20 h-20 rounded-full object-cover" />
+          ) : (
+            <DefaultAvatar gender={donor.gender} size={80} />
+          )}
           <BloodGroupBadge group={donor.bloodGroup} size="lg" />
           <div>
             <h2 className="text-xl font-bold text-[#111111]">{donor.name}</h2>

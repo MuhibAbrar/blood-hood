@@ -8,6 +8,7 @@ import { logout } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
+import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import AvailabilityToggle from '@/components/donor/AvailabilityToggle'
 import TopBar from '@/components/layout/TopBar'
 
@@ -54,6 +55,11 @@ export default function ProfilePage() {
       <div className="px-4 py-4 space-y-5">
         {/* Profile Header */}
         <div className="card p-6 flex flex-col items-center gap-3">
+          {user.profilePhoto ? (
+            <img src={user.profilePhoto} alt="প্রোফাইল" className="w-20 h-20 rounded-full object-cover" />
+          ) : (
+            <DefaultAvatar gender={user.gender} size={80} />
+          )}
           <BloodGroupBadge group={user.bloodGroup} size="lg" />
           <div className="text-center">
             <h2 className="text-xl font-bold text-[#111111]">{user.name}</h2>
