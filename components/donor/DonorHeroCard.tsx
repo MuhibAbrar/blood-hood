@@ -35,15 +35,10 @@ export default function DonorHeroCard() {
       {/* Hero card */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#C0392B] via-[#A93226] to-[#7B241C] p-5 text-white shadow-lg shadow-red-900/30">
 
-        {/* Blood drop SVG background */}
-        <svg
-          className="absolute right-0 top-0 h-full opacity-10 pointer-events-none select-none"
-          viewBox="0 0 100 140"
-          fill="white"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M50 5 C50 5 10 55 10 85 C10 110 28 130 50 130 C72 130 90 110 90 85 C90 55 50 5 50 5Z" />
-        </svg>
+        {/* Decorative blobs */}
+        <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
+        <div className="absolute -bottom-8 -right-2 w-20 h-20 bg-white/5 rounded-full" />
+        <div className="absolute top-3 right-4 text-5xl opacity-10 select-none pointer-events-none">🩸</div>
 
         {/* Name */}
         <h2 className="text-2xl font-bold leading-tight mb-0.5 relative">{user.name}</h2>
