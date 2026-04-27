@@ -34,16 +34,22 @@ export default function DonorHeroCard() {
     <>
       {/* Hero card */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#C0392B] via-[#A93226] to-[#7B241C] p-5 text-white shadow-lg shadow-red-900/30">
-        {/* Decorative blobs */}
-        <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
-        <div className="absolute -bottom-8 -right-2 w-20 h-20 bg-white/5 rounded-full" />
-        <div className="absolute top-3 right-4 text-5xl opacity-10 select-none pointer-events-none">🩸</div>
+
+        {/* Blood drop SVG background */}
+        <svg
+          className="absolute right-0 top-0 h-full opacity-10 pointer-events-none select-none"
+          viewBox="0 0 100 140"
+          fill="white"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M50 5 C50 5 10 55 10 85 C10 110 28 130 50 130 C72 130 90 110 90 85 C90 55 50 5 50 5Z" />
+        </svg>
 
         {/* Name */}
-        <h2 className="text-2xl font-bold leading-tight mb-0.5">{user.name}</h2>
+        <h2 className="text-2xl font-bold leading-tight mb-0.5 relative">{user.name}</h2>
 
         {/* Blood group + location */}
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 relative">
           <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full border border-white/20">
             {user.bloodGroup}
           </span>
@@ -55,28 +61,22 @@ export default function DonorHeroCard() {
           type="button"
           onClick={() => setModalOpen(true)}
           disabled={loading}
-          className="w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between"
+          className="relative w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
         >
-          <div className="flex items-center gap-2">
-            {user.isAvailable ? (
-              <span className="w-5 h-5 bg-[#1A9E6B] rounded-md flex items-center justify-center shrink-0">
-                <svg className="w-3 h-3 stroke-white" fill="none" viewBox="0 0 12 12" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
-                </svg>
-              </span>
-            ) : (
-              <span className="w-5 h-5 bg-white/20 rounded-md shrink-0" />
-            )}
-            <span className="text-sm font-semibold">আমি রক্ত দিতে পারব</span>
-          </div>
-          {/* Toggle switch */}
-          <div className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${user.isAvailable ? 'bg-[#1A9E6B]' : 'bg-white/25'}`}>
-            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${user.isAvailable ? 'translate-x-5' : 'translate-x-0.5'}`} />
+          <span className="text-sm font-semibold">আমি রক্ত দিতে পারব</span>
+
+          {/* Toggle switch — fixed size, no overflow */}
+          <div className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${user.isAvailable ? 'bg-[#1A9E6B]' : 'bg-white/30'}`}>
+            <span
+              className={`absolute top-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-all duration-200 ${
+                user.isAvailable ? 'left-[26px]' : 'left-[3px]'
+              }`}
+            />
           </div>
         </button>
 
         {/* Status label */}
-        <p className={`text-xs mt-2 text-center font-medium ${user.isAvailable ? 'text-green-300' : 'text-white/40'}`}>
+        <p className={`text-xs mt-2 text-center font-medium relative ${user.isAvailable ? 'text-green-300' : 'text-white/40'}`}>
           {user.isAvailable ? '● Available হিসেবে দেখা যাচ্ছে' : '○ Unavailable — নতুন request-এ দেখানো হবে না'}
         </p>
       </div>
