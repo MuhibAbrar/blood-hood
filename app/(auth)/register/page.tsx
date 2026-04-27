@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { createUser } from '@/lib/firestore'
+import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
@@ -13,8 +14,18 @@ export default function RegisterPage() {
   const router = useRouter()
   const { firebaseUser, refreshUser } = useAuth()
   const { showToast } = useToast()
-  const [step, setStep] = useState(1)
+
+  // step 0 = phone+password, steps 1–3 = profile setup
+  const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+
+  // auth step fields
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [authPhone, setAuthPhone] = useState('') // finalised phone after signUp
+
+  // profile fields
   const [form, setForm] = useState({
     name: '',
     bloodGroup: '' as BloodGroup | '',
@@ -24,9 +35,51 @@ export default function RegisterPage() {
     gender: '' as Gender | '',
   })
 
+  // If already logged in (came from login → no profile), skip step 0
+  useEffect(() => {
+    if (firebaseUser) {
+      const p = firebaseUser.email?.replace('@bloodhood.app', '') ?? ''
+      setAuthPhone(p)
+      setStep(1)
+    }
+  }, [firebaseUser])
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
+  // ── Step 0: create Firebase account ─────────────────────────────────────
+  const handleSignUp = async () => {
+    const rawPhone = phone.replace(/\D/g, '')
+    if (!validateBDPhone(rawPhone)) {
+      showToast('সঠিক বাংলাদেশি নম্বর দিন (01XXXXXXXXX)', 'error')
+      return
+    }
+    if (password.length < 6) {
+      showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে', 'error')
+      return
+    }
+    if (password !== confirmPassword) {
+      showToast('পাসওয়ার্ড মিলছে না', 'error')
+      return
+    }
+    setLoading(true)
+    try {
+      await signUp(rawPhone, password)
+      setAuthPhone(rawPhone)
+      setStep(1)
+    } catch (err: unknown) {
+      const e = err as { code?: string }
+      if (e?.code === 'auth/email-already-in-use') {
+        showToast('এই নম্বরে আগেই অ্যাকাউন্ট আছে', 'error')
+      } else {
+        showToast('অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে', 'error')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 3: save profile to Firestore ───────────────────────────────────
   const handleSubmit = async () => {
     if (!firebaseUser) { router.replace('/login'); return }
     const age = parseInt(form.age)
@@ -35,7 +88,7 @@ export default function RegisterPage() {
     try {
       await createUser(firebaseUser.uid, {
         name: form.name,
-        phone: firebaseUser.phoneNumber?.replace('+88', '') ?? '',
+        phone: authPhone,
         bloodGroup: form.bloodGroup as BloodGroup,
         area: form.area,
         upazila: form.upazila,
@@ -65,13 +118,68 @@ export default function RegisterPage() {
       <div className="text-center mb-6">
         <span className="text-5xl block mb-2">🩸</span>
         <h1 className="text-xl font-bold text-[#111111]">নতুন অ্যাকাউন্ট</h1>
-        <div className="flex items-center gap-2 justify-center mt-3">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className={`h-1.5 w-10 rounded-full transition-colors ${s <= step ? 'bg-[#D92B2B]' : 'bg-gray-200'}`} />
-          ))}
-        </div>
+
+        {/* progress dots — only for profile steps 1–3 */}
+        {step >= 1 && (
+          <div className="flex items-center gap-2 justify-center mt-3">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className={`h-1.5 w-10 rounded-full transition-colors ${s <= step ? 'bg-[#D92B2B]' : 'bg-gray-200'}`} />
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* ── Step 0: Phone + Password ── */}
+      {step === 0 && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#111111] mb-1.5">মোবাইল নম্বর</label>
+            <input
+              type="tel"
+              value={formatPhone(phone)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+              placeholder="01X-XXXX-XXXX"
+              maxLength={13}
+              className="input-field"
+              inputMode="tel"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#111111] mb-1.5">পাসওয়ার্ড</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="কমপক্ষে ৬ অক্ষর"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#111111] mb-1.5">পাসওয়ার্ড নিশ্চিত করুন</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="পাসওয়ার্ড আবার লিখুন"
+              className="input-field"
+            />
+          </div>
+          <button onClick={handleSignUp} disabled={loading} className="btn-primary w-full">
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                তৈরি হচ্ছে...
+              </span>
+            ) : 'পরবর্তী →'}
+          </button>
+          <p className="text-center text-sm text-[#555555]">
+            আগেই অ্যাকাউন্ট আছে?{' '}
+            <a href="/login" className="text-[#D92B2B] font-semibold">লগইন করুন</a>
+          </p>
+        </div>
+      )}
+
+      {/* ── Step 1: Basic Info ── */}
       {step === 1 && (
         <div className="space-y-4">
           <div>
@@ -103,6 +211,7 @@ export default function RegisterPage() {
         </div>
       )}
 
+      {/* ── Step 2: Blood Group ── */}
       {step === 2 && (
         <div className="space-y-4">
           <div>
@@ -138,6 +247,7 @@ export default function RegisterPage() {
         </div>
       )}
 
+      {/* ── Step 3: Location ── */}
       {step === 3 && (
         <div className="space-y-4">
           <div>

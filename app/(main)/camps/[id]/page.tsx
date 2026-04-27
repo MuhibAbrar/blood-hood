@@ -71,4 +71,3 @@ export default function CampDetailPage() {
     </div>
   )
 }
-export function generateStaticParams() { return [] }

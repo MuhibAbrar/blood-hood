@@ -1,26 +1,25 @@
 import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
-  ConfirmationResult,
 } from 'firebase/auth'
 import { auth } from './firebase'
 
-let confirmationResult: ConfirmationResult | null = null
-
-export const setupRecaptcha = (containerId: string) => {
-  if (typeof window === 'undefined') return null
-  return new RecaptchaVerifier(auth, containerId, { size: 'invisible' })
+// Phone number থেকে Firebase email বানাই
+const phoneToEmail = (phone: string): string => {
+  const digits = phone.replace(/\D/g, '')
+  return `${digits}@bloodhood.app`
 }
 
-export const sendOTP = async (phone: string, recaptchaVerifier: RecaptchaVerifier): Promise<void> => {
-  const formatted = phone.startsWith('+88') ? phone : `+88${phone}`
-  confirmationResult = await signInWithPhoneNumber(auth, formatted, recaptchaVerifier)
+export const signUp = async (phone: string, password: string) => {
+  const email = phoneToEmail(phone)
+  const result = await createUserWithEmailAndPassword(auth, email, password)
+  return result.user
 }
 
-export const verifyOTP = async (otp: string) => {
-  if (!confirmationResult) throw new Error('OTP পাঠানো হয়নি')
-  const result = await confirmationResult.confirm(otp)
+export const signIn = async (phone: string, password: string) => {
+  const email = phoneToEmail(phone)
+  const result = await signInWithEmailAndPassword(auth, email, password)
   return result.user
 }
 
