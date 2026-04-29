@@ -8,7 +8,6 @@ import type { User, Organization } from '@/types'
 
 export default function LeaderboardPage() {
   const [mainTab, setMainTab] = useState<'donors' | 'orgs'>('donors')
-  const [donorTab, setDonorTab] = useState<'donations' | 'available'>('donations')
   const [donors, setDonors] = useState<User[]>([])
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,9 +23,7 @@ export default function LeaderboardPage() {
     })
   }, [])
 
-  const donorList = donorTab === 'donations'
-    ? donors.filter(d => d.totalDonations > 0)
-    : donors.filter(d => d.isAvailable)
+  const donorList = donors.filter(d => d.totalDonations > 0)
 
   const medals = ['🥇', '🥈', '🥉']
   const orgTypeLabel: Record<string, string> = {
@@ -55,22 +52,8 @@ export default function LeaderboardPage() {
         {/* ===== DONOR TAB ===== */}
         {mainTab === 'donors' && (
           <>
-            {/* Sub tabs */}
-            <div className="flex gap-2 bg-[#F5F5F5] p-1 rounded-xl">
-              {[
-                { value: 'donations', label: '🩸 সর্বোচ্চ দান' },
-                { value: 'available', label: '✅ এখন Available' },
-              ].map(({ value, label }) => (
-                <button key={value} onClick={() => setDonorTab(value as typeof donorTab)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    donorTab === value ? 'bg-white text-[#111111] shadow-sm' : 'text-[#555555]'
-                  }`}
-                >{label}</button>
-              ))}
-            </div>
-
             {/* Podium */}
-            {!loading && donorList.length >= 3 && donorTab === 'donations' && (
+            {!loading && donorList.length >= 3 && (
               <div className="card p-5">
                 <div className="flex items-end justify-center gap-3">
                   <div className="flex flex-col items-center gap-2 pb-2">
@@ -125,14 +108,10 @@ export default function LeaderboardPage() {
                         </div>
                         <p className="text-xs text-[#555555]">{donor.upazila} · {donor.bloodGroup}</p>
                       </div>
-                      {donorTab === 'donations' ? (
-                        <div className="text-right shrink-0">
-                          <p className="font-bold text-[#D92B2B]">{donor.totalDonations}</p>
-                          <p className="text-[10px] text-[#555555]">দান</p>
-                        </div>
-                      ) : (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full shrink-0">● Available</span>
-                      )}
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-[#D92B2B]">{donor.totalDonations}</p>
+                        <p className="text-[10px] text-[#555555]">দান</p>
+                      </div>
                     </div>
                   ))}
                 </div>
