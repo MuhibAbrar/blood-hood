@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAllUsers, deleteUserDoc, addManualDonor } from '@/lib/firestore'
+import { getAllUsers, deleteUserDoc } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import type { User, UserRole, BloodGroup, Gender } from '@/types'
+// BloodGroup and Gender used in addForm state typing only
 
 const roles: { value: UserRole; label: string; icon: string; badge: string }[] = [
   { value: 'donor', label: 'ডোনার', icon: '🩸', badge: 'bg-gray-100 text-[#555555]' },
@@ -112,23 +113,31 @@ export default function AdminUsersPage() {
     }
     setAddLoading(true)
     try {
-      await addManualDonor({
-        name: addForm.name,
-        phone,
-        bloodGroup: addForm.bloodGroup as BloodGroup,
-        upazila: addForm.upazila,
-        area: addForm.area,
-        gender: addForm.gender as Gender,
-        age: addForm.age ? parseInt(addForm.age) : undefined,
+      const res = await fetch('/api/admin/add-donor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: addForm.name,
+          phone,
+          bloodGroup: addForm.bloodGroup,
+          upazila: addForm.upazila,
+          area: addForm.area,
+          gender: addForm.gender,
+          age: addForm.age ? parseInt(addForm.age) : undefined,
+        }),
       })
+      const result = await res.json()
+      if (!res.ok) {
+        if (result.error === 'phone-exists') showToast('এই নম্বরে ইতিমধ্যে একজন ডোনার আছেন', 'error')
+        else showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+        return
+      }
       showToast(`${addForm.name} সফলভাবে যোগ করা হয়েছে ✓`, 'success')
       setAddModal(false)
       setAddForm({ name: '', phone: '', bloodGroup: '', upazila: '', area: '', gender: '', age: '' })
       await load()
-    } catch (err: unknown) {
-      const e = err as Error
-      if (e?.message === 'phone-exists') showToast('এই নম্বরে ইতিমধ্যে একজন ডোনার আছেন', 'error')
-      else showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
       setAddLoading(false)
     }
