@@ -65,6 +65,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Blood Hood',
   },
+  verification: {
+    google: 'vDJcWtA92IfK_QgooKa0PVpXjbEYxlfcCtJxMapaRBA',
+  },
 }
 
 export const viewport: Viewport = {
