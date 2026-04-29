@@ -14,13 +14,12 @@ const messaging = firebase.messaging()
 
 // Background notification — app বন্ধ বা minimize থাকলে
 messaging.onBackgroundMessage(async (payload) => {
-  // App যদি সামনে খোলা থাকে তাহলে SW notification দেখাবে না
-  // InAppNotification component নিজেই handle করবে
-  const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-  const isAppFocused = allClients.some(c => c.focused)
-  if (isAppFocused) return
+  // notification field থাকলে browser নিজেই auto-show করে — duplicate এড়াতে return
+  if (payload.notification) return
 
-  const { title, body } = payload.notification ?? {}
+  // data-only message হলে manually দেখাই
+  const title = payload.data?.title
+  const body = payload.data?.body
   if (!title) return
 
   self.registration.showNotification(title, {
