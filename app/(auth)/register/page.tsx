@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { createUser, getUserByPhone, mergeManualDonor } from '@/lib/firestore'
+import { createUser } from '@/lib/firestore'
 import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
@@ -104,14 +104,20 @@ export default function RegisterPage() {
         profilePhoto: null as null,
       }
 
-      // Check if manually added donor exists with same phone
-      const existingUser = await getUserByPhone(authPhone)
-      if (existingUser?.manuallyAdded && existingUser.uid !== firebaseUser.uid) {
-        // Merge: carry over history, update profile with new info
-        await mergeManualDonor(firebaseUser.uid, existingUser.uid, profileData)
+      // Always create the new user doc first
+      await createUser(firebaseUser.uid, profileData)
+
+      // Then check if a manual entry exists for this phone and merge via API
+      const mergeRes = await fetch('/api/merge-donor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newUid: firebaseUser.uid, phone: authPhone }),
+      })
+      const mergeData = await mergeRes.json()
+
+      if (mergeData.merged) {
         showToast('আপনার আগের data পাওয়া গেছে এবং account merge হয়েছে! 🎉', 'success')
       } else {
-        await createUser(firebaseUser.uid, profileData)
         showToast('সফলভাবে রেজিস্ট্রেশন হয়েছে!', 'success')
       }
 
