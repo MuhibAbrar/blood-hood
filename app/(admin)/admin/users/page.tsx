@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAllUsers, deleteUserDoc } from '@/lib/firestore'
+import { getAllUsers } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
@@ -85,10 +85,28 @@ export default function AdminUsersPage() {
     if (!confirmDelete) return
     setActionLoading(confirmDelete.uid + '_delete')
     try {
-      await deleteUserDoc(confirmDelete.uid)
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: confirmDelete.uid }),
+      })
+      if (!res.ok) throw new Error('Delete failed')
       setConfirmDelete(null)
       await load()
       showToast('User মুছে ফেলা হয়েছে', 'success')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleAvailabilityToggle = async (user: User) => {
+    setActionLoading(user.uid + '_avail')
+    try {
+      await adminUpdate(user.uid, { isAvailable: !user.isAvailable })
+      await load()
+      showToast(user.isAvailable ? 'Unavailable করা হয়েছে' : '✓ Available করা হয়েছে', 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
@@ -220,7 +238,19 @@ export default function AdminUsersPage() {
                     </td>
 
                     <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Availability toggle */}
+                        <button
+                          onClick={() => handleAvailabilityToggle(u)}
+                          disabled={!!actionLoading}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                            u.isAvailable
+                              ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                              : 'bg-gray-100 text-[#555555] hover:bg-gray-200'
+                          }`}
+                        >
+                          {actionLoading === u.uid + '_avail' ? '...' : u.isAvailable ? '● Available' : '○ Unavailable'}
+                        </button>
                         <button
                           onClick={() => handleVerify(u)}
                           disabled={!!actionLoading}
