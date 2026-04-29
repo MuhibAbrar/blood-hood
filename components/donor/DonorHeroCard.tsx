@@ -1,9 +1,48 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { updateUser } from '@/lib/firestore'
+
+function GuestHeroCard() {
+  return (
+    <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#C0392B] via-[#A93226] to-[#7B241C] p-5 text-white shadow-lg shadow-red-900/30">
+      {/* Decorative blobs */}
+      <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
+      <div className="absolute -bottom-8 -right-2 w-20 h-20 bg-white/5 rounded-full" />
+      <div className="absolute top-3 right-4 text-5xl opacity-10 select-none pointer-events-none">🩸</div>
+
+      {/* Text */}
+      <h2 className="text-xl font-bold leading-tight mb-1 relative">রক্ত দিন, জীবন বাঁচান</h2>
+      <p className="text-white/70 text-sm mb-4 relative leading-relaxed">
+        ডোনার হিসেবে যোগ দিন অথবা জরুরি রক্তের অনুরোধ দিন।
+      </p>
+
+      {/* CTA buttons */}
+      <div className="flex gap-2 relative">
+        <Link
+          href="/login"
+          className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
+        >
+          লগইন করুন
+        </Link>
+        <Link
+          href="/register"
+          className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors"
+        >
+          রেজিস্ট্রেশন
+        </Link>
+      </div>
+
+      {/* Mobile install hint */}
+      <p className="text-white/50 text-xs text-center mt-3 relative md:hidden">
+        📲 app ইনস্টল করে রেজিস্ট্রেশন করুন
+      </p>
+    </div>
+  )
+}
 
 export default function DonorHeroCard() {
   const { user, refreshUser } = useAuth()
@@ -11,7 +50,7 @@ export default function DonorHeroCard() {
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  if (!user) return null
+  if (!user) return <GuestHeroCard />
 
   const toggle = async () => {
     setLoading(true)

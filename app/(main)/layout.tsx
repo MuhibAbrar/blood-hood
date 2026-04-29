@@ -13,8 +13,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !firebaseUser) router.replace('/login')
-  }, [loading, firebaseUser, router])
+    // Logged in but profile incomplete → go to register
+    if (!loading && firebaseUser && !user) router.replace('/register')
+  }, [loading, firebaseUser, user, router])
 
   if (loading) {
     return (
@@ -27,13 +28,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     )
   }
 
-  if (!firebaseUser) return null
-
-  // New user without profile — redirect to register
-  if (firebaseUser && !user) {
-    router.replace('/register')
-    return null
-  }
+  // Logged in but profile not loaded yet — wait
+  if (firebaseUser && !user) return null
 
   return (
     <div className="min-h-screen flex flex-col">
