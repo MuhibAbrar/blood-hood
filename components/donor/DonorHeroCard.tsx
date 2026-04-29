@@ -44,16 +44,9 @@ function GuestHeroCard() {
         ডোনার হিসেবে যোগ দিন অথবা জরুরি রক্তের অনুরোধ দিন।
       </p>
 
-      {/* Mobile: install button (or login if standalone/no prompt) */}
+      {/* Mobile: install button (always, unless already standalone) */}
       <div className="md:hidden relative">
-        {!isStandalone && installPrompt ? (
-          <button
-            onClick={handleInstall}
-            className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
-          >
-            📲 অ্যাপ ইনস্টল করুন
-          </button>
-        ) : (
+        {isStandalone ? (
           <div className="flex gap-2">
             <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
               লগইন করুন
@@ -61,6 +54,27 @@ function GuestHeroCard() {
             <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">
               রেজিস্ট্রেশন
             </Link>
+          </div>
+        ) : installPrompt ? (
+          <button
+            onClick={handleInstall}
+            className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
+          >
+            📲 অ্যাপ ইনস্টল করুন — বিনামূল্যে
+          </button>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <p className="text-white/70 text-xs text-center">
+              📲 Browser এর মেনু থেকে <span className="font-bold text-white">"Add to Home Screen"</span> দিয়ে ইনস্টল করুন
+            </p>
+            <div className="flex gap-2">
+              <Link href="/login" className="flex-1 py-2 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
+                লগইন
+              </Link>
+              <Link href="/register" className="flex-1 py-2 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">
+                রেজিস্ট্রেশন
+              </Link>
+            </div>
           </div>
         )}
       </div>
