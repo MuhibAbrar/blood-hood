@@ -53,7 +53,7 @@ export async function GET() {
 
         {/* URL */}
         <div style={{ position: 'absolute', bottom: '32px', color: 'rgba(255,255,255,0.5)', fontSize: '20px', display: 'flex' }}>
-          blood-hood-f4e66.web.app
+          bloodhood.pro.bd
         </div>
       </div>
     ),

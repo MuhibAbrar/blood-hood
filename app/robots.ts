@@ -26,7 +26,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://blood-hood-f4e66.web.app/sitemap.xml',
-    host: 'https://blood-hood-f4e66.web.app',
+    sitemap: 'https://bloodhood.pro.bd/sitemap.xml',
+    host: 'https://bloodhood.pro.bd',
   }
 }

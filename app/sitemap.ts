@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const BASE_URL = 'https://blood-hood-f4e66.web.app'
+const BASE_URL = 'https://bloodhood.pro.bd'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()

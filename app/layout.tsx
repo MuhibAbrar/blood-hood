@@ -5,7 +5,7 @@ import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/ui/Toast'
 
-const BASE_URL = 'https://blood-hood-f4e66.web.app'
+const BASE_URL = 'https://bloodhood.pro.bd'
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
