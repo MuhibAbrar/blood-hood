@@ -6,21 +6,8 @@ import { useAuth } from '@/context/AuthContext'
 import { respondToRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
+import { triggerInstall } from '@/lib/installPrompt'
 import type { BloodRequest } from '@/types'
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-// Shared install prompt — captured once at module level
-let cachedInstallPrompt: BeforeInstallPromptEvent | null = null
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    cachedInstallPrompt = e as BeforeInstallPromptEvent
-  })
-}
 
 interface RequestCardProps {
   request: BloodRequest
@@ -138,15 +125,7 @@ export default function RequestCard({ request }: RequestCardProps) {
             <>
               {/* Mobile: install button */}
               <button
-                onClick={async () => {
-                  if (cachedInstallPrompt) {
-                    cachedInstallPrompt.prompt()
-                    await cachedInstallPrompt.userChoice
-                    cachedInstallPrompt = null
-                  } else {
-                    router.push('/login')
-                  }
-                }}
+                onClick={triggerInstall}
                 className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold text-center transition-colors md:hidden"
               >
                 📲 সাহায্য করতে ইনস্টল করুন

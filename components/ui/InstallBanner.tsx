@@ -1,41 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getInstallPrompt, triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 
 export default function InstallBanner() {
-  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [hasPrompt, setHasPrompt] = useState(false)
   const [dismissed, setDismissed] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(true) // assume standalone until checked
 
   useEffect(() => {
-    // Check if already running as installed PWA
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      ('standalone' in window.navigator && (window.navigator as Navigator & { standalone?: boolean }).standalone === true)
-
-    setIsStandalone(standalone)
-
-    // Listen for install prompt (only fires in browser, not in installed PWA)
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setPrompt(e as BeforeInstallPromptEvent)
-    }
-
+    if (getInstallPrompt()) { setHasPrompt(true); return }
+    const handler = () => setHasPrompt(true)
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   const handleInstall = async () => {
-    if (!prompt) return
-    prompt.prompt()
-    const result = await prompt.userChoice
-    if (result.outcome === 'accepted') {
-      setPrompt(null)
-    }
+    await triggerInstall()
+    setHasPrompt(false)
   }
 
-  // Hide if: already installed, no prompt available, or dismissed
-  if (isStandalone || !prompt || dismissed) return null
+  if (isStandalonePWA() || !hasPrompt || dismissed) return null
 
   return (
     <div className="bg-[#1A9E6B] text-white flex items-center justify-between px-4 py-2.5 gap-3">
@@ -64,10 +48,4 @@ export default function InstallBanner() {
       </div>
     </div>
   )
-}
-
-// TypeScript type for the non-standard beforeinstallprompt event
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }

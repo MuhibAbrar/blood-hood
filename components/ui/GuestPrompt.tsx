@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 
 interface GuestPromptProps {
   icon: string
@@ -10,36 +10,8 @@ interface GuestPromptProps {
   features: string[]
 }
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
 export default function GuestPrompt({ icon, title, subtitle, features }: GuestPromptProps) {
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isStandalone, setIsStandalone] = useState(false)
-
-  useEffect(() => {
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      ('standalone' in window.navigator &&
-        (window.navigator as Navigator & { standalone?: boolean }).standalone === true)
-    setIsStandalone(standalone)
-
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setInstallPrompt(e as BeforeInstallPromptEvent)
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
-
-  const handleInstall = async () => {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    await installPrompt.userChoice
-    setInstallPrompt(null)
-  }
+  const standalone = isStandalonePWA()
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-10 text-center">
@@ -64,7 +36,7 @@ export default function GuestPrompt({ icon, title, subtitle, features }: GuestPr
 
       {/* Mobile CTA */}
       <div className="md:hidden w-full max-w-xs flex flex-col gap-3">
-        {isStandalone ? (
+        {standalone ? (
           <>
             <Link href="/login" className="w-full py-3.5 rounded-2xl bg-[#D92B2B] text-white font-bold text-center text-base hover:bg-[#b82424] transition-colors">
               লগইন করুন
@@ -76,7 +48,7 @@ export default function GuestPrompt({ icon, title, subtitle, features }: GuestPr
         ) : (
           <>
             <button
-              onClick={handleInstall}
+              onClick={triggerInstall}
               className="w-full py-3.5 rounded-2xl bg-[#D92B2B] text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-[#b82424] transition-colors"
             >
               <span>📲</span> অ্যাপ ইনস্টল করুন — বিনামূল্যে
