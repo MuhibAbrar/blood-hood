@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
-import { getOrgMembers, removeMember, getAllUsers, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
+import { getOrgMembers, removeMember, getUserByPhone, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { Organization, User, JoinRequest } from '@/types'
@@ -12,7 +12,6 @@ export default function OrgMembersPage() {
   const { showToast } = useToast()
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<User[]>([])
-  const [allUsers, setAllUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [removing, setRemoving] = useState<string | null>(null)
@@ -20,18 +19,16 @@ export default function OrgMembersPage() {
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
   const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [addSearch, setAddSearch] = useState('')
-  const [adding, setAdding] = useState<string | null>(null)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [searchResult, setSearchResult] = useState<User | null | 'not-found' | 'already-member'>(null)
+  const [searching, setSearching] = useState(false)
+  const [adding, setAdding] = useState(false)
   const [processingReq, setProcessingReq] = useState<string | null>(null)
 
   const load = async (o: Organization) => {
     try {
       const allIds = Array.from(new Set([...o.memberIds, ...o.adminIds]))
-      const [allU, m] = await Promise.all([
-        getAllUsers(),
-        getOrgMembers(allIds),
-      ])
-      setAllUsers(allU)
+      const m = await getOrgMembers(allIds)
       m.sort((a, b) => b.totalDonations - a.totalDonations)
       setMembers(m)
     } catch (e) {
@@ -61,23 +58,41 @@ export default function OrgMembersPage() {
     m.bloodGroup.includes(search)
   )
 
-  const addableUsers = allUsers.filter(u =>
-    !org?.memberIds.includes(u.uid) &&
-    !org?.adminIds.includes(u.uid) &&
-    (u.name.toLowerCase().includes(addSearch.toLowerCase()) || u.phone.includes(addSearch))
-  ).slice(0, 10)
-
-  const handleAdd = async (u: User) => {
-    if (!org) return
-    setAdding(u.uid)
+  const handlePhoneSearch = async () => {
+    const phone = phoneInput.replace(/\D/g, '')
+    if (!/^01[3-9]\d{8}$/.test(phone)) {
+      showToast('সঠিক ১১ সংখ্যার নম্বর দিন (01XXXXXXXXX)', 'error'); return
+    }
+    setSearching(true)
+    setSearchResult(null)
     try {
-      await joinOrganization(org.id, u.uid)
-      await load(org)
-      showToast(`${u.name}-কে যোগ করা হয়েছে ✓`, 'success')
+      const u = await getUserByPhone(phone)
+      if (!u) { setSearchResult('not-found'); return }
+      if (org?.memberIds.includes(u.uid) || org?.adminIds.includes(u.uid)) {
+        setSearchResult('already-member'); return
+      }
+      setSearchResult(u)
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
-      setAdding(null)
+      setSearching(false)
+    }
+  }
+
+  const handleAdd = async () => {
+    if (!org || !searchResult || typeof searchResult === 'string') return
+    setAdding(true)
+    try {
+      await joinOrganization(org.id, searchResult.uid)
+      await load(org)
+      showToast(`${searchResult.name}-কে যোগ করা হয়েছে ✓`, 'success')
+      setShowAddModal(false)
+      setPhoneInput('')
+      setSearchResult(null)
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setAdding(false)
     }
   }
 
@@ -133,7 +148,7 @@ export default function OrgMembersPage() {
           <p className="text-[#555555] text-sm mt-0.5">মোট {members.length} জন</p>
         </div>
         <button
-          onClick={() => { setShowAddModal(true); setAddSearch('') }}
+          onClick={() => { setShowAddModal(true); setPhoneInput(''); setSearchResult(null) }}
           className="bg-[#1A9E6B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#158a5c] transition-colors self-start sm:self-auto"
         >
           + সদস্য যোগ করুন
@@ -222,7 +237,7 @@ export default function OrgMembersPage() {
           <div className="p-12 text-center">
             <span className="text-4xl block mb-3">👥</span>
             <p className="text-[#555555]">কোনো সদস্য নেই</p>
-            <button onClick={() => { setShowAddModal(true); setAddSearch('') }} className="mt-3 text-sm text-[#1A9E6B] font-medium hover:underline">
+            <button onClick={() => { setShowAddModal(true); setPhoneInput(''); setSearchResult(null) }} className="mt-3 text-sm text-[#1A9E6B] font-medium hover:underline">
               + প্রথম সদস্য যোগ করুন
             </button>
           </div>
@@ -279,50 +294,87 @@ export default function OrgMembersPage() {
       {/* Add member modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
-            <div className="px-6 py-5 border-b border-[#E5E5E5] flex items-center justify-between shrink-0">
-              <h3 className="font-bold text-[#111111]">সদস্য যোগ করুন</h3>
-              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#555555]">✕</button>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="px-6 py-5 border-b border-[#E5E5E5] flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-[#111111]">সদস্য যোগ করুন</h3>
+                <p className="text-xs text-[#555555] mt-0.5">ফোন নম্বর দিয়ে খুঁজুন</p>
+              </div>
+              <button onClick={() => { setShowAddModal(false); setPhoneInput(''); setSearchResult(null) }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#555555]">✕</button>
             </div>
-            <div className="px-6 py-4 shrink-0">
-              <input
-                autoFocus
-                type="text"
-                placeholder="নাম বা ফোন নম্বর দিয়ে খুঁজুন..."
-                value={addSearch}
-                onChange={e => setAddSearch(e.target.value)}
-                className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]"
-              />
-            </div>
-            <div className="overflow-y-auto flex-1 px-4 pb-4">
-              {addSearch.length < 2 ? (
-                <p className="text-center text-sm text-[#555555] py-8">কমপক্ষে ২ অক্ষর লিখুন</p>
-              ) : addableUsers.length === 0 ? (
-                <p className="text-center text-sm text-[#555555] py-8">কাউকে পাওয়া যায়নি</p>
-              ) : (
-                <div className="space-y-2">
-                  {addableUsers.map(u => (
-                    <div key={u.uid} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-                      <DefaultAvatar gender={u.gender} size={36} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#111111]">{u.name}</p>
-                        <p className="text-xs text-[#555555]">{u.phone} · {u.bloodGroup}</p>
-                      </div>
-                      <button
-                        onClick={() => handleAdd(u)}
-                        disabled={adding === u.uid}
-                        className="text-xs bg-[#1A9E6B] text-white px-3 py-1.5 rounded-lg font-medium hover:bg-[#158a5c] transition-colors shrink-0"
-                      >
-                        {adding === u.uid ? '...' : '+ যোগ'}
-                      </button>
+
+            <div className="p-6 space-y-4">
+              {/* Phone input + search button */}
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={11}
+                  placeholder="01XXXXXXXXX"
+                  value={phoneInput}
+                  onChange={e => { setPhoneInput(e.target.value.replace(/\D/g, '')); setSearchResult(null) }}
+                  onKeyDown={e => e.key === 'Enter' && handlePhoneSearch()}
+                  className="flex-1 border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]"
+                />
+                <button
+                  onClick={handlePhoneSearch}
+                  disabled={searching}
+                  className="bg-[#1A9E6B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-60 whitespace-nowrap"
+                >
+                  {searching ? '...' : 'খুঁজুন'}
+                </button>
+              </div>
+
+              {/* Search result */}
+              {searchResult === null && !searching && (
+                <p className="text-center text-sm text-[#555555] py-4">পূর্ণ ফোন নম্বর লিখে খুঁজুন বাটনে চাপুন</p>
+              )}
+              {searchResult === 'not-found' && (
+                <div className="text-center py-6">
+                  <span className="text-3xl block mb-2">🔍</span>
+                  <p className="text-sm text-[#555555]">এই নম্বরে কোনো ডোনার পাওয়া যায়নি</p>
+                </div>
+              )}
+              {searchResult === 'already-member' && (
+                <div className="text-center py-6">
+                  <span className="text-3xl block mb-2">✅</span>
+                  <p className="text-sm text-[#555555]">এই ব্যক্তি আগে থেকেই সংগঠনের সদস্য</p>
+                </div>
+              )}
+              {searchResult && typeof searchResult === 'object' && (
+                <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-4 flex items-center gap-3">
+                  <DefaultAvatar gender={searchResult.gender} size={44} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold text-[#111111]">{searchResult.name}</p>
+                      {searchResult.isVerified && <span className="text-blue-500 text-xs">✓</span>}
                     </div>
-                  ))}
+                    <p className="text-xs text-[#555555] mt-0.5">{searchResult.phone} · <span className="font-bold text-[#D92B2B]">{searchResult.bloodGroup}</span> · {searchResult.upazila}</p>
+                    <p className="text-xs text-[#555555]">মোট দান: {searchResult.totalDonations} বার</p>
+                  </div>
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t border-[#E5E5E5] shrink-0">
-              <button onClick={() => setShowAddModal(false)} className="w-full py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium hover:bg-gray-50">
-                বন্ধ করুন
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => { setShowAddModal(false); setPhoneInput(''); setSearchResult(null) }}
+                className="flex-1 py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium hover:bg-gray-50"
+              >
+                বাতিল
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={!searchResult || typeof searchResult === 'string' || adding}
+                className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-40"
+              >
+                {adding ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    যোগ হচ্ছে...
+                  </span>
+                ) : '+ সদস্য যোগ করুন'}
               </button>
             </div>
           </div>
