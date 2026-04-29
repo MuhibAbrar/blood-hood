@@ -344,6 +344,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, sent: allUserIds.length })
     }
 
+    // ── Single user (test / custom) ──────────────────────────────────────
+    if (type === 'single_user') {
+      const { uid, title, body: bodyText } = data
+      if (!uid || !title) return NextResponse.json({ error: 'uid and title required' }, { status: 400 })
+
+      const userSnap = await db.collection('users').doc(uid).get()
+      if (!userSnap.exists) return NextResponse.json({ error: 'user not found' }, { status: 404 })
+
+      await saveNotification(db, uid, title, bodyText ?? '', 'broadcast', { link: '/notifications' })
+
+      const token = userSnap.data()?.fcmToken
+      if (token) {
+        await messaging.sendEachForMulticast({
+          tokens: [token],
+          notification: { title, body: bodyText ?? '' },
+          data: { type: 'broadcast', link: '/notifications' },
+          android: { notification: { sound: 'default' } },
+          webpush: { fcmOptions: { link: '/notifications' } },
+        })
+      }
+
+      return NextResponse.json({ success: true, sent: 1 })
+    }
+
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
 
   } catch (err) {
