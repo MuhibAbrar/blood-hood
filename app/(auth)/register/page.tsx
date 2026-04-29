@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { createUser } from '@/lib/firestore'
 import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
@@ -12,6 +12,7 @@ import type { BloodGroup, Gender } from '@/types'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { firebaseUser, refreshUser } = useAuth()
   const { showToast } = useToast()
 
@@ -20,7 +21,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   // auth step fields
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(searchParams.get('phone') ?? '')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [authPhone, setAuthPhone] = useState('') // finalised phone after signUp
@@ -149,6 +150,11 @@ export default function RegisterPage() {
       {/* ── Step 0: Phone + Password ── */}
       {step === 0 && (
         <div className="space-y-4">
+          {searchParams.get('phone') && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
+              🎉 আপনার তথ্য আগে থেকেই আছে! পাসওয়ার্ড দিয়ে account খুললেই সব data চলে আসবে।
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-[#111111] mb-1.5">মোবাইল নম্বর</label>
             <input

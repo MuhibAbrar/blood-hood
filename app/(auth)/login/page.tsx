@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn, formatPhone, validateBDPhone } from '@/lib/auth'
-import { getUser } from '@/lib/firestore'
+import { getUser, getUserByPhone } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 
 export default function LoginPage() {
@@ -37,6 +37,15 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const e = err as { code?: string }
       if (e?.code === 'auth/invalid-credential' || e?.code === 'auth/wrong-password' || e?.code === 'auth/user-not-found') {
+        // Check if this phone has a manual entry — if so, guide to register
+        try {
+          const existing = await getUserByPhone(rawPhone)
+          if (existing?.manuallyAdded) {
+            showToast('আপনার তথ্য আগে থেকেই আছে! নতুন account খুলুন — data আপনাআপনি চলে আসবে 🎉', 'success')
+            router.push(`/register?phone=${rawPhone}`)
+            return
+          }
+        } catch { /* ignore */ }
         showToast('নম্বর বা পাসওয়ার্ড ভুল', 'error')
       } else {
         showToast('লগইন করতে সমস্যা হয়েছে', 'error')
