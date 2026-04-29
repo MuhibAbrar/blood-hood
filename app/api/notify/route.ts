@@ -230,6 +230,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, sent: allUserIds.length })
     }
 
+    // ── All users blast for blood request (সবাইকে — blood_request type হিসেবে) ──
+    if (type === 'all_blood_request') {
+      const { bloodGroup, hospital, area, patientName, urgency, requestId } = data
+
+      const title = urgency === 'urgent'
+        ? `🔴 জরুরি ${bloodGroup} রক্ত লাগবে!`
+        : `🩸 ${bloodGroup} রক্তের অনুরোধ`
+      const bodyText = `${patientName} — ${hospital}, ${area}`
+
+      const allTokens: string[] = []
+      const allUserIds: string[] = []
+
+      const usersSnap = await db.collection('users').get()
+      usersSnap.docs.forEach(d => {
+        const uid = d.data().uid
+        if (!uid) return
+        allUserIds.push(uid)
+        const token = d.data().fcmToken
+        if (token) allTokens.push(token)
+      })
+
+      await Promise.all(
+        allUserIds.map(uid =>
+          saveNotification(db, uid, title, bodyText, 'blood_request', {
+            requestId: requestId ?? '',
+            link: `/requests/${requestId}`,
+          })
+        )
+      )
+
+      if (allTokens.length > 0) {
+        const batches: string[][] = []
+        for (let i = 0; i < allTokens.length; i += 500) batches.push(allTokens.slice(i, i + 500))
+        for (const batch of batches) {
+          await messaging.sendEachForMulticast({
+            tokens: batch,
+            notification: { title, body: bodyText },
+            data: { type: 'blood_request', requestId: requestId ?? '', link: `/requests/${requestId}` },
+            android: {
+              priority: urgency === 'urgent' ? 'high' : 'normal',
+              notification: { sound: 'default', channelId: 'blood_requests' },
+            },
+            webpush: {
+              notification: { icon: '/icons/icon-192x192.png', badge: '/icons/icon-192x192.png' },
+              fcmOptions: { link: `/requests/${requestId}` },
+            },
+          })
+        }
+      }
+
+      return NextResponse.json({ success: true, sent: allUserIds.length })
+    }
+
     // ── Org Admins blast (blood request → সব org admin) ──────────────────
     if (type === 'org_admins_blast') {
       const { bloodGroup, hospital, area, patientName, urgency, requestId } = data

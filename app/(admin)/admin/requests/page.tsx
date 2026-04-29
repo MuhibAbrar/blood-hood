@@ -91,13 +91,7 @@ export default function AdminRequestsPage() {
         await fetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'broadcast',
-            data: {
-              title: r.urgency === 'urgent' ? `🔴 জরুরি ${r.bloodGroup} রক্ত লাগবে!` : `🩸 ${r.bloodGroup} রক্তের অনুরোধ`,
-              body: `${r.patientName} — ${r.hospital}, ${r.area}`,
-            },
-          }),
+          body: JSON.stringify({ type: 'all_blood_request', data: baseData }),
         })
         showToast('সব user দের notification পাঠানো হয়েছে', 'success')
       } else if (type === 'org_admins') {
