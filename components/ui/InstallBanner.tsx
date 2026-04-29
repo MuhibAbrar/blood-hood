@@ -22,7 +22,7 @@ export default function InstallBanner() {
   if (isStandalonePWA() || !hasPrompt || dismissed) return null
 
   return (
-    <div className="bg-[#1A9E6B] text-white flex items-center justify-between px-4 py-2.5 gap-3">
+    <div className="md:hidden bg-[#1A9E6B] text-white flex items-center justify-between px-4 py-2.5 gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="text-xl shrink-0">📲</span>
         <p className="text-sm font-medium leading-tight">
