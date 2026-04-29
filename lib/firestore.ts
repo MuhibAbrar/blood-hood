@@ -302,6 +302,11 @@ export const getOrganization = async (id: string): Promise<Organization | null> 
 }
 
 export const joinOrganization = async (orgId: string, uid: string) => {
+  // Enforce 1 org per user
+  const userSnap = await getDoc(doc(db, 'users', uid))
+  const userOrgs: string[] = userSnap.data()?.organizations ?? []
+  if (userOrgs.length > 0 && !userOrgs.includes(orgId)) throw new Error('already-in-org')
+
   await updateDoc(doc(db, 'organizations', orgId), {
     memberIds: arrayUnion(uid),
   })
@@ -466,6 +471,11 @@ export const recordCampDonation = async (campId: string, donorId: string, orgId:
 // --- Join Requests ---
 
 export const requestJoinOrg = async (orgId: string, user: User): Promise<void> => {
+  // Enforce 1 org per user
+  if (user.organizations.length > 0 && !user.organizations.includes(orgId)) {
+    throw new Error('already-in-org')
+  }
+
   // Check if already pending
   const existing = await getDocs(query(
     collection(db, 'joinRequests'),

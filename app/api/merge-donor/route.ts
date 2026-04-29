@@ -23,15 +23,28 @@ export async function POST(req: NextRequest) {
     // If old doc is already the new UID, nothing to do
     if (oldUid === newUid) return NextResponse.json({ notFound: true })
 
+    const orgIds: string[] = oldData.organizations ?? []
+
     // Update the new UID doc with historical data from manual entry
     await db.collection('users').doc(newUid).update({
       totalDonations: oldData.totalDonations ?? 0,
       isVerified: oldData.isVerified ?? false,
-      organizations: oldData.organizations ?? [],
+      organizations: orgIds,
       lastDonatedAt: oldData.lastDonatedAt ?? null,
       manuallyAdded: false,
       updatedAt: FieldValue.serverTimestamp(),
     })
+
+    // In each org, replace oldUid with newUid in memberIds
+    await Promise.all(orgIds.map(orgId =>
+      db.collection('organizations').doc(orgId).update({
+        memberIds: FieldValue.arrayRemove(oldUid),
+      }).then(() =>
+        db.collection('organizations').doc(orgId).update({
+          memberIds: FieldValue.arrayUnion(newUid),
+        })
+      ).catch(() => { /* ignore */ })
+    ))
 
     // Delete old manual doc
     await db.collection('users').doc(oldUid).delete()

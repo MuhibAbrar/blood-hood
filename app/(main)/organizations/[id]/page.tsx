@@ -60,8 +60,10 @@ export default function OrgDetailPage() {
       await requestJoinOrg(org.id, user)
       setJoinRequest({ id: 'pending', orgId: org.id, userId: user.uid, userName: user.name, userPhone: user.phone, userBloodGroup: user.bloodGroup, status: 'pending', createdAt: null as never })
       showToast('যোগ দেওয়ার অনুরোধ পাঠানো হয়েছে! অ্যাডমিন অনুমোদন করলে যোগ হবে।', 'success')
-    } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } catch (err: unknown) {
+      const e = err as Error
+      if (e?.message === 'already-in-org') showToast('আপনি ইতিমধ্যে অন্য একটি সংগঠনে আছেন', 'error')
+      else showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
       setRequesting(false)
     }
@@ -72,6 +74,7 @@ export default function OrgDetailPage() {
 
   const isMember = user ? (org.memberIds.includes(user.uid) || org.adminIds.includes(user.uid)) : false
   const hasPendingRequest = !!joinRequest
+  const isInAnotherOrg = user ? (user.organizations.length > 0 && !user.organizations.includes(org.id)) : false
 
   const orgIcon = org.type === 'college' || org.type === 'university' ? '🏫' : org.type === 'ngo' ? '🤝' : org.type === 'hospital' ? '🏥' : '🏘️'
   const totalMembers = new Set([...org.memberIds, ...org.adminIds]).size
@@ -129,6 +132,11 @@ export default function OrgDetailPage() {
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
             <p className="text-yellow-700 font-semibold">⏳ অনুরোধ পেন্ডিং</p>
             <p className="text-xs text-[#555555] mt-1">অ্যাডমিন অনুমোদন করলে আপনি সদস্য হবেন</p>
+          </div>
+        ) : isInAnotherOrg ? (
+          <div className="bg-gray-50 border border-[#E5E5E5] rounded-2xl p-4 text-center">
+            <p className="text-[#555555] font-medium">আপনি ইতিমধ্যে অন্য একটি সংগঠনের সদস্য</p>
+            <p className="text-xs text-[#555555] mt-1">একজন ডোনার শুধুমাত্র একটি সংগঠনে থাকতে পারবেন</p>
           </div>
         ) : (
           <button
