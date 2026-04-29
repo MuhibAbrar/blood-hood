@@ -65,7 +65,7 @@ function GuestHeroCard() {
         ) : (
           <div className="flex flex-col gap-2">
             <p className="text-white/70 text-xs text-center">
-              📲 Browser এর মেনু থেকে <span className="font-bold text-white">"Add to Home Screen"</span> দিয়ে ইনস্টল করুন
+              📲 Browser মেনু থেকে <span className="font-bold text-white">&ldquo;Add to Home Screen&rdquo;</span> দিয়ে ইনস্টল করুন
             </p>
             <div className="flex gap-2">
               <Link href="/login" className="flex-1 py-2 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
