@@ -15,23 +15,6 @@ import type { BloodGroup, Urgency } from '@/types'
 export default function NewRequestPage() {
   const router = useRouter()
   const { user } = useAuth()
-
-  if (!user) return (
-    <div>
-      <TopBar title="রক্তের অনুরোধ" back />
-      <GuestPrompt
-        icon="🩸"
-        title="রক্তের অনুরোধ দিন"
-        subtitle="জরুরি রক্তের প্রয়োজনে অনুরোধ দিন — খুলনার ডোনাররা সাথে সাথে জানতে পারবেন।"
-        features={[
-          'জরুরি বা সাধারণ request করুন',
-          'হাসপাতাল ও এলাকা উল্লেখ করুন',
-          'ডোনাররা সরাসরি কল করবেন',
-          'সম্পূর্ণ বিনামূল্যে',
-        ]}
-      />
-    </div>
-  )
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -75,6 +58,23 @@ export default function NewRequestPage() {
       setLoading(false)
     }
   }
+
+  if (!user) return (
+    <div>
+      <TopBar title="রক্তের অনুরোধ" back />
+      <GuestPrompt
+        icon="🩸"
+        title="রক্তের অনুরোধ দিন"
+        subtitle="জরুরি রক্তের প্রয়োজনে অনুরোধ দিন — খুলনার ডোনাররা সাথে সাথে জানতে পারবেন।"
+        features={[
+          'জরুরি বা সাধারণ request করুন',
+          'হাসপাতাল ও এলাকা উল্লেখ করুন',
+          'ডোনাররা সরাসরি কল করবেন',
+          'সম্পূর্ণ বিনামূল্যে',
+        ]}
+      />
+    </div>
+  )
 
   return (
     <div>
