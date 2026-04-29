@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { createUser } from '@/lib/firestore'
+import { createUser, getUserByPhone, mergeManualDonor } from '@/lib/firestore'
 import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
@@ -86,7 +86,7 @@ export default function RegisterPage() {
     if (age < 18 || age > 60) { showToast('বয়স ১৮-৬০ বছরের মধ্যে হতে হবে', 'error'); return }
     setLoading(true)
     try {
-      await createUser(firebaseUser.uid, {
+      const profileData = {
         name: form.name,
         phone: authPhone,
         bloodGroup: form.bloodGroup as BloodGroup,
@@ -95,16 +95,27 @@ export default function RegisterPage() {
         age,
         gender: form.gender as Gender,
         isAvailable: true,
-        lastDonatedAt: null,
+        lastDonatedAt: null as null,
         totalDonations: 0,
-        organizations: [],
-        role: 'donor',
-        fcmToken: null,
+        organizations: [] as string[],
+        role: 'donor' as const,
+        fcmToken: null as null,
         isVerified: false,
-        profilePhoto: null,
-      })
+        profilePhoto: null as null,
+      }
+
+      // Check if manually added donor exists with same phone
+      const existingUser = await getUserByPhone(authPhone)
+      if (existingUser?.manuallyAdded && existingUser.uid !== firebaseUser.uid) {
+        // Merge: carry over history, update profile with new info
+        await mergeManualDonor(firebaseUser.uid, existingUser.uid, profileData)
+        showToast('আপনার আগের data পাওয়া গেছে এবং account merge হয়েছে! 🎉', 'success')
+      } else {
+        await createUser(firebaseUser.uid, profileData)
+        showToast('সফলভাবে রেজিস্ট্রেশন হয়েছে!', 'success')
+      }
+
       await refreshUser()
-      showToast('সফলভাবে রেজিস্ট্রেশন হয়েছে!', 'success')
       router.replace('/dashboard')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন', 'error')

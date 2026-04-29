@@ -194,6 +194,69 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
   return snap.docs[0].data() as User
 }
 
+export const addManualDonor = async (data: {
+  name: string
+  phone: string
+  bloodGroup: BloodGroup
+  upazila: string
+  area: string
+  gender: Gender
+  age?: number
+}) => {
+  // Check if phone already exists
+  const existing = await getUserByPhone(data.phone)
+  if (existing) throw new Error('phone-exists')
+
+  const uid = `manual_${data.phone}`
+  const now = Timestamp.now()
+  await setDoc(doc(db, 'users', uid), {
+    uid,
+    name: data.name,
+    phone: data.phone,
+    bloodGroup: data.bloodGroup,
+    upazila: data.upazila,
+    area: data.area,
+    gender: data.gender,
+    age: data.age ?? 0,
+    isAvailable: true,
+    lastDonatedAt: null,
+    totalDonations: 0,
+    organizations: [],
+    role: 'donor',
+    fcmToken: null,
+    isVerified: false,
+    profilePhoto: null,
+    manuallyAdded: true,
+    createdAt: now,
+    updatedAt: now,
+  })
+}
+
+export const mergeManualDonor = async (
+  newUid: string,
+  oldUid: string,
+  profileData: Omit<User, 'uid' | 'createdAt' | 'updatedAt' | 'manuallyAdded'>
+) => {
+  const oldDoc = await getDoc(doc(db, 'users', oldUid))
+  const oldData = oldDoc.exists() ? (oldDoc.data() as User) : null
+
+  const now = Timestamp.now()
+  // Create new doc with Firebase Auth UID, carry over historical data
+  await setDoc(doc(db, 'users', newUid), {
+    ...profileData,
+    uid: newUid,
+    totalDonations: oldData?.totalDonations ?? 0,
+    isVerified: oldData?.isVerified ?? false,
+    organizations: oldData?.organizations ?? [],
+    lastDonatedAt: oldData?.lastDonatedAt ?? null,
+    manuallyAdded: false,
+    createdAt: oldData?.createdAt ?? now,
+    updatedAt: now,
+  })
+  // Delete old manual doc
+  await deleteDoc(doc(db, 'users', oldUid))
+}
+
 export const cancelRequest = async (requestId: string) => {
   await updateDoc(doc(db, 'bloodRequests', requestId), { status: 'cancelled' })
 }

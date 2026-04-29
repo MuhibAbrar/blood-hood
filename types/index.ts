@@ -25,6 +25,7 @@ export interface User {
   fcmToken: string | null
   isVerified: boolean
   profilePhoto: string | null
+  manuallyAdded?: boolean
   createdAt: Timestamp
   updatedAt: Timestamp
 }
