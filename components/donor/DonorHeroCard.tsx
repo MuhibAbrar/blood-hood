@@ -1,12 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { updateUser } from '@/lib/firestore'
 
 function GuestHeroCard() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [isStandalone, setIsStandalone] = useState(false)
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      ('standalone' in window.navigator && (window.navigator as Navigator & { standalone?: boolean }).standalone === true)
+    setIsStandalone(standalone)
+
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e as BeforeInstallPromptEvent)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    await installPrompt.userChoice
+    setInstallPrompt(null)
+  }
+
   return (
     <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#C0392B] via-[#A93226] to-[#7B241C] p-5 text-white shadow-lg shadow-red-900/30">
       {/* Decorative blobs */}
@@ -20,28 +44,43 @@ function GuestHeroCard() {
         ডোনার হিসেবে যোগ দিন অথবা জরুরি রক্তের অনুরোধ দিন।
       </p>
 
-      {/* CTA buttons */}
-      <div className="flex gap-2 relative">
-        <Link
-          href="/login"
-          className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
-        >
-          লগইন করুন
-        </Link>
-        <Link
-          href="/register"
-          className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors"
-        >
-          রেজিস্ট্রেশন
-        </Link>
+      {/* Mobile: install button (or login if standalone/no prompt) */}
+      <div className="md:hidden relative">
+        {!isStandalone && installPrompt ? (
+          <button
+            onClick={handleInstall}
+            className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
+          >
+            📲 অ্যাপ ইনস্টল করুন
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
+              লগইন করুন
+            </Link>
+            <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">
+              রেজিস্ট্রেশন
+            </Link>
+          </div>
+        )}
       </div>
 
-      {/* Mobile install hint */}
-      <p className="text-white/50 text-xs text-center mt-3 relative md:hidden">
-        📲 app ইনস্টল করে রেজিস্ট্রেশন করুন
-      </p>
+      {/* PC: login + register buttons */}
+      <div className="hidden md:flex gap-2 relative">
+        <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
+          লগইন করুন
+        </Link>
+        <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">
+          রেজিস্ট্রেশন করুন
+        </Link>
+      </div>
     </div>
   )
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
 export default function DonorHeroCard() {
