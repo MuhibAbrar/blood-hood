@@ -49,6 +49,7 @@ export interface BloodRequest {
 export interface Donation {
   id: string
   donorId: string
+  donorName: string
   requestId: string | null
   recipientName: string
   hospital: string
@@ -56,6 +57,7 @@ export interface Donation {
   donatedAt: Timestamp
   verifiedBy: string | null
   campId: string | null
+  orgId: string | null
 }
 
 export interface Organization {

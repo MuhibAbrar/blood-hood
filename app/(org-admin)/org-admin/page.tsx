@@ -4,23 +4,25 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
-import { getCampsByOrg, getAnnouncements } from '@/lib/firestore'
+import { getCampsByOrg, getAnnouncements, getDonationsByOrg } from '@/lib/firestore'
 import { formatBanglaDate } from '@/lib/constants'
-import type { Camp, Announcement } from '@/types'
+import type { Camp, Announcement, Donation } from '@/types'
 
 export default function OrgAdminDashboard() {
   const { user } = useAuth()
   const { org: orgAdmin } = useOrgAdmin()
   const [camps, setCamps] = useState<Camp[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [donations, setDonations] = useState<Donation[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!orgAdmin) return
-    Promise.all([getCampsByOrg(orgAdmin.id), getAnnouncements(orgAdmin.id)])
-      .then(([c, a]) => {
+    Promise.all([getCampsByOrg(orgAdmin.id), getAnnouncements(orgAdmin.id), getDonationsByOrg(orgAdmin.id)])
+      .then(([c, a, d]) => {
         setCamps(c)
         setAnnouncements(a)
+        setDonations(d)
       })
       .catch(e => console.error('dashboard load error', e))
       .finally(() => setLoading(false))
@@ -138,6 +140,50 @@ export default function OrgAdminDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Donation history */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-[#111111]">🩸 সদস্যদের রক্তদান ইতিহাস</h2>
+          <span className="text-xs text-[#555555]">মোট {donations.length} টি</span>
+        </div>
+        {donations.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6 text-center">
+            <span className="text-3xl block mb-2">🩸</span>
+            <p className="text-[#555555] text-sm">এখনো কোনো রক্তদান নেই</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-x-auto">
+            <table className="w-full min-w-[420px]">
+              <thead className="bg-[#F8F8F8] border-b border-[#E5E5E5]">
+                <tr>
+                  {['দাতা', 'গ্রহীতা', 'হাসপাতাল', 'তারিখ'].map(h => (
+                    <th key={h} className="text-left text-xs font-semibold text-[#555555] px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F0F0F0]">
+                {donations.slice(0, 10).map(d => (
+                  <tr key={d.id} className="hover:bg-[#FAFAFA]">
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-[#111111]">{d.donorName}</p>
+                      <p className="text-xs text-[#D92B2B] font-bold">{d.bloodGroup}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#555555] max-w-[120px] truncate">{d.recipientName}</td>
+                    <td className="px-4 py-3 text-xs text-[#555555] max-w-[140px] truncate">{d.hospital}</td>
+                    <td className="px-4 py-3 text-xs text-[#555555] whitespace-nowrap">{formatBanglaDate(d.donatedAt.toDate())}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {donations.length > 10 && (
+              <div className="px-4 py-3 border-t border-[#F0F0F0] text-center">
+                <p className="text-xs text-[#555555]">সর্বশেষ ১০টি দেখানো হচ্ছে · মোট {donations.length} টি</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Completed camps */}

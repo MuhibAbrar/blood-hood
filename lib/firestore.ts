@@ -123,17 +123,34 @@ export const fulfillRequest = async (
     fulfilledBy: donorUid,
     fulfilledAt: now,
   })
-  // If a known donor is selected, update their donation stats
+
+  let orgId: string | null = null
+  let donorName = 'Anonymous'
+
   if (donorUid) {
+    const donorSnap = await getDoc(doc(db, 'users', donorUid))
+    const donor = donorSnap.exists() ? (donorSnap.data() as User) : null
+    donorName = donor?.name ?? 'Unknown'
+    orgId = donor?.organizations?.[0] ?? null
+
     await updateDoc(doc(db, 'users', donorUid), {
       totalDonations: increment(1),
       lastDonatedAt: now,
       isAvailable: false,
     })
+
+    // Also increment org's totalDonations if donor belongs to one
+    if (orgId) {
+      await updateDoc(doc(db, 'organizations', orgId), {
+        totalDonations: increment(1),
+      })
+    }
   }
-  // Always record in donations collection for stats tracking
+
+  // Record in donations collection (1 document = 1 donation, no double count)
   await addDoc(collection(db, 'donations'), {
     donorId: donorUid ?? 'anonymous',
+    donorName,
     requestId,
     recipientName: '',
     hospital: requestData?.hospital ?? '',
@@ -141,7 +158,23 @@ export const fulfillRequest = async (
     donatedAt: now,
     verifiedBy: null,
     campId: null,
+    orgId,
   })
+}
+
+export const getDonationsByOrg = async (orgId: string): Promise<Donation[]> => {
+  const snap = await getDocs(query(
+    collection(db, 'donations'),
+    where('orgId', '==', orgId)
+  ))
+  const donations = snap.docs.map(d => ({ id: d.id, ...d.data() } as Donation))
+  return donations.sort((a, b) => b.donatedAt.toMillis() - a.donatedAt.toMillis())
+}
+
+export const getOrganizationsLeaderboard = async (): Promise<Organization[]> => {
+  const snap = await getDocs(collection(db, 'organizations'))
+  const orgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Organization))
+  return orgs.sort((a, b) => b.totalDonations - a.totalDonations)
 }
 
 export const getUsersByUids = async (uids: string[]): Promise<User[]> => {
