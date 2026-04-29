@@ -11,6 +11,7 @@ import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import AvailabilityToggle from '@/components/donor/AvailabilityToggle'
 import TopBar from '@/components/layout/TopBar'
+import GuestPrompt from '@/components/ui/GuestPrompt'
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
@@ -19,6 +20,23 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ name: user?.name ?? '', area: user?.area ?? '', upazila: user?.upazila ?? '' })
+
+  if (!user) return (
+    <div>
+      <TopBar title="প্রোফাইল" />
+      <GuestPrompt
+        icon="👤"
+        title="আপনার প্রোফাইল"
+        subtitle="Blood Hood এ যোগ দিন — ডোনার হিসেবে নিবন্ধন করুন এবং জীবন বাঁচাতে সাহায্য করুন।"
+        features={[
+          'ডোনার হিসেবে নিবন্ধন করুন',
+          'Availability চালু/বন্ধ করুন',
+          'দানের ইতিহাস দেখুন',
+          'সংগঠনে যোগ দিন',
+        ]}
+      />
+    </div>
+  )
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
