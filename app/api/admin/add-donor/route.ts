@@ -7,7 +7,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 // Uses Admin SDK — bypasses Firestore security rules
 export async function POST(req: NextRequest) {
   try {
-    const { name, phone, bloodGroup, upazila, area, gender, age } = await req.json()
+    const { name, phone, bloodGroup, upazila, area, gender, age, orgId } = await req.json()
 
     if (!name || !phone || !bloodGroup || !upazila || !gender) {
       return NextResponse.json({ error: 'missing-fields' }, { status: 400 })
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       isAvailable: true,
       lastDonatedAt: null,
       totalDonations: 0,
-      organizations: [],
+      organizations: orgId ? [orgId] : [],
       role: 'donor',
       fcmToken: null,
       isVerified: false,
@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
       createdAt: now,
       updatedAt: now,
     })
+
+    // If orgId provided, add to org's memberIds
+    if (orgId) {
+      await db.collection('organizations').doc(orgId).update({
+        memberIds: FieldValue.arrayUnion(uid),
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {

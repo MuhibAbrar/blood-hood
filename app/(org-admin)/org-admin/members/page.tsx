@@ -5,7 +5,9 @@ import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getOrgMembers, removeMember, getUserByPhone, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import type { Organization, User, JoinRequest } from '@/types'
+import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
+import type { Organization, User, JoinRequest, BloodGroup, Gender } from '@/types'
 
 export default function OrgMembersPage() {
   const { org: orgAdmin } = useOrgAdmin()
@@ -24,6 +26,12 @@ export default function OrgMembersPage() {
   const [searching, setSearching] = useState(false)
   const [adding, setAdding] = useState(false)
   const [processingReq, setProcessingReq] = useState<string | null>(null)
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [manualLoading, setManualLoading] = useState(false)
+  const [manualForm, setManualForm] = useState({
+    name: '', phone: '', bloodGroup: '' as BloodGroup | '',
+    upazila: '', area: '', gender: '' as Gender | '', age: '',
+  })
 
   const load = async (o: Organization) => {
     try {
@@ -96,6 +104,51 @@ export default function OrgMembersPage() {
     }
   }
 
+  const setManual = (k: keyof typeof manualForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setManualForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleManualAdd = async () => {
+    if (!org) return
+    const phone = manualForm.phone.replace(/\D/g, '')
+    if (!manualForm.name || !phone || !manualForm.bloodGroup || !manualForm.upazila || !manualForm.gender) {
+      showToast('নাম, ফোন, রক্তের গ্রুপ, উপজেলা ও লিঙ্গ আবশ্যক', 'error'); return
+    }
+    if (!/^01[3-9]\d{8}$/.test(phone)) {
+      showToast('সঠিক ১১ সংখ্যার নম্বর দিন', 'error'); return
+    }
+    setManualLoading(true)
+    try {
+      const res = await fetch('/api/admin/add-donor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: manualForm.name,
+          phone,
+          bloodGroup: manualForm.bloodGroup,
+          upazila: manualForm.upazila,
+          area: manualForm.area,
+          gender: manualForm.gender,
+          age: manualForm.age ? parseInt(manualForm.age) : undefined,
+          orgId: org.id,
+        }),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        if (result.error === 'phone-exists') showToast('এই নম্বরে ইতিমধ্যে একজন ডোনার আছেন', 'error')
+        else showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+        return
+      }
+      showToast(`${manualForm.name} সফলভাবে যোগ করা হয়েছে ✓`, 'success')
+      setShowManualModal(false)
+      setManualForm({ name: '', phone: '', bloodGroup: '', upazila: '', area: '', gender: '', age: '' })
+      await load(org)
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setManualLoading(false)
+    }
+  }
+
   const handleAccept = async (req: JoinRequest) => {
     if (!org) return
     setProcessingReq(req.id)
@@ -147,12 +200,20 @@ export default function OrgMembersPage() {
           <h1 className="text-xl font-bold text-[#111111]">সদস্য</h1>
           <p className="text-[#555555] text-sm mt-0.5">মোট {members.length} জন</p>
         </div>
-        <button
-          onClick={() => { setShowAddModal(true); setPhoneInput(''); setSearchResult(null) }}
-          className="bg-[#1A9E6B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#158a5c] transition-colors self-start sm:self-auto"
-        >
-          + সদস্য যোগ করুন
-        </button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => { setShowAddModal(true); setPhoneInput(''); setSearchResult(null) }}
+            className="bg-[#1A9E6B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#158a5c] transition-colors"
+          >
+            + সদস্য যোগ করুন
+          </button>
+          <button
+            onClick={() => setShowManualModal(true)}
+            className="bg-[#D92B2B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#b82424] transition-colors whitespace-nowrap"
+          >
+            + ম্যানুয়াল যোগ
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -375,6 +436,83 @@ export default function OrgMembersPage() {
                     যোগ হচ্ছে...
                   </span>
                 ) : '+ সদস্য যোগ করুন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual add modal */}
+      {showManualModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-5 border-b border-[#E5E5E5] flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-[#111111] text-lg">ম্যানুয়াল ডোনার যোগ</h3>
+                <p className="text-xs text-[#555555] mt-0.5">app নেই এমন ডোনারদের যোগ করুন</p>
+              </div>
+              <button onClick={() => setShowManualModal(false)} className="text-[#555555] hover:text-[#111111] text-xl">✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">পূর্ণ নাম *</label>
+                <input value={manualForm.name} onChange={setManual('name')} placeholder="রক্তদাতার নাম" className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">মোবাইল নম্বর *</label>
+                <input value={manualForm.phone} onChange={setManual('phone')} placeholder="01XXXXXXXXX" inputMode="tel" maxLength={11} className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-2">রক্তের গ্রুপ *</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {BLOOD_GROUPS.map(g => (
+                    <button key={g} onClick={() => setManualForm(f => ({ ...f, bloodGroup: g }))}
+                      className={`py-2.5 rounded-xl font-bold text-sm transition-all ${manualForm.bloodGroup === g ? 'bg-[#D92B2B] text-white scale-105 shadow-md' : 'bg-gray-100 text-[#555555] hover:bg-gray-200'}`}
+                    >{g}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">লিঙ্গ *</label>
+                <select value={manualForm.gender} onChange={setManual('gender')} className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]">
+                  <option value="">নির্বাচন করুন</option>
+                  <option value="male">পুরুষ</option>
+                  <option value="female">মহিলা</option>
+                  <option value="other">অন্যান্য</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
+                <select value={manualForm.upazila} onChange={setManual('upazila')} className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]">
+                  <option value="">উপজেলা নির্বাচন করুন</option>
+                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা</label>
+                <input value={manualForm.area} onChange={setManual('area')} placeholder="মহল্লা / পাড়া (ঐচ্ছিক)" className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">বয়স <span className="text-[#555555] font-normal">(ঐচ্ছিক)</span></label>
+                <input value={manualForm.age} onChange={setManual('age')} type="number" min={18} max={60} placeholder="না জানলে ফাঁকা রাখুন" inputMode="numeric" className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]" />
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-xs text-orange-700">
+                ⚠️ এই ডোনার পরে একই নম্বর দিয়ে register করলে সব data স্বয়ংক্রিয়ভাবে নতুন account এ চলে আসবে।
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button onClick={() => setShowManualModal(false)} className="flex-1 py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium hover:bg-gray-50">
+                বাতিল
+              </button>
+              <button onClick={handleManualAdd} disabled={manualLoading}
+                className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold hover:bg-[#b82424] transition-colors disabled:opacity-60"
+              >
+                {manualLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    যোগ হচ্ছে...
+                  </span>
+                ) : 'যোগ করুন ✓'}
               </button>
             </div>
           </div>
