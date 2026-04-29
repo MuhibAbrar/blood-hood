@@ -8,6 +8,20 @@ import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import type { BloodRequest } from '@/types'
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+// Shared install prompt — captured once at module level
+let cachedInstallPrompt: BeforeInstallPromptEvent | null = null
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    cachedInstallPrompt = e as BeforeInstallPromptEvent
+  })
+}
+
 interface RequestCardProps {
   request: BloodRequest
 }
@@ -120,7 +134,32 @@ export default function RequestCard({ request }: RequestCardProps) {
       {/* Action buttons */}
       {request.status === 'open' && (
         <div onClick={e => e.stopPropagation()} className="flex gap-2">
-          {isOwner ? (
+          {!user ? (
+            <>
+              {/* Mobile: install button */}
+              <button
+                onClick={async () => {
+                  if (cachedInstallPrompt) {
+                    cachedInstallPrompt.prompt()
+                    await cachedInstallPrompt.userChoice
+                    cachedInstallPrompt = null
+                  } else {
+                    router.push('/login')
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold text-center transition-colors md:hidden"
+              >
+                📲 সাহায্য করতে ইনস্টল করুন
+              </button>
+              {/* PC: login button */}
+              <button
+                onClick={() => router.push('/login')}
+                className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold text-center transition-colors hidden md:block"
+              >
+                🩸 সাহায্য করতে লগইন করুন
+              </button>
+            </>
+          ) : isOwner ? (
             <button
               onClick={() => router.push(`/requests/${request.id}`)}
               className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors"
