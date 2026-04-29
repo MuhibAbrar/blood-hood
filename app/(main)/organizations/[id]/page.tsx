@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { getOrganization, requestJoinOrg, getUserJoinRequest } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
@@ -18,15 +19,19 @@ export default function OrgDetailPage() {
   const [requesting, setRequesting] = useState(false)
 
   useEffect(() => {
-    if (!id || !user) return
-    Promise.all([
-      getOrganization(id),
-      getUserJoinRequest(id, user.uid),
-    ]).then(([o, jr]) => {
+    if (!id) return
+    const fetchData = async () => {
+      const o = await getOrganization(id)
       setOrg(o)
-      setJoinRequest(jr)
+      if (user) {
+        try {
+          const jr = await getUserJoinRequest(id, user.uid)
+          setJoinRequest(jr)
+        } catch { /* ignore */ }
+      }
       setLoading(false)
-    })
+    }
+    fetchData()
   }, [id, user])
 
   const handleRequestJoin = async () => {
@@ -81,7 +86,11 @@ export default function OrgDetailPage() {
         </div>
 
         {/* Join status */}
-        {isMember ? (
+        {!user ? (
+          <Link href="/login" className="btn-primary w-full text-center block">
+            🤝 যোগ দিতে লগইন করুন
+          </Link>
+        ) : isMember ? (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
             <p className="text-[#1A9E6B] font-semibold text-lg">✓ আপনি এই সংগঠনের সদস্য</p>
             <p className="text-xs text-[#555555] mt-1">আপনি ক্যাম্প ও ঘোষণা পাবেন</p>
