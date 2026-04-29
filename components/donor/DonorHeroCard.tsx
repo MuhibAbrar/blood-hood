@@ -9,7 +9,7 @@ import { updateUser } from '@/lib/firestore'
 function GuestHeroCard() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isStandalone, setIsStandalone] = useState(false)
-  const [showHint, setShowHint] = useState(false)
+  const [showHint, setShowHint] = useState(false) // eslint-disable-line @typescript-eslint/no-unused-vars
 
   useEffect(() => {
     const standalone =
@@ -26,13 +26,10 @@ function GuestHeroCard() {
   }, [])
 
   const handleInstall = async () => {
-    if (installPrompt) {
-      installPrompt.prompt()
-      await installPrompt.userChoice
-      setInstallPrompt(null)
-    } else {
-      setShowHint(true)
-    }
+    if (!installPrompt) return
+    installPrompt.prompt()
+    await installPrompt.userChoice
+    setInstallPrompt(null)
   }
 
   return (
@@ -67,11 +64,6 @@ function GuestHeroCard() {
             >
               📲 অ্যাপ ইনস্টল করুন — বিনামূল্যে
             </button>
-            {showHint && (
-              <p className="text-white/80 text-xs text-center bg-white/10 rounded-xl px-3 py-2">
-                Browser মেনু → &ldquo;Add to Home Screen&rdquo; চাপুন
-              </p>
-            )}
           </>
         )}
       </div>

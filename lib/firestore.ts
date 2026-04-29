@@ -440,23 +440,24 @@ export const getPlatformStats = async () => {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const [usersSnap, requestsSnap, donationsSnap, allRequestsSnap] = await Promise.all([
+  const [usersSnap, requestsSnap, allRequestsSnap] = await Promise.all([
     getDocs(collection(db, 'users')),
     getDocs(query(collection(db, 'bloodRequests'), where('status', '==', 'open'))),
-    getDocs(collection(db, 'donations')),
     getDocs(query(collection(db, 'bloodRequests'), where('status', '==', 'fulfilled'))),
   ])
+
+  // donations may be restricted for guests — handle gracefully
+  let donationsDocs: QuerySnapshot | null = null
+  try { donationsDocs = await getDocs(collection(db, 'donations')) } catch { /* guest */ }
 
   const users = usersSnap.docs.map((d) => d.data() as User)
   const availableCount = users.filter((u) => u.isAvailable).length
 
-  // Count this month's donations from donations collection
-  const thisMonthFromDonations = donationsSnap.docs.filter((d) => {
+  const thisMonthFromDonations = donationsDocs?.docs.filter((d) => {
     const data = d.data() as Donation
     return data.donatedAt?.toDate() >= startOfMonth
-  }).length
+  }).length ?? 0
 
-  // Fallback: count fulfilled requests this month (client-side filter, no index needed)
   const thisMonthFromRequests = allRequestsSnap.docs.filter((d) => {
     const data = d.data()
     return data.fulfilledAt?.toDate() >= startOfMonth
@@ -469,6 +470,6 @@ export const getPlatformStats = async () => {
     availableNow: availableCount,
     thisMonthDonations,
     pendingRequests: requestsSnap.size,
-    totalDonations: donationsSnap.size,
+    totalDonations: donationsDocs?.size ?? 0,
   }
 }

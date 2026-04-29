@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { getUser, getDonationsByUser } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
@@ -30,7 +31,7 @@ export default function DonorProfilePage() {
   if (loading) return <div className="px-4 py-4"><DonorCardSkeleton /></div>
   if (!donor) return <div className="px-4 py-8 text-center text-[#555555]">ডোনার পাওয়া যায়নি</div>
 
-  const showContact = donor.isAvailable || currentUser?.uid === donor.uid
+  const showContact = !!currentUser && (donor.isAvailable || currentUser.uid === donor.uid)
   const daysSinceDonation = donor.lastDonatedAt ? daysSince(donor.lastDonatedAt.toDate()) : null
 
   return (
@@ -65,16 +66,17 @@ export default function DonorProfilePage() {
         </div>
 
         {/* Contact */}
-        {showContact ? (
-          <a
-            href={`tel:${donor.phone}`}
-            className="btn-primary w-full"
-          >
+        {!currentUser ? (
+          <Link href="/login" className="btn-primary w-full text-center block">
+            📞 নম্বর দেখতে লগইন করুন
+          </Link>
+        ) : showContact ? (
+          <a href={`tel:${donor.phone}`} className="btn-primary w-full text-center block">
             📞 যোগাযোগ করুন — {donor.phone}
           </a>
         ) : (
           <div className="card p-4 text-center text-[#555555] text-sm">
-            যোগাযোগের তথ্য দেখতে, ডোনারকে Available থাকতে হবে
+            যোগাযোগের তথ্য দেখতে ডোনারকে Available থাকতে হবে
           </div>
         )}
 
