@@ -134,6 +134,12 @@ export const fulfillRequest = async (
     donorName = donor?.name ?? 'Unknown'
     orgId = donor?.organizations?.[0] ?? null
 
+    // Fallback: if donor has no organizations[], check if they're an org admin
+    if (!orgId) {
+      const adminOrg = await getOrgByAdmin(donorUid)
+      if (adminOrg) orgId = adminOrg.id
+    }
+
     await updateDoc(doc(db, 'users', donorUid), {
       totalDonations: increment(1),
       lastDonatedAt: now,
@@ -373,6 +379,15 @@ export const createOrganization = async (data: Omit<Organization, 'id' | 'create
     totalDonations: 0,
     createdAt: Timestamp.now(),
   })
+  // Add orgId to each admin's organizations field so their donations count for the org
+  for (const adminUid of (data.adminIds ?? [])) {
+    try {
+      await updateDoc(doc(db, 'users', adminUid), {
+        organizations: arrayUnion(ref.id),
+        updatedAt: Timestamp.now(),
+      })
+    } catch { /* ignore if user doc doesn't exist */ }
+  }
   return ref.id
 }
 

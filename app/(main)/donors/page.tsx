@@ -13,6 +13,7 @@ import type { User, BloodGroup } from '@/types'
 export default function DonorsPage() {
   const [donors, setDonors] = useState<User[]>([])
   const [orgMap, setOrgMap] = useState<Record<string, string>>({})
+  const [adminToOrgMap, setAdminToOrgMap] = useState<Record<string, string>>({})
   const [filtered, setFiltered] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -23,10 +24,15 @@ export default function DonorsPage() {
   useEffect(() => {
     Promise.all([getDonors(), getOrganizations()]).then(([d, orgs]) => {
       setDonors(d)
-      // Build orgId → orgName map
+      // Build orgId → orgName map and adminUid → orgId map (for admins who may not have organizations[] set)
       const map: Record<string, string> = {}
-      orgs.forEach(o => { map[o.id] = o.name })
+      const adminMap: Record<string, string> = {}
+      orgs.forEach(o => {
+        map[o.id] = o.name
+        o.adminIds?.forEach(uid => { adminMap[uid] = o.id })
+      })
       setOrgMap(map)
+      setAdminToOrgMap(adminMap)
       setLoading(false)
     })
   }, [])
@@ -43,10 +49,12 @@ export default function DonorsPage() {
     setFiltered(result)
   }, [donors, bloodFilter, upazilaFilter, availableOnly, search])
 
-  // Get first org name for a donor
+  // Get org name for a donor — also checks adminIds as fallback for org admins
   const getOrgName = (donor: User) => {
-    if (!donor.organizations?.length) return undefined
-    return orgMap[donor.organizations[0]]
+    if (donor.organizations?.length) return orgMap[donor.organizations[0]]
+    // Fallback: donor might be an org admin whose user doc doesn't have organizations[] set
+    const orgId = adminToOrgMap[donor.uid]
+    return orgId ? orgMap[orgId] : undefined
   }
 
   return (
