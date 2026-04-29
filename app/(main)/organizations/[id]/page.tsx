@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { getOrganization, requestJoinOrg, getUserJoinRequest, leaveOrganization } from '@/lib/firestore'
+import { getOrganization, requestJoinOrg, getUserJoinRequest } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import TopBar from '@/components/layout/TopBar'
@@ -40,10 +40,14 @@ export default function OrgDetailPage() {
     if (!user || !org) return
     setLeaving(true)
     try {
-      await leaveOrganization(org.id, user.uid)
+      const res = await fetch('/api/leave-org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId: org.id, uid: user.uid }),
+      })
+      if (!res.ok) throw new Error('leave failed')
       setConfirmLeave(false)
       showToast('সংগঠন ছেড়ে দেওয়া হয়েছে', 'success')
-      // Refresh org data
       const updated = await getOrganization(id)
       setOrg(updated)
     } catch {
