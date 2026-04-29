@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { getBloodRequests, fulfillRequest, cancelRequest, getUsersByUids } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
@@ -20,9 +20,8 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<RequestStatus | 'all'>('open')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [notifyMenuId, setNotifyMenuId] = useState<string | null>(null)
+  const [notifyRequest, setNotifyRequest] = useState<BloodRequest | null>(null)
   const [notifyLoading, setNotifyLoading] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
 
   const load = async () => {
     const r = await getBloodRequests()
@@ -39,16 +38,6 @@ export default function AdminRequestsPage() {
 
   useEffect(() => { load() }, [])
 
-  // Close menu on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setNotifyMenuId(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   const filtered = tab === 'all' ? requests : requests.filter(r => r.status === tab)
 
@@ -80,7 +69,7 @@ export default function AdminRequestsPage() {
 
   const handleNotify = async (r: BloodRequest, type: 'compatible' | 'all' | 'org_admins') => {
     setNotifyLoading(r.id + '_' + type)
-    setNotifyMenuId(null)
+    setNotifyRequest(null)
     try {
       const baseData = {
         requestId: r.id,
@@ -253,52 +242,13 @@ export default function AdminRequestsPage() {
                         )}
 
                         {/* Notify button */}
-                        <div className="relative" ref={notifyMenuId === r.id ? menuRef : undefined}>
-                          <button
-                            onClick={() => setNotifyMenuId(notifyMenuId === r.id ? null : r.id)}
-                            disabled={!!notifyLoading}
-                            className="text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors whitespace-nowrap"
-                            title="Notification পাঠান"
-                          >
-                            {notifyLoading?.startsWith(r.id) ? '...' : '🔔 Notify'}
-                          </button>
-
-                          {notifyMenuId === r.id && (
-                            <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-[#E5E5E5] z-50 w-52 py-1">
-                              <p className="text-[10px] text-[#555555] px-3 pt-2 pb-1 font-semibold uppercase tracking-wide">Notification পাঠান</p>
-                              <button
-                                onClick={() => handleNotify(r, 'compatible')}
-                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors flex items-center gap-2"
-                              >
-                                <span>🩸</span>
-                                <div>
-                                  <p className="font-medium text-[#111111]">Compatible Donors</p>
-                                  <p className="text-[10px] text-[#555555]">{r.bloodGroup} গ্রুপের ডোনাররা</p>
-                                </div>
-                              </button>
-                              <button
-                                onClick={() => handleNotify(r, 'org_admins')}
-                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors flex items-center gap-2"
-                              >
-                                <span>🏢</span>
-                                <div>
-                                  <p className="font-medium text-[#111111]">সংগঠনের Admins</p>
-                                  <p className="text-[10px] text-[#555555]">সব org admin রা</p>
-                                </div>
-                              </button>
-                              <button
-                                onClick={() => handleNotify(r, 'all')}
-                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors flex items-center gap-2"
-                              >
-                                <span>📢</span>
-                                <div>
-                                  <p className="font-medium text-[#111111]">সবাইকে</p>
-                                  <p className="text-[10px] text-[#555555]">সব registered user রা</p>
-                                </div>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => setNotifyRequest(r)}
+                          disabled={!!notifyLoading}
+                          className="text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors whitespace-nowrap"
+                        >
+                          {notifyLoading?.startsWith(r.id) ? '...' : '🔔 Notify'}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -308,6 +258,62 @@ export default function AdminRequestsPage() {
           </div>
         )}
       </div>
+      {/* Notify Modal */}
+      {notifyRequest && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-[#111111] text-lg">Notification পাঠান</h3>
+                <p className="text-xs text-[#555555] mt-0.5">
+                  <span className="bg-red-100 text-[#D92B2B] font-bold px-1.5 py-0.5 rounded-full text-[10px]">{notifyRequest.bloodGroup}</span>
+                  {' '}{notifyRequest.patientName}
+                </p>
+              </div>
+              <button onClick={() => setNotifyRequest(null)} className="text-[#555555] hover:text-[#111111] p-1">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleNotify(notifyRequest, 'compatible')}
+                disabled={!!notifyLoading}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-[#E5E5E5] hover:bg-[#FAFAFA] hover:border-red-200 transition-all text-left"
+              >
+                <span className="text-2xl">🩸</span>
+                <div>
+                  <p className="font-semibold text-[#111111] text-sm">Compatible Donors</p>
+                  <p className="text-xs text-[#555555]">{notifyRequest.bloodGroup} গ্রুপের সব ডোনার</p>
+                </div>
+              </button>
+              <button
+                onClick={() => handleNotify(notifyRequest, 'org_admins')}
+                disabled={!!notifyLoading}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-[#E5E5E5] hover:bg-[#FAFAFA] hover:border-blue-200 transition-all text-left"
+              >
+                <span className="text-2xl">🏢</span>
+                <div>
+                  <p className="font-semibold text-[#111111] text-sm">সংগঠনের Admins</p>
+                  <p className="text-xs text-[#555555]">সব সংগঠনের admin রা</p>
+                </div>
+              </button>
+              <button
+                onClick={() => handleNotify(notifyRequest, 'all')}
+                disabled={!!notifyLoading}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-[#E5E5E5] hover:bg-[#FAFAFA] hover:border-yellow-200 transition-all text-left"
+              >
+                <span className="text-2xl">📢</span>
+                <div>
+                  <p className="font-semibold text-[#111111] text-sm">সবাইকে</p>
+                  <p className="text-xs text-[#555555]">সব registered user রা</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
