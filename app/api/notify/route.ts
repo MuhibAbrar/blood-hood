@@ -230,6 +230,67 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, sent: allUserIds.length })
     }
 
+    // ── Org Admins blast (blood request → সব org admin) ──────────────────
+    if (type === 'org_admins_blast') {
+      const { bloodGroup, hospital, area, patientName, urgency, requestId } = data
+
+      const title = urgency === 'urgent'
+        ? `🔴 জরুরি ${bloodGroup} রক্ত লাগবে!`
+        : `🩸 ${bloodGroup} রক্তের অনুরোধ`
+      const bodyText = `${patientName} — ${hospital}, ${area}`
+
+      // Fetch all org adminIds
+      const orgsSnap = await db.collection('organizations').get()
+      const adminUids = new Set<string>()
+      orgsSnap.docs.forEach(d => {
+        const admins: string[] = d.data().adminIds ?? []
+        admins.forEach(uid => adminUids.add(uid))
+      })
+
+      const adminUidList = Array.from(adminUids)
+      if (!adminUidList.length) return NextResponse.json({ success: true, sent: 0 })
+
+      const allTokens: string[] = []
+      const allUserIds: string[] = []
+
+      for (let i = 0; i < adminUidList.length; i += 10) {
+        const batch = adminUidList.slice(i, i + 10)
+        const snap = await db.collection('users').where('uid', 'in', batch).get()
+        snap.docs.forEach(d => {
+          allUserIds.push(d.data().uid)
+          const token = d.data().fcmToken
+          if (token) allTokens.push(token)
+        })
+      }
+
+      await Promise.all(
+        allUserIds.map(uid =>
+          saveNotification(db, uid, title, bodyText, 'blood_request', {
+            requestId: requestId ?? '',
+            link: `/requests/${requestId}`,
+          })
+        )
+      )
+
+      if (allTokens.length > 0) {
+        await messaging.sendEachForMulticast({
+          tokens: allTokens,
+          notification: { title, body: bodyText },
+          data: { type: 'blood_request', requestId: requestId ?? '', link: `/requests/${requestId}` },
+          android: {
+            priority: urgency === 'urgent' ? 'high' : 'normal',
+            notification: { sound: 'default', channelId: 'blood_requests' },
+          },
+          webpush: {
+            notification: { icon: '/icons/icon-192x192.png', badge: '/icons/icon-192x192.png' },
+            fcmOptions: { link: `/requests/${requestId}` },
+          },
+        })
+      }
+
+      return NextResponse.json({ success: true, sent: allUserIds.length })
+    }
+
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
 
   } catch (err) {

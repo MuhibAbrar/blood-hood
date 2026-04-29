@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { getBloodRequests, fulfillRequest, cancelRequest, getUsersByUids } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
@@ -20,12 +20,14 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<RequestStatus | 'all'>('open')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [notifyMenuId, setNotifyMenuId] = useState<string | null>(null)
+  const [notifyLoading, setNotifyLoading] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const load = async () => {
     const r = await getBloodRequests()
     setRequests(r)
-    // Fetch requester user info
-    const uids = [...new Set(r.map(req => req.requestedBy).filter(Boolean))]
+    const uids = Array.from(new Set(r.map(req => req.requestedBy).filter(Boolean)))
     if (uids.length) {
       const users = await getUsersByUids(uids)
       const map: Record<string, User> = {}
@@ -36,6 +38,17 @@ export default function AdminRequestsPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setNotifyMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const filtered = tab === 'all' ? requests : requests.filter(r => r.status === tab)
 
@@ -62,6 +75,54 @@ export default function AdminRequestsPage() {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const handleNotify = async (r: BloodRequest, type: 'compatible' | 'all' | 'org_admins') => {
+    setNotifyLoading(r.id + '_' + type)
+    setNotifyMenuId(null)
+    try {
+      const baseData = {
+        requestId: r.id,
+        bloodGroup: r.bloodGroup,
+        hospital: r.hospital,
+        area: r.area,
+        patientName: r.patientName,
+        urgency: r.urgency,
+      }
+
+      if (type === 'compatible') {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'blood_request', data: baseData }),
+        })
+        showToast('Compatible donors দের notification পাঠানো হয়েছে', 'success')
+      } else if (type === 'all') {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'broadcast',
+            data: {
+              title: r.urgency === 'urgent' ? `🔴 জরুরি ${r.bloodGroup} রক্ত লাগবে!` : `🩸 ${r.bloodGroup} রক্তের অনুরোধ`,
+              body: `${r.patientName} — ${r.hospital}, ${r.area}`,
+            },
+          }),
+        })
+        showToast('সব user দের notification পাঠানো হয়েছে', 'success')
+      } else if (type === 'org_admins') {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'org_admins_blast', data: baseData }),
+        })
+        showToast('সংগঠনের admins দের notification পাঠানো হয়েছে', 'success')
+      }
+    } catch {
+      showToast('notification পাঠাতে সমস্যা হয়েছে', 'error')
+    } finally {
+      setNotifyLoading(null)
     }
   }
 
@@ -171,24 +232,74 @@ export default function AdminRequestsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      {r.status === 'open' && (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
+                        {r.status === 'open' && (
+                          <>
+                            <button
+                              onClick={() => handleFulfill(r)}
+                              disabled={!!actionLoading}
+                              className="text-xs px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors whitespace-nowrap"
+                            >
+                              {actionLoading === r.id ? '...' : '✓ পূর্ণ'}
+                            </button>
+                            <button
+                              onClick={() => handleCancel(r)}
+                              disabled={!!actionLoading}
+                              className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 text-[#555555] hover:bg-gray-200 font-medium transition-colors whitespace-nowrap"
+                            >
+                              {actionLoading === r.id + '_cancel' ? '...' : 'বাতিল'}
+                            </button>
+                          </>
+                        )}
+
+                        {/* Notify button */}
+                        <div className="relative" ref={notifyMenuId === r.id ? menuRef : undefined}>
                           <button
-                            onClick={() => handleFulfill(r)}
-                            disabled={!!actionLoading}
-                            className="text-xs px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors whitespace-nowrap"
+                            onClick={() => setNotifyMenuId(notifyMenuId === r.id ? null : r.id)}
+                            disabled={!!notifyLoading}
+                            className="text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium transition-colors whitespace-nowrap"
+                            title="Notification পাঠান"
                           >
-                            {actionLoading === r.id ? '...' : '✓ পূর্ণ'}
+                            {notifyLoading?.startsWith(r.id) ? '...' : '🔔 Notify'}
                           </button>
-                          <button
-                            onClick={() => handleCancel(r)}
-                            disabled={!!actionLoading}
-                            className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 text-[#555555] hover:bg-gray-200 font-medium transition-colors whitespace-nowrap"
-                          >
-                            {actionLoading === r.id + '_cancel' ? '...' : 'বাতিল'}
-                          </button>
+
+                          {notifyMenuId === r.id && (
+                            <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-[#E5E5E5] z-50 w-52 py-1">
+                              <p className="text-[10px] text-[#555555] px-3 pt-2 pb-1 font-semibold uppercase tracking-wide">Notification পাঠান</p>
+                              <button
+                                onClick={() => handleNotify(r, 'compatible')}
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors flex items-center gap-2"
+                              >
+                                <span>🩸</span>
+                                <div>
+                                  <p className="font-medium text-[#111111]">Compatible Donors</p>
+                                  <p className="text-[10px] text-[#555555]">{r.bloodGroup} গ্রুপের ডোনাররা</p>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => handleNotify(r, 'org_admins')}
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors flex items-center gap-2"
+                              >
+                                <span>🏢</span>
+                                <div>
+                                  <p className="font-medium text-[#111111]">সংগঠনের Admins</p>
+                                  <p className="text-[10px] text-[#555555]">সব org admin রা</p>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => handleNotify(r, 'all')}
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#FAFAFA] transition-colors flex items-center gap-2"
+                              >
+                                <span>📢</span>
+                                <div>
+                                  <p className="font-medium text-[#111111]">সবাইকে</p>
+                                  <p className="text-[10px] text-[#555555]">সব registered user রা</p>
+                                </div>
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}
