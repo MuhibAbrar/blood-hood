@@ -19,7 +19,7 @@ import {
   QuerySnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement, Notification, JoinRequest } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest } from '@/types'
 
 // --- Users ---
 
