@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getBloodRequests, fulfillRequest, cancelRequest } from '@/lib/firestore'
+import { getBloodRequests, fulfillRequest, cancelRequest, getUsersByUids } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
-import type { BloodRequest, RequestStatus } from '@/types'
+import type { BloodRequest, RequestStatus, User } from '@/types'
 
 const tabs: { value: RequestStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'সব' },
@@ -16,12 +16,24 @@ const tabs: { value: RequestStatus | 'all'; label: string }[] = [
 export default function AdminRequestsPage() {
   const { showToast } = useToast()
   const [requests, setRequests] = useState<BloodRequest[]>([])
+  const [userMap, setUserMap] = useState<Record<string, User>>({})
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<RequestStatus | 'all'>('open')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  const load = () =>
-    getBloodRequests().then((r) => { setRequests(r); setLoading(false) })
+  const load = async () => {
+    const r = await getBloodRequests()
+    setRequests(r)
+    // Fetch requester user info
+    const uids = [...new Set(r.map(req => req.requestedBy).filter(Boolean))]
+    if (uids.length) {
+      const users = await getUsersByUids(uids)
+      const map: Record<string, User> = {}
+      users.forEach(u => { map[u.uid] = u })
+      setUserMap(map)
+    }
+    setLoading(false)
+  }
 
   useEffect(() => { load() }, [])
 
@@ -112,7 +124,7 @@ export default function AdminRequestsPage() {
             <table className="w-full">
               <thead className="bg-[#F8F8F8] border-b border-[#E5E5E5]">
                 <tr>
-                  {['রোগীর নাম', 'রক্ত', 'হাসপাতাল', 'যোগাযোগ', 'তারিখ', 'অবস্থা', 'অ্যাকশন'].map(h => (
+                  {['রোগীর নাম', 'রক্ত', 'হাসপাতাল', 'যোগাযোগ', 'অ্যাকাউন্ট', 'তারিখ', 'অবস্থা', 'অ্যাকশন'].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-[#555555] px-5 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -137,6 +149,18 @@ export default function AdminRequestsPage() {
                       <a href={`tel:${r.contactPhone}`} className="text-sm text-[#D92B2B] font-medium hover:underline whitespace-nowrap">
                         📞 {r.contactPhone}
                       </a>
+                    </td>
+                    <td className="px-5 py-3">
+                      {userMap[r.requestedBy] ? (
+                        <div>
+                          <p className="text-sm font-medium text-[#111111]">{userMap[r.requestedBy].name}</p>
+                          <a href={`tel:${userMap[r.requestedBy].phone}`} className="text-xs text-[#D92B2B] hover:underline">
+                            📞 {userMap[r.requestedBy].phone}
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[#555555]">অজ্ঞাত</span>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-xs text-[#555555] whitespace-nowrap">
                       {formatBanglaDate(r.createdAt.toDate())}
