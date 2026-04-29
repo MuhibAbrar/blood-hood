@@ -400,10 +400,23 @@ export const getOrgMembers = async (memberIds: string[]): Promise<User[]> => {
 
 export const removeMember = async (orgId: string, uid: string) => {
   await updateDoc(doc(db, 'organizations', orgId), {
-    memberIds: (await getDoc(doc(db, 'organizations', orgId))).data()?.memberIds.filter((id: string) => id !== uid) ?? [],
+    memberIds: arrayRemove(uid),
+  })
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      organizations: arrayRemove(orgId),
+      updatedAt: Timestamp.now(),
+    })
+  } catch { /* user doc may not exist */ }
+}
+
+export const leaveOrganization = async (orgId: string, uid: string) => {
+  await updateDoc(doc(db, 'organizations', orgId), {
+    memberIds: arrayRemove(uid),
   })
   await updateDoc(doc(db, 'users', uid), {
-    organizations: (await getDoc(doc(db, 'users', uid))).data()?.organizations.filter((id: string) => id !== orgId) ?? [],
+    organizations: arrayRemove(orgId),
+    updatedAt: Timestamp.now(),
   })
 }
 

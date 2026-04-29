@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { getOrganization, requestJoinOrg, getUserJoinRequest } from '@/lib/firestore'
+import { getOrganization, requestJoinOrg, getUserJoinRequest, leaveOrganization } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import TopBar from '@/components/layout/TopBar'
@@ -17,6 +17,8 @@ export default function OrgDetailPage() {
   const [joinRequest, setJoinRequest] = useState<JoinRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -33,6 +35,23 @@ export default function OrgDetailPage() {
     }
     fetchData()
   }, [id, user])
+
+  const handleLeave = async () => {
+    if (!user || !org) return
+    setLeaving(true)
+    try {
+      await leaveOrganization(org.id, user.uid)
+      setConfirmLeave(false)
+      showToast('সংগঠন ছেড়ে দেওয়া হয়েছে', 'success')
+      // Refresh org data
+      const updated = await getOrganization(id)
+      setOrg(updated)
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setLeaving(false)
+    }
+  }
 
   const handleRequestJoin = async () => {
     if (!user || !org) return
@@ -91,9 +110,20 @@ export default function OrgDetailPage() {
             🤝 যোগ দিতে লগইন করুন
           </Link>
         ) : isMember ? (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
-            <p className="text-[#1A9E6B] font-semibold text-lg">✓ আপনি এই সংগঠনের সদস্য</p>
-            <p className="text-xs text-[#555555] mt-1">আপনি ক্যাম্প ও ঘোষণা পাবেন</p>
+          <div className="space-y-2">
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
+              <p className="text-[#1A9E6B] font-semibold text-lg">✓ আপনি এই সংগঠনের সদস্য</p>
+              <p className="text-xs text-[#555555] mt-1">আপনি ক্যাম্প ও ঘোষণা পাবেন</p>
+            </div>
+            {/* Only non-admins can leave */}
+            {!org.adminIds.includes(user.uid) && (
+              <button
+                onClick={() => setConfirmLeave(true)}
+                className="w-full py-2.5 rounded-2xl border border-red-200 text-[#D92B2B] text-sm font-medium hover:bg-red-50 transition-colors"
+              >
+                সংগঠন ছেড়ে দিন
+              </button>
+            )}
           </div>
         ) : hasPendingRequest ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
@@ -110,6 +140,34 @@ export default function OrgDetailPage() {
           </button>
         )}
       </div>
+
+      {/* Confirm leave modal */}
+      {confirmLeave && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <span className="text-4xl block mb-3">🚪</span>
+            <h3 className="font-bold text-[#111111] text-lg mb-2">সংগঠন ছেড়ে দেবেন?</h3>
+            <p className="text-[#555555] text-sm mb-5">
+              <span className="font-semibold">{org.name}</span> থেকে বের হয়ে যাবেন। পরে আবার অনুরোধ করতে পারবেন।
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmLeave(false)}
+                className="flex-1 py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium"
+              >
+                বাতিল
+              </button>
+              <button
+                onClick={handleLeave}
+                disabled={leaving}
+                className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold hover:bg-[#b82424] transition-colors disabled:opacity-60"
+              >
+                {leaving ? 'হচ্ছে...' : 'হ্যাঁ, ছেড়ে দিন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
