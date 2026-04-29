@@ -9,6 +9,7 @@ import { updateUser } from '@/lib/firestore'
 function GuestHeroCard() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [showHint, setShowHint] = useState(false)
 
   useEffect(() => {
     const standalone =
@@ -25,10 +26,13 @@ function GuestHeroCard() {
   }, [])
 
   const handleInstall = async () => {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    await installPrompt.userChoice
-    setInstallPrompt(null)
+    if (installPrompt) {
+      installPrompt.prompt()
+      await installPrompt.userChoice
+      setInstallPrompt(null)
+    } else {
+      setShowHint(true)
+    }
   }
 
   return (
@@ -44,42 +48,35 @@ function GuestHeroCard() {
         ডোনার হিসেবে যোগ দিন অথবা জরুরি রক্তের অনুরোধ দিন।
       </p>
 
-      {/* Mobile: install button (always, unless already standalone) */}
-      <div className="md:hidden relative">
+      {/* Mobile: always install button (login/register only if already installed) */}
+      <div className="md:hidden relative flex flex-col gap-2">
         {isStandalone ? (
           <div className="flex gap-2">
-            <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
+            <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center">
               লগইন করুন
             </Link>
-            <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">
+            <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center">
               রেজিস্ট্রেশন
             </Link>
           </div>
-        ) : installPrompt ? (
-          <button
-            onClick={handleInstall}
-            className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
-          >
-            📲 অ্যাপ ইনস্টল করুন — বিনামূল্যে
-          </button>
         ) : (
-          <div className="flex flex-col gap-2">
-            <p className="text-white/70 text-xs text-center">
-              📲 Browser মেনু থেকে <span className="font-bold text-white">&ldquo;Add to Home Screen&rdquo;</span> দিয়ে ইনস্টল করুন
-            </p>
-            <div className="flex gap-2">
-              <Link href="/login" className="flex-1 py-2 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
-                লগইন
-              </Link>
-              <Link href="/register" className="flex-1 py-2 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">
-                রেজিস্ট্রেশন
-              </Link>
-            </div>
-          </div>
+          <>
+            <button
+              onClick={handleInstall}
+              className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors"
+            >
+              📲 অ্যাপ ইনস্টল করুন — বিনামূল্যে
+            </button>
+            {showHint && (
+              <p className="text-white/80 text-xs text-center bg-white/10 rounded-xl px-3 py-2">
+                Browser মেনু → &ldquo;Add to Home Screen&rdquo; চাপুন
+              </p>
+            )}
+          </>
         )}
       </div>
 
-      {/* PC: login + register buttons */}
+      {/* PC: login + register */}
       <div className="hidden md:flex gap-2 relative">
         <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
           লগইন করুন

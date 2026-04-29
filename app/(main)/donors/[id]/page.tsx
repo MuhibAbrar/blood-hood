@@ -20,9 +20,9 @@ export default function DonorProfilePage() {
 
   useEffect(() => {
     if (!id) return
-    Promise.all([getUser(id), getDonationsByUser(id)]).then(([d, hist]) => {
-      setDonor(d)
-      setDonations(hist)
+    Promise.allSettled([getUser(id), getDonationsByUser(id)]).then(([dRes, histRes]) => {
+      if (dRes.status === 'fulfilled') setDonor(dRes.value)
+      if (histRes.status === 'fulfilled') setDonations(histRes.value)
       setLoading(false)
     })
   }, [id])
