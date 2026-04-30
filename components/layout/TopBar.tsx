@@ -50,10 +50,10 @@ export function AppBar() {
           {orgAdmin && (
             <Link
               href="/org-admin"
-              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold max-w-[160px]"
             >
-              <span>🏢</span>
-              <span className="hidden xs:inline">সংগঠন</span>
+              <span className="shrink-0">🏢</span>
+              <span className="truncate">{orgAdmin.name}</span>
             </Link>
           )}
 
