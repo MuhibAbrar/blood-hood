@@ -12,6 +12,7 @@ import type { Organization } from '@/types'
 const navItems = [
   { href: '/org-admin', label: 'ড্যাশবোর্ড', icon: '📊', exact: true },
   { href: '/org-admin/members', label: 'সদস্য', icon: '👥' },
+  { href: '/org-admin/requests', label: 'রক্ত অনুরোধ', icon: '🩸' },
   { href: '/org-admin/camps', label: 'ক্যাম্প', icon: '🏕️' },
   { href: '/org-admin/announcements', label: 'ঘোষণা', icon: '📢' },
 ]

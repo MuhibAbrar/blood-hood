@@ -43,6 +43,8 @@ export interface BloodRequest {
   respondedBy: string[]
   fulfilledBy: string | null
   note: string | null
+  bags: number
+  orgId: string | null
   createdAt: Timestamp
   fulfilledAt: Timestamp | null
 }
@@ -113,7 +115,7 @@ export interface Notification {
   userId: string
   title: string
   body: string
-  type: 'blood_request' | 'availability_reminder' | 'camp_reminder' | 'org_approved' | 'org_announcement' | 'request_fulfilled' | 'broadcast'
+  type: 'blood_request' | 'availability_reminder' | 'camp_reminder' | 'org_approved' | 'org_announcement' | 'request_fulfilled' | 'broadcast' | 'request_responded'
   read: boolean
   data: Record<string, string>
   createdAt: Timestamp

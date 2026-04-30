@@ -12,6 +12,7 @@ import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import AvailabilityToggle from '@/components/donor/AvailabilityToggle'
 import TopBar from '@/components/layout/TopBar'
 import GuestPrompt from '@/components/ui/GuestPrompt'
+import { daysSince, formatBanglaDate } from '@/lib/constants'
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
@@ -97,6 +98,40 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Last donation countdown */}
+        {(() => {
+          const DONATION_INTERVAL_DAYS = 120
+          if (!user.lastDonatedAt) {
+            return (
+              <div className="card p-4 flex items-center gap-3 bg-green-50 border border-green-100">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p className="font-semibold text-[#111111] text-sm">এখনই রক্ত দিতে পারবেন</p>
+                  <p className="text-xs text-[#555555] mt-0.5">আপনার কোনো পূর্বের দানের রেকর্ড নেই</p>
+                </div>
+              </div>
+            )
+          }
+          const lastDate = user.lastDonatedAt.toDate()
+          const elapsed = daysSince(lastDate)
+          const remaining = DONATION_INTERVAL_DAYS - elapsed
+          const canDonate = remaining <= 0
+
+          return (
+            <div className={`card p-4 flex items-center gap-3 ${canDonate ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
+              <span className="text-2xl">{canDonate ? '✅' : '⏳'}</span>
+              <div className="flex-1">
+                <p className="font-semibold text-[#111111] text-sm">
+                  {canDonate ? 'এখনই রক্ত দিতে পারবেন!' : `আর ${remaining} দিন পরে দিতে পারবেন`}
+                </p>
+                <p className="text-xs text-[#555555] mt-0.5">
+                  শেষ দান: {formatBanglaDate(lastDate)} ({elapsed} দিন আগে)
+                </p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Availability Toggle */}
         <AvailabilityToggle />

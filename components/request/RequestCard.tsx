@@ -86,6 +86,12 @@ export default function RequestCard({ request }: RequestCardProps) {
           <span className="text-base">🏥</span>
           <span className="truncate">{request.hospital}{request.area ? `, ${request.area}` : ''}</span>
         </p>
+        {request.bags > 1 && (
+          <p className="text-sm text-[#555555] flex items-center gap-2">
+            <span className="text-base">🩸</span>
+            <span className="font-medium text-[#D92B2B]">{request.bags} ব্যাগ রক্ত লাগবে</span>
+          </p>
+        )}
         <p className="text-sm text-[#555555] flex items-center gap-2">
           <span className="text-base">📞</span>
           {user ? (

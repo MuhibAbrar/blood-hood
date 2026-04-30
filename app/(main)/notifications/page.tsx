@@ -15,6 +15,7 @@ const typeIcon = (type: Notification['type']) => ({
   availability_reminder: '⏰',
   request_fulfilled: '✅',
   broadcast: '📣',
+  request_responded: '🙋',
 })[type] ?? '🔔'
 
 const timeAgo = (date: Date): string => {

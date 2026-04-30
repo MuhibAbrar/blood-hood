@@ -24,6 +24,7 @@ export default function NewRequestPage() {
     area: '',
     contactPhone: '',
     urgency: 'normal' as Urgency,
+    bags: 1,
     note: '',
   })
 
@@ -48,6 +49,8 @@ export default function NewRequestPage() {
         contactPhone: form.contactPhone,
         requestedBy: user.uid,
         urgency: form.urgency,
+        bags: form.bags,
+        orgId: null,
         note: form.note || null,
       })
       showToast('সফলভাবে অনুরোধ পাঠানো হয়েছে!', 'success')
@@ -143,6 +146,33 @@ export default function NewRequestPage() {
         <div>
           <label className="block text-sm font-medium text-[#111111] mb-1.5">যোগাযোগ নম্বর *</label>
           <input value={form.contactPhone} onChange={set('contactPhone')} placeholder="01X-XXXX-XXXX" className="input-field" type="tel" inputMode="tel" />
+        </div>
+
+        {/* Bags count */}
+        <div>
+          <label className="block text-sm font-medium text-[#111111] mb-2">কয় ব্যাগ রক্ত লাগবে?</label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setForm(f => ({ ...f, bags: Math.max(1, f.bags - 1) }))}
+              className="w-11 h-11 rounded-xl border-2 border-[#E5E5E5] flex items-center justify-center text-xl font-bold text-[#555555] hover:border-[#D92B2B] hover:text-[#D92B2B] transition-colors disabled:opacity-40"
+              disabled={form.bags <= 1}
+            >
+              −
+            </button>
+            <div className="flex-1 text-center">
+              <span className="text-3xl font-bold text-[#D92B2B]">{form.bags}</span>
+              <span className="text-sm text-[#555555] ml-1">ব্যাগ</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(f => ({ ...f, bags: Math.min(10, f.bags + 1) }))}
+              className="w-11 h-11 rounded-xl border-2 border-[#E5E5E5] flex items-center justify-center text-xl font-bold text-[#555555] hover:border-[#1A9E6B] hover:text-[#1A9E6B] transition-colors disabled:opacity-40"
+              disabled={form.bags >= 10}
+            >
+              +
+            </button>
+          </div>
         </div>
 
         <div>

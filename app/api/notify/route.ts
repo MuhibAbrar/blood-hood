@@ -344,6 +344,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, sent: allUserIds.length })
     }
 
+    // ── Request responded (requester-এ auto notification) ────────────────
+    if (type === 'request_responded') {
+      const { requesterId, requestId, donorName, bloodGroup } = data
+      if (!requesterId || !requestId) return NextResponse.json({ error: 'requesterId and requestId required' }, { status: 400 })
+
+      const title = `🩸 কেউ সাড়া দিয়েছেন!`
+      const bodyText = `${donorName || 'একজন ডোনার'} আপনার ${bloodGroup || ''} রক্তের অনুরোধে সাহায্য করতে চান।`
+
+      await saveNotification(db, requesterId, title, bodyText, 'request_responded', {
+        requestId,
+        link: `/requests/${requestId}`,
+      })
+
+      const userSnap = await db.collection('users').doc(requesterId).get()
+      const token = userSnap.exists ? userSnap.data()?.fcmToken : null
+
+      if (token) {
+        await messaging.sendEachForMulticast({
+          tokens: [token],
+          notification: { title, body: bodyText },
+          data: { type: 'request_responded', requestId, link: `/requests/${requestId}` },
+          android: { notification: { sound: 'default' } },
+          webpush: { fcmOptions: { link: `/requests/${requestId}` } },
+        })
+      }
+
+      return NextResponse.json({ success: true, sent: 1 })
+    }
+
     // ── Single user (test / custom) ──────────────────────────────────────
     if (type === 'single_user') {
       const { uid, title, body: bodyText } = data

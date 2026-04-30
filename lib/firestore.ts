@@ -102,6 +102,16 @@ export const getBloodRequests = async (status?: BloodRequest['status']): Promise
   return status ? all.filter(r => r.status === status) : all
 }
 
+export const getBloodRequestsByOrg = async (orgId: string): Promise<BloodRequest[]> => {
+  const q = query(
+    collection(db, 'bloodRequests'),
+    where('orgId', '==', orgId),
+    orderBy('createdAt', 'desc')
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
+}
+
 export const getBloodRequest = async (id: string): Promise<BloodRequest | null> => {
   const snap = await getDoc(doc(db, 'bloodRequests', id))
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as BloodRequest) : null
@@ -111,6 +121,31 @@ export const respondToRequest = async (requestId: string, donorUid: string) => {
   await updateDoc(doc(db, 'bloodRequests', requestId), {
     respondedBy: arrayUnion(donorUid),
   })
+
+  // Notify the requester that someone responded (fire-and-forget)
+  try {
+    const [requestSnap, donorSnap] = await Promise.all([
+      getDoc(doc(db, 'bloodRequests', requestId)),
+      getDoc(doc(db, 'users', donorUid)),
+    ])
+    const requestData = requestSnap.exists() ? requestSnap.data() : null
+    const donorName = donorSnap.exists() ? donorSnap.data().name : 'কেউ'
+    if (requestData?.requestedBy && requestData.requestedBy !== donorUid) {
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'request_responded',
+          data: {
+            requesterId: requestData.requestedBy,
+            requestId,
+            donorName,
+            bloodGroup: requestData.bloodGroup,
+          },
+        }),
+      }).catch(() => {})
+    }
+  } catch { /* silently ignore */ }
 }
 
 export const fulfillRequest = async (

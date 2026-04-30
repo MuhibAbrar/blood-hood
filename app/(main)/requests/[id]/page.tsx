@@ -142,6 +142,13 @@ export default function RequestDetailPage() {
               </p>
             </div>
           </div>
+          {/* Bags count */}
+          {request.bags > 1 && (
+            <div className="mt-3 flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2">
+              <span>🩸</span>
+              <span className="text-sm font-semibold text-[#D92B2B]">{request.bags} ব্যাগ রক্তের প্রয়োজন</span>
+            </div>
+          )}
           {request.note && (
             <p className="mt-3 text-sm text-[#555555] bg-gray-50 rounded-xl p-3">{request.note}</p>
           )}
