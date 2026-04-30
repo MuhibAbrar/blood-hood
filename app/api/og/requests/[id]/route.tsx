@@ -268,7 +268,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           )}
 
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 20, display: 'flex' }}>
-            bloodhood.vercel.app
+            bloodhood.pro.bd
           </div>
         </div>
       </div>
