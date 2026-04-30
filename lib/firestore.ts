@@ -688,15 +688,15 @@ export const logContactEvent = async (
 
 /**
  * Returns contactEvents for a seeker that are still "contacted" and older
- * than 1 hour — i.e. ready to ask "did you get blood?"
+ * than 24 hours — i.e. ready to ask "did you get blood?"
  */
 export const getPendingContactEvents = async (seekerId: string): Promise<ContactEvent[]> => {
-  const oneHourAgo = Timestamp.fromMillis(Date.now() - 60 * 60 * 1000)
+  const oneDayAgo = Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000)
   const q = query(
     collection(db, 'contactEvents'),
     where('seekerId',    '==', seekerId),
     where('status',      '==', 'contacted'),
-    where('contactedAt', '<=', oneHourAgo)
+    where('contactedAt', '<=', oneDayAgo)
   )
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ContactEvent))

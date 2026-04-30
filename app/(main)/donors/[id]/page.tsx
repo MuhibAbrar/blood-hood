@@ -18,6 +18,7 @@ export default function DonorProfilePage() {
   const [donor, setDonor] = useState<User | null>(null)
   const [donations, setDonations] = useState<Donation[]>([])
   const [loading, setLoading] = useState(true)
+  const [revealed, setRevealed] = useState(false)   // must be above early returns
 
   useEffect(() => {
     if (!id) return
@@ -33,10 +34,8 @@ export default function DonorProfilePage() {
 
   const showContact = !!currentUser && (donor.isAvailable || currentUser.uid === donor.uid)
   const daysSinceDonation = donor.lastDonatedAt ? daysSince(donor.lastDonatedAt.toDate()) : null
-  const [revealed, setRevealed] = useState(false)
 
   const handleContact = async () => {
-    // Log the contact event (fire-and-forget, don't block the call)
     if (currentUser && currentUser.uid !== donor.uid) {
       logContactEvent(currentUser.uid, donor).catch(() => {})
     }
