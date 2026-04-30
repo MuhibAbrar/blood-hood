@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resvg } from '@resvg/resvg-js'
-import fs from 'fs'
 import path from 'path'
 
 export const runtime = 'nodejs'
@@ -70,7 +69,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   // Static TTF — full Bengali + Latin glyphs with OpenType shaping tables
-  const fontBn = fs.readFileSync(path.join(process.cwd(), 'public', 'fonts', 'NotoSansBengali-Bold.ttf'))
+  const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansBengali-Bold.ttf')
 
   const data = await fetchRequest(params.id)
 
@@ -250,7 +249,7 @@ export async function GET(
     const resvg = new Resvg(svg, {
       font: {
         loadSystemFonts: false,
-        fontBuffers: [fontBn],
+        fontFiles: [fontPath],
       },
       fitTo: { mode: 'width' as const, value: 1200 },
     })
