@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { getUser, getDonationsByUser } from '@/lib/firestore'
+import { getUser, getDonationsByUser, logContactEvent } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
@@ -33,6 +33,15 @@ export default function DonorProfilePage() {
 
   const showContact = !!currentUser && (donor.isAvailable || currentUser.uid === donor.uid)
   const daysSinceDonation = donor.lastDonatedAt ? daysSince(donor.lastDonatedAt.toDate()) : null
+  const [revealed, setRevealed] = useState(false)
+
+  const handleContact = async () => {
+    // Log the contact event (fire-and-forget, don't block the call)
+    if (currentUser && currentUser.uid !== donor.uid) {
+      logContactEvent(currentUser.uid, donor).catch(() => {})
+    }
+    setRevealed(true)
+  }
 
   return (
     <div>
@@ -71,9 +80,17 @@ export default function DonorProfilePage() {
             📞 নম্বর দেখতে লগইন করুন
           </Link>
         ) : showContact ? (
-          <a href={`tel:${donor.phone}`} className="btn-primary w-full text-center block">
-            📞 যোগাযোগ করুন — {donor.phone}
-          </a>
+          revealed ? (
+            /* Number revealed — tap to call */
+            <a href={`tel:${donor.phone}`} className="btn-primary w-full text-center block">
+              📞 {donor.phone} — কল করুন
+            </a>
+          ) : (
+            /* First tap: log the event, then show number */
+            <button onClick={handleContact} className="btn-primary w-full">
+              📞 নম্বর দেখুন ও যোগাযোগ করুন
+            </button>
+          )
         ) : (
           <div className="card p-4 text-center text-[#555555] text-sm">
             যোগাযোগের তথ্য দেখতে ডোনারকে Available থাকতে হবে

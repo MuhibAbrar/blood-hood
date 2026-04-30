@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import { AppBar } from '@/components/layout/TopBar'
 import InAppNotification from '@/components/ui/InAppNotification'
 import InstallBanner from '@/components/ui/InstallBanner'
+import DonationFollowUpModal from '@/components/ui/DonationFollowUpModal'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { firebaseUser, user, loading } = useAuth()
@@ -36,6 +37,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <AppBar />
       <InstallBanner />
       <InAppNotification />
+      <DonationFollowUpModal />
       <main className="flex-1 pb-20 md:pb-6 md:ml-56">{children}</main>
       <BottomNav />
     </div>

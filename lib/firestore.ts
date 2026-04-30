@@ -16,11 +16,12 @@ import {
   arrayUnion,
   arrayRemove,
   increment,
+  writeBatch,
   DocumentSnapshot,
   QuerySnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent } from '@/types'
 
 // --- Users ---
 
@@ -655,4 +656,77 @@ export const getPlatformStats = async () => {
     pendingRequests: requestsSnap.size,
     totalDonations: donationsDocs?.size ?? 0,
   }
+}
+
+// --- Contact Events ---
+
+/** Called when a seeker reveals a donor's phone number. */
+export const logContactEvent = async (
+  seekerId: string,
+  donor: Pick<User, 'uid' | 'name' | 'bloodGroup' | 'area'>
+): Promise<void> => {
+  // Don't duplicate if already logged and still pending
+  const dupeQ = query(
+    collection(db, 'contactEvents'),
+    where('seekerId', '==', seekerId),
+    where('donorId', '==', donor.uid),
+    where('status', '==', 'contacted')
+  )
+  const existing = await getDocs(dupeQ)
+  if (!existing.empty) return
+
+  await addDoc(collection(db, 'contactEvents'), {
+    seekerId,
+    donorId:        donor.uid,
+    donorName:      donor.name,
+    donorBloodGroup: donor.bloodGroup,
+    donorArea:      donor.area ?? '',
+    contactedAt:    Timestamp.now(),
+    status:         'contacted',
+  })
+}
+
+/**
+ * Returns contactEvents for a seeker that are still "contacted" and older
+ * than 1 hour — i.e. ready to ask "did you get blood?"
+ */
+export const getPendingContactEvents = async (seekerId: string): Promise<ContactEvent[]> => {
+  const oneHourAgo = Timestamp.fromMillis(Date.now() - 60 * 60 * 1000)
+  const q = query(
+    collection(db, 'contactEvents'),
+    where('seekerId',    '==', seekerId),
+    where('status',      '==', 'contacted'),
+    where('contactedAt', '<=', oneHourAgo)
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ContactEvent))
+}
+
+/**
+ * Resolves a batch of pending contact events.
+ * - donatedEventId: the event whose donor actually donated (null → nobody donated)
+ * - All others are marked "not_donated"
+ * - If someone donated, their totalDonations counter is incremented
+ */
+export const resolveContactEvents = async (
+  allEventIds:     string[],
+  donatedEventId:  string | null,
+  donorId:         string | null
+): Promise<void> => {
+  const batch = writeBatch(db)
+
+  for (const eventId of allEventIds) {
+    const ref = doc(db, 'contactEvents', eventId)
+    batch.update(ref, {
+      status: eventId === donatedEventId ? 'donated' : 'not_donated',
+    })
+  }
+
+  if (donatedEventId && donorId) {
+    batch.update(doc(db, 'users', donorId), {
+      totalDonations: increment(1),
+    })
+  }
+
+  await batch.commit()
 }

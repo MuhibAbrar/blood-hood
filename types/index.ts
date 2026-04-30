@@ -110,6 +110,17 @@ export interface JoinRequest {
   createdAt: Timestamp
 }
 
+export interface ContactEvent {
+  id: string
+  seekerId: string
+  donorId: string
+  donorName: string
+  donorBloodGroup: BloodGroup
+  donorArea: string
+  contactedAt: Timestamp
+  status: 'contacted' | 'donated' | 'not_donated'
+}
+
 export interface Notification {
   id: string
   userId: string
