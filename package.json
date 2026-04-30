@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fontsource/noto-sans-bengali": "^5.2.11",
     "@next/font": "^14.2.15",
     "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",
