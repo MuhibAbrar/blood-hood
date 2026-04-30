@@ -11,6 +11,7 @@
   "dependencies": {
     "@fontsource/noto-sans-bengali": "^5.2.11",
     "@next/font": "^14.2.15",
+    "@resvg/resvg-js": "^2.6.2",
     "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",
     "next": "14.2.35",

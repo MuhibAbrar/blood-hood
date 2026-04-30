@@ -15,6 +15,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@resvg/resvg-js'],
+  },
 }
 
 export default pwaConfig(nextConfig)
