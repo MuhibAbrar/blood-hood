@@ -582,8 +582,6 @@ export const getUserJoinRequest = async (orgId: string, userId: string): Promise
 
 export const getNotifications = async (uid: string): Promise<Notification[]> => {
   // NOTE: Requires Firestore composite index: userId (ASC) + createdAt (DESC)
-  // If this throws, go to Firebase Console → Firestore → Indexes → Add composite index
-  // Collection: notifications, Fields: userId Ascending, createdAt Descending
   const q = query(
     collection(db, 'notifications'),
     where('userId', '==', uid),
@@ -591,6 +589,17 @@ export const getNotifications = async (uid: string): Promise<Notification[]> => 
     limit(50)
   )
   const snap = await getDocs(q)
+
+  // ৩০ দিনের পুরনো read notifications চুপচাপ delete করি (fire-and-forget)
+  const thirtyDaysAgo = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+  const toDelete = snap.docs.filter(d => {
+    const data = d.data()
+    return data.read === true && data.createdAt && data.createdAt < thirtyDaysAgo
+  })
+  if (toDelete.length > 0) {
+    Promise.all(toDelete.map(d => deleteDoc(d.ref))).catch(() => {})
+  }
+
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
 }
 
