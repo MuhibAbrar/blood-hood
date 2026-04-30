@@ -11,6 +11,8 @@ async function saveNotification(
   type: string,
   data: Record<string, string>
 ) {
+  // deleteAt = ৩০ দিন পরে — Firebase TTL policy এই field দেখে auto-delete করবে
+  const deleteAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   await db.collection('notifications').add({
     userId,
     title,
@@ -19,6 +21,7 @@ async function saveNotification(
     read: false,
     data,
     createdAt: FieldValue.serverTimestamp(),
+    deleteAt,
   })
 }
 
