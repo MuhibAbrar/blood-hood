@@ -186,15 +186,20 @@ export default function RequestDetailPage() {
             <button
               onClick={async () => {
                 setActionLoading(true)
-                await cancelRequest(request.id)
-                showToast('অনুরোধ বাতিল হয়েছে', 'info')
-                await reload()
-                setActionLoading(false)
+                try {
+                  await cancelRequest(request.id)
+                  showToast('অনুরোধ বাতিল হয়েছে', 'info')
+                  await reload()
+                } catch {
+                  showToast('বাতিল করতে সমস্যা হয়েছে', 'error')
+                } finally {
+                  setActionLoading(false)
+                }
               }}
               disabled={actionLoading}
               className="btn-ghost flex-1 border border-[#E5E5E5]"
             >
-              বাতিল করুন
+              {actionLoading ? 'হচ্ছে...' : 'বাতিল করুন'}
             </button>
           </div>
         )}
