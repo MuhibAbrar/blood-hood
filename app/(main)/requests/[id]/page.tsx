@@ -240,26 +240,28 @@ export default function RequestDetailPage() {
                     🙋 সাড়া দিয়েছেন ({responders.length} জন)
                   </p>
                   <div className="space-y-2">
-                    {responders.map(r => (
+                    {responders.map(r => {
+                      const isSelected = selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === r.uid
+                      return (
                       <button
                         key={r.uid}
-                        onClick={() => setSelectedDonor(selectedDonor !== 'anonymous' && selectedDonor?.uid === r.uid ? null : r)}
+                        onClick={() => setSelectedDonor(isSelected ? null : r)}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                          selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === r.uid
-                            ? 'border-[#1A9E6B] bg-green-50'
-                            : 'border-[#E5E5E5] hover:border-gray-300'
+                          isSelected ? 'border-[#1A9E6B] bg-green-50' : 'border-[#E5E5E5] hover:border-gray-300'
                         }`}
                       >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                          isSelected ? 'border-[#1A9E6B] bg-[#1A9E6B]' : 'border-gray-300'
+                        }`}>
+                          {isSelected && <span className="text-white text-[10px] font-bold">✓</span>}
+                        </div>
                         <DefaultAvatar gender={r.gender} size={36} />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-[#111111]">{r.name}</p>
                           <p className="text-xs text-[#555555]">{r.phone} · <span className="font-bold text-[#D92B2B]">{r.bloodGroup}</span></p>
                         </div>
-                        {selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === r.uid && (
-                          <span className="text-[#1A9E6B] text-lg shrink-0">✓</span>
-                        )}
                       </button>
-                    ))}
+                    )})}
                   </div>
                 </div>
               )}
@@ -292,25 +294,27 @@ export default function RequestDetailPage() {
                 </div>
 
                 {/* Phone search result */}
-                {phoneSearchResult && phoneSearchResult !== 'not_found' && (
+                {phoneSearchResult && phoneSearchResult !== 'not_found' && (() => {
+                  const isSelected = selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid
+                  return (
                   <button
-                    onClick={() => setSelectedDonor(selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid ? null : phoneSearchResult)}
+                    onClick={() => setSelectedDonor(isSelected ? null : phoneSearchResult)}
                     className={`mt-2 w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                      selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid
-                        ? 'border-[#1A9E6B] bg-green-50'
-                        : 'border-[#E5E5E5] hover:border-gray-300'
+                      isSelected ? 'border-[#1A9E6B] bg-green-50' : 'border-[#E5E5E5] hover:border-gray-300'
                     }`}
                   >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                      isSelected ? 'border-[#1A9E6B] bg-[#1A9E6B]' : 'border-gray-300'
+                    }`}>
+                      {isSelected && <span className="text-white text-[10px] font-bold">✓</span>}
+                    </div>
                     <DefaultAvatar gender={phoneSearchResult.gender} size={36} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[#111111]">{phoneSearchResult.name}</p>
                       <p className="text-xs text-[#555555]">{phoneSearchResult.phone} · <span className="font-bold text-[#D92B2B]">{phoneSearchResult.bloodGroup}</span></p>
                     </div>
-                    {selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid && (
-                      <span className="text-[#1A9E6B] text-lg shrink-0">✓</span>
-                    )}
                   </button>
-                )}
+                )})()}
 
                 {phoneSearchResult === 'not_found' && (
                   <p className="mt-2 text-xs text-[#555555] bg-gray-50 rounded-xl px-3 py-2">
@@ -323,17 +327,19 @@ export default function RequestDetailPage() {
               <button
                 onClick={() => setSelectedDonor(selectedDonor === 'anonymous' ? null : 'anonymous')}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                  selectedDonor === 'anonymous'
-                    ? 'border-[#D92B2B] bg-red-50'
-                    : 'border-[#E5E5E5] hover:border-gray-300'
+                  selectedDonor === 'anonymous' ? 'border-[#D92B2B] bg-red-50' : 'border-[#E5E5E5] hover:border-gray-300'
                 }`}
               >
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                  selectedDonor === 'anonymous' ? 'border-[#D92B2B] bg-[#D92B2B]' : 'border-gray-300'
+                }`}>
+                  {selectedDonor === 'anonymous' && <span className="text-white text-[10px] font-bold">✓</span>}
+                </div>
                 <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-lg shrink-0">👤</div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-[#111111]">অন্য কেউ দান করেছেন</p>
                   <p className="text-xs text-[#555555]">App এ নেই এমন কেউ রক্ত দিয়েছেন</p>
                 </div>
-                {selectedDonor === 'anonymous' && <span className="text-[#D92B2B] text-lg shrink-0">✓</span>}
               </button>
 
             </div>
