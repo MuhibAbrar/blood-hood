@@ -29,7 +29,9 @@ export default function RequestDetailClient() {
   // Fulfill modal state
   const [showFulfillModal, setShowFulfillModal] = useState(false)
   const [responders, setResponders] = useState<User[]>([])
-  const [selectedDonor, setSelectedDonor] = useState<User | 'anonymous' | null>(null)
+  const [selectedDonor, setSelectedDonor] = useState<User | 'external' | null>(null)
+  const [externalName, setExternalName] = useState('')
+  const [externalPhone, setExternalPhone] = useState('')
   const [phoneSearch, setPhoneSearch] = useState('')
   const [phoneSearchResult, setPhoneSearchResult] = useState<User | null | 'not_found'>(null)
   const [searchingPhone, setSearchingPhone] = useState(false)
@@ -83,6 +85,8 @@ export default function RequestDetailClient() {
   const openFulfillModal = async () => {
     if (!request) return
     setSelectedDonor(null)
+    setExternalName('')
+    setExternalPhone('')
     setPhoneSearch('')
     setPhoneSearchResult(null)
     const users = await getUsersByUids(request.respondedBy)
@@ -111,10 +115,17 @@ export default function RequestDetailClient() {
 
   const handleConfirmFulfill = async () => {
     if (!request || selectedDonor === null) return
+    if (selectedDonor === 'external' && !externalName.trim()) {
+      showToast('দাতার নাম দিন', 'error')
+      return
+    }
     setFulfilling(true)
     try {
-      const donorUid = selectedDonor === 'anonymous' ? null : selectedDonor.uid
-      await fulfillRequest(request.id, donorUid, { bloodGroup: request.bloodGroup, hospital: request.hospital })
+      const donorUid = selectedDonor === 'external' ? null : selectedDonor.uid
+      const externalDonor = selectedDonor === 'external'
+        ? { name: externalName.trim(), phone: externalPhone.trim() }
+        : undefined
+      await fulfillRequest(request.id, donorUid, { bloodGroup: request.bloodGroup, hospital: request.hospital }, externalDonor)
       showToast('অনুরোধ পূর্ণ হয়েছে! ধন্যবাদ 🩸', 'success')
       setShowFulfillModal(false)
       await reload()
@@ -294,6 +305,11 @@ export default function RequestDetailClient() {
         {request.status === 'fulfilled' && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
             <p className="text-[#1A9E6B] font-semibold text-lg">✓ এই অনুরোধ পূর্ণ হয়েছে</p>
+            {isOwner && request.fulfilledByName && (
+              <p className="text-sm font-semibold text-[#111111] mt-2">
+                🩸 রক্ত দিয়েছেন: {request.fulfilledByName}
+              </p>
+            )}
             {request.fulfilledAt && (
               <p className="text-xs text-[#555555] mt-1">{formatBanglaDate(request.fulfilledAt.toDate())}</p>
             )}
@@ -466,24 +482,46 @@ export default function RequestDetailClient() {
                 )}
               </div>
 
-              {/* Anonymous option */}
-              <button
-                onClick={() => setSelectedDonor(selectedDonor === 'anonymous' ? null : 'anonymous')}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                  selectedDonor === 'anonymous' ? 'border-[#D92B2B] bg-red-50' : 'border-[#E5E5E5] hover:border-gray-300'
-                }`}
-              >
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                  selectedDonor === 'anonymous' ? 'border-[#D92B2B] bg-[#D92B2B]' : 'border-gray-300'
-                }`}>
-                  {selectedDonor === 'anonymous' && <span className="text-white text-[10px] font-bold">✓</span>}
-                </div>
-                <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-lg shrink-0">👤</div>
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-[#111111]">অন্য কেউ দান করেছেন</p>
-                  <p className="text-xs text-[#555555]">App এ নেই এমন কেউ রক্ত দিয়েছেন</p>
-                </div>
-              </button>
+              {/* External donor option */}
+              <div>
+                <button
+                  onClick={() => setSelectedDonor(selectedDonor === 'external' ? null : 'external')}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                    selectedDonor === 'external' ? 'border-[#D92B2B] bg-red-50' : 'border-[#E5E5E5] hover:border-gray-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                    selectedDonor === 'external' ? 'border-[#D92B2B] bg-[#D92B2B]' : 'border-gray-300'
+                  }`}>
+                    {selectedDonor === 'external' && <span className="text-white text-[10px] font-bold">✓</span>}
+                  </div>
+                  <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-lg shrink-0">👤</div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-[#111111]">অন্য কেউ দান করেছেন</p>
+                    <p className="text-xs text-[#555555]">App এ নেই এমন কেউ রক্ত দিয়েছেন</p>
+                  </div>
+                </button>
+
+                {selectedDonor === 'external' && (
+                  <div className="mt-2 space-y-2 px-1">
+                    <input
+                      type="text"
+                      value={externalName}
+                      onChange={e => setExternalName(e.target.value)}
+                      placeholder="দাতার নাম *"
+                      className="input-field w-full"
+                    />
+                    <input
+                      type="tel"
+                      value={externalPhone}
+                      onChange={e => setExternalPhone(e.target.value)}
+                      placeholder="মোবাইল নম্বর (ঐচ্ছিক — future merge এর জন্য)"
+                      className="input-field w-full"
+                      maxLength={11}
+                    />
+                  </div>
+                )}
+              </div>
 
             </div>
 
@@ -491,15 +529,17 @@ export default function RequestDetailClient() {
             <div className="px-5 py-4 border-t border-[#E5E5E5] shrink-0">
               {selectedDonor !== null && (
                 <p className="text-xs text-center text-[#555555] mb-3">
-                  {selectedDonor === 'anonymous'
-                    ? '👤 অন্য কেউ রক্ত দিয়েছেন হিসেবে চিহ্নিত হবে'
+                  {selectedDonor === 'external'
+                    ? externalName.trim()
+                      ? `👤 ${externalName.trim()} রক্ত দিয়েছেন হিসেবে চিহ্নিত হবে`
+                      : '👤 নাম দিন'
                     : `✓ ${(selectedDonor as User).name} রক্ত দিয়েছেন হিসেবে চিহ্নিত হবে`
                   }
                 </p>
               )}
               <button
                 onClick={handleConfirmFulfill}
-                disabled={selectedDonor === null || fulfilling}
+                disabled={selectedDonor === null || fulfilling || (selectedDonor === 'external' && !externalName.trim())}
                 className="w-full py-3 rounded-xl bg-[#1A9E6B] text-white font-semibold disabled:opacity-40 transition-opacity"
               >
                 {fulfilling ? 'সম্পন্ন হচ্ছে...' : '🩸 নিশ্চিত করুন'}

@@ -168,7 +168,7 @@ export default function AdminRequestsPage() {
             <table className="w-full">
               <thead className="bg-[#F8F8F8] border-b border-[#E5E5E5]">
                 <tr>
-                  {['রোগীর নাম', 'রক্ত', 'হাসপাতাল', 'যোগাযোগ', 'অ্যাকাউন্ট', 'তারিখ', 'অবস্থা', 'অ্যাকশন'].map(h => (
+                  {['রোগীর নাম', 'রক্ত', 'হাসপাতাল', 'যোগাযোগ', 'অ্যাকাউন্ট', 'তারিখ', 'অবস্থা', 'দাতা', 'অ্যাকশন'].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-[#555555] px-5 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -213,6 +213,24 @@ export default function AdminRequestsPage() {
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${statusBadge(r.status)}`}>
                         {statusLabel(r.status)}
                       </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      {r.status === 'fulfilled' ? (
+                        r.fulfilledByName ? (
+                          <div>
+                            <p className="text-sm font-medium text-[#111111] whitespace-nowrap">{r.fulfilledByName}</p>
+                            {r.fulfilledByPhone && (
+                              <a href={`tel:${r.fulfilledByPhone}`} className="text-xs text-[#D92B2B] hover:underline whitespace-nowrap">
+                                📞 {r.fulfilledByPhone}
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#555555]">অজানা</span>
+                        )
+                      ) : (
+                        <span className="text-xs text-[#555555]">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex gap-2 items-center">

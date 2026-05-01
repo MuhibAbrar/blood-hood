@@ -152,22 +152,22 @@ export const respondToRequest = async (requestId: string, donorUid: string) => {
 export const fulfillRequest = async (
   requestId: string,
   donorUid: string | null,
-  requestData?: { bloodGroup: BloodGroup; hospital: string }
+  requestData?: { bloodGroup: BloodGroup; hospital: string },
+  externalDonor?: { name: string; phone: string }
 ) => {
   const now = Timestamp.now()
-  await updateDoc(doc(db, 'bloodRequests', requestId), {
-    status: 'fulfilled',
-    fulfilledBy: donorUid,
-    fulfilledAt: now,
-  })
 
   let orgId: string | null = null
   let donorName = 'Anonymous'
+  let fulfilledByName: string | null = null
+  let fulfilledByPhone: string | null = null
+  let externalDonorPhone: string | null = null
 
   if (donorUid) {
     const donorSnap = await getDoc(doc(db, 'users', donorUid))
     const donor = donorSnap.exists() ? (donorSnap.data() as User) : null
     donorName = donor?.name ?? 'Unknown'
+    fulfilledByName = donorName
     orgId = donor?.organizations?.[0] ?? null
 
     // Fallback: if donor has no organizations[], check if they're an org admin
@@ -182,17 +182,28 @@ export const fulfillRequest = async (
       isAvailable: false,
     })
 
-    // Also increment org's totalDonations if donor belongs to one
     if (orgId) {
       await updateDoc(doc(db, 'organizations', orgId), {
         totalDonations: increment(1),
       })
     }
+  } else if (externalDonor) {
+    donorName = externalDonor.name
+    fulfilledByName = externalDonor.name
+    fulfilledByPhone = externalDonor.phone || null
+    externalDonorPhone = externalDonor.phone || null
   }
 
-  // Record in donations collection (1 document = 1 donation, no double count)
+  await updateDoc(doc(db, 'bloodRequests', requestId), {
+    status: 'fulfilled',
+    fulfilledBy: donorUid,
+    fulfilledAt: now,
+    fulfilledByName,
+    fulfilledByPhone,
+  })
+
   await addDoc(collection(db, 'donations'), {
-    donorId: donorUid ?? 'anonymous',
+    donorId: donorUid ?? (externalDonor ? 'external' : 'anonymous'),
     donorName,
     requestId,
     recipientName: '',
@@ -202,6 +213,7 @@ export const fulfillRequest = async (
     verifiedBy: null,
     campId: null,
     orgId,
+    externalDonorPhone,
   })
 }
 

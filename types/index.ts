@@ -42,6 +42,8 @@ export interface BloodRequest {
   status: RequestStatus
   respondedBy: string[]
   fulfilledBy: string | null
+  fulfilledByName: string | null
+  fulfilledByPhone: string | null
   note: string | null
   bags: number
   orgId: string | null
@@ -61,6 +63,7 @@ export interface Donation {
   verifiedBy: string | null
   campId: string | null
   orgId: string | null
+  externalDonorPhone: string | null
 }
 
 export interface Organization {
