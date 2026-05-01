@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getPendingContactEvents, resolveContactEvents } from '@/lib/firestore'
+import { getPendingContactEvents } from '@/lib/firestore'
 import type { ContactEvent } from '@/types'
 
 export default function DonationFollowUpModal() {
@@ -40,13 +40,22 @@ export default function DonationFollowUpModal() {
       ? events.find((e) => e.id === selected) ?? null
       : null
 
-    await resolveContactEvents(
-      events.map((e) => e.id),
-      donatedEvent?.id   ?? null,
-      donatedEvent?.donorId ?? null
-    ).catch(() => {})
+    const res = await fetch('/api/resolve-contact-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventIds:       events.map((e) => e.id),
+        donatedEventId: donatedEvent?.id   ?? null,
+        donorId:        donatedEvent?.donorId ?? null,
+        seekerId:       user!.uid,
+      }),
+    })
 
-    setDone(true)
+    if (res.ok) {
+      setDone(true)
+    } else {
+      setSubmitting(false)
+    }
   }
 
   return (

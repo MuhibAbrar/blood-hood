@@ -39,7 +39,7 @@ export function AppBar() {
   const { user, orgAdmins } = useAuth()
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  const showDropdown = orgAdmins.length > 2
+  const showDropdown = orgAdmins.length > 1
 
   return (
     <header className="sticky top-0 bg-[#D92B2B] z-40 safe-top shadow-md">
