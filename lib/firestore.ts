@@ -65,12 +65,14 @@ export const subscribeToUser = (uid: string, cb: (user: User | null) => void) =>
 
 // --- Blood Requests ---
 
-export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'createdAt' | 'fulfilledAt' | 'respondedBy' | 'fulfilledBy' | 'status'>): Promise<string> => {
+export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'createdAt' | 'fulfilledAt' | 'respondedBy' | 'fulfilledBy' | 'fulfilledByName' | 'fulfilledByPhone' | 'status'>): Promise<string> => {
   const ref = await addDoc(collection(db, 'bloodRequests'), {
     ...data,
     status: 'open',
     respondedBy: [],
     fulfilledBy: null,
+    fulfilledByName: null,
+    fulfilledByPhone: null,
     fulfilledAt: null,
     createdAt: Timestamp.now(),
   })
