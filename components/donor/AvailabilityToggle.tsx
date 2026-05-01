@@ -13,7 +13,7 @@ export default function AvailabilityToggle() {
   const { user, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
-  const [blockedModalOpen, setBlockedModalOpen] = useState(false)
+  const [warningModalOpen, setWarningModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   if (!user) return null
@@ -22,11 +22,11 @@ export default function AvailabilityToggle() {
     ? Math.max(0, UNAVAILABLE_DAYS - daysSince(user.lastDonatedAt.toDate()))
     : 0
 
-  const isBlocked = !user.isAvailable && remainingDays > 0
+  const isWithinBlock = !user.isAvailable && remainingDays > 0
 
   const handleToggleClick = () => {
-    if (!user.isAvailable && isBlocked) {
-      setBlockedModalOpen(true)
+    if (!user.isAvailable && isWithinBlock) {
+      setWarningModalOpen(true)
     } else {
       setModalOpen(true)
     }
@@ -46,6 +46,7 @@ export default function AvailabilityToggle() {
     } finally {
       setLoading(false)
       setModalOpen(false)
+      setWarningModalOpen(false)
     }
   }
 
@@ -73,6 +74,7 @@ export default function AvailabilityToggle() {
         </button>
       </div>
 
+      {/* Normal confirmation modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="নিশ্চিত করুন">
         <p className="text-[#555555] mb-6">
           {user.isAvailable
@@ -89,18 +91,26 @@ export default function AvailabilityToggle() {
         </div>
       </Modal>
 
-      <Modal open={blockedModalOpen} onClose={() => setBlockedModalOpen(false)} title="এখন সম্ভব নয়">
-        <p className="text-[#555555] mb-2">
-          আপনি সম্প্রতি রক্ত দিয়েছেন।
+      {/* Soft warning modal — within 90 days */}
+      <Modal open={warningModalOpen} onClose={() => setWarningModalOpen(false)} title="সতর্কতা">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+          <p className="text-sm text-amber-800 font-semibold">⚠️ চিকিৎসা পরামর্শ</p>
+          <p className="text-sm text-amber-700 mt-1">
+            আপনি মাত্র <span className="font-bold">{UNAVAILABLE_DAYS - remainingDays}</span> দিন আগে রক্ত দিয়েছেন।
+            সুস্থ থাকার জন্য কমপক্ষে <span className="font-bold">{UNAVAILABLE_DAYS}</span> দিন বিরতি নেওয়া উচিত।
+          </p>
+        </div>
+        <p className="text-[#555555] text-sm mb-6">
+          তবুও যদি জরুরি কারণে Available হতে চান, নিচের বাটন চাপুন।
         </p>
-        <p className="font-semibold text-[#111111] mb-6">
-          আর{' '}
-          <span className="text-3xl font-bold text-[#D92B2B]">{remainingDays}</span>
-          {' '}দিন পর Available হতে পারবেন।
-        </p>
-        <button onClick={() => setBlockedModalOpen(false)} className="btn-primary w-full">
-          ঠিক আছে
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => setWarningModalOpen(false)} className="btn-ghost flex-1 border border-[#E5E5E5]">
+            বাতিল
+          </button>
+          <button onClick={toggle} disabled={loading} className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 px-4 rounded-xl flex-1 transition-colors">
+            {loading ? 'অপেক্ষা করুন...' : 'তবুও Available করুন'}
+          </button>
+        </div>
       </Modal>
     </>
   )

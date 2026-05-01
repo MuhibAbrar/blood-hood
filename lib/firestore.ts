@@ -766,6 +766,8 @@ export const resolveContactEvents = async (
   if (donatedEventId && donorId) {
     batch.update(doc(db, 'users', donorId), {
       totalDonations: increment(1),
+      lastDonatedAt: Timestamp.now(),
+      isAvailable: false,
     })
   }
 
