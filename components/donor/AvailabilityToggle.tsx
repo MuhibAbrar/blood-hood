@@ -5,14 +5,32 @@ import Modal from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { updateUser } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
+import { daysSince } from '@/lib/constants'
+
+const UNAVAILABLE_DAYS = 90
 
 export default function AvailabilityToggle() {
   const { user, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
+  const [blockedModalOpen, setBlockedModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   if (!user) return null
+
+  const remainingDays = user.lastDonatedAt
+    ? Math.max(0, UNAVAILABLE_DAYS - daysSince(user.lastDonatedAt.toDate()))
+    : 0
+
+  const isBlocked = !user.isAvailable && remainingDays > 0
+
+  const handleToggleClick = () => {
+    if (!user.isAvailable && isBlocked) {
+      setBlockedModalOpen(true)
+    } else {
+      setModalOpen(true)
+    }
+  }
 
   const toggle = async () => {
     setLoading(true)
@@ -41,7 +59,7 @@ export default function AvailabilityToggle() {
           </p>
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={handleToggleClick}
           className={`relative inline-flex items-center w-14 h-7 rounded-full transition-colors ${
             user.isAvailable ? 'bg-[#1A9E6B]' : 'bg-gray-300'
           }`}
@@ -69,6 +87,20 @@ export default function AvailabilityToggle() {
             {loading ? 'অপেক্ষা করুন...' : 'হ্যাঁ, নিশ্চিত'}
           </button>
         </div>
+      </Modal>
+
+      <Modal open={blockedModalOpen} onClose={() => setBlockedModalOpen(false)} title="এখন সম্ভব নয়">
+        <p className="text-[#555555] mb-2">
+          আপনি সম্প্রতি রক্ত দিয়েছেন।
+        </p>
+        <p className="font-semibold text-[#111111] mb-6">
+          আর{' '}
+          <span className="text-3xl font-bold text-[#D92B2B]">{remainingDays}</span>
+          {' '}দিন পর Available হতে পারবেন।
+        </p>
+        <button onClick={() => setBlockedModalOpen(false)} className="btn-primary w-full">
+          ঠিক আছে
+        </button>
       </Modal>
     </>
   )

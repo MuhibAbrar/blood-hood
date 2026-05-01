@@ -325,6 +325,26 @@ export const createDonation = async (data: Omit<Donation, 'id'>): Promise<string
   return ref.id
 }
 
+export const recordSelfDonation = async (
+  donorId: string,
+  donorName: string,
+  bloodGroup: BloodGroup,
+  donatedAt: Timestamp
+) => {
+  await createDonation({
+    donorId,
+    donorName,
+    requestId: null,
+    recipientName: 'নিজে রিপোর্ট',
+    hospital: 'অজানা',
+    bloodGroup,
+    donatedAt,
+    verifiedBy: null,
+    campId: null,
+    orgId: null,
+  })
+}
+
 export const getDonationsByUser = async (uid: string): Promise<Donation[]> => {
   const q = query(collection(db, 'donations'), where('donorId', '==', uid), orderBy('donatedAt', 'desc'))
   const snap = await getDocs(q)

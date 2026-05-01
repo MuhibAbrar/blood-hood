@@ -13,6 +13,9 @@ import AvailabilityToggle from '@/components/donor/AvailabilityToggle'
 import TopBar from '@/components/layout/TopBar'
 import GuestPrompt from '@/components/ui/GuestPrompt'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
+import { recordSelfDonation } from '@/lib/firestore'
+import { Timestamp } from 'firebase/firestore'
+import Modal from '@/components/ui/Modal'
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
@@ -21,6 +24,9 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ name: user?.name ?? '', area: user?.area ?? '', upazila: user?.upazila ?? '' })
+  const [donationModal, setDonationModal] = useState(false)
+  const [donationDate, setDonationDate] = useState('')
+  const [donationLoading, setDonationLoading] = useState(false)
 
   if (!user) return (
     <div>
@@ -60,6 +66,23 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout()
     router.replace('/')
+  }
+
+  const handleSelfDonation = async () => {
+    if (!user || !donationDate) return
+    setDonationLoading(true)
+    try {
+      const date = new Date(donationDate)
+      await recordSelfDonation(user.uid, user.name, user.bloodGroup, Timestamp.fromDate(date))
+      await refreshUser()
+      showToast('রক্তদান রেকর্ড হয়েছে', 'success')
+      setDonationModal(false)
+      setDonationDate('')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন', 'error')
+    } finally {
+      setDonationLoading(false)
+    }
   }
 
   if (!user) return null
@@ -135,6 +158,43 @@ export default function ProfilePage() {
 
         {/* Availability Toggle */}
         <AvailabilityToggle />
+
+        {/* Self-reported donation */}
+        <button
+          onClick={() => { setDonationDate(''); setDonationModal(true) }}
+          className="w-full card p-4 flex items-center justify-between text-left"
+        >
+          <div>
+            <p className="font-semibold text-[#111111]">আমি রক্ত দিয়েছি</p>
+            <p className="text-xs text-[#555555] mt-0.5">তারিখ দিন — ৯০ দিন unavailable থাকবেন</p>
+          </div>
+          <span className="text-2xl">🩸</span>
+        </button>
+
+        <Modal open={donationModal} onClose={() => setDonationModal(false)} title="রক্তদানের তারিখ">
+          <p className="text-sm text-[#555555] mb-4">
+            আপনি কবে রক্ত দিয়েছেন সেই তারিখটি সিলেক্ট করুন। এরপর ৯০ দিন আপনি Unavailable হিসেবে চিহ্নিত হবেন।
+          </p>
+          <input
+            type="date"
+            value={donationDate}
+            onChange={(e) => setDonationDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            className="input-field w-full mb-6"
+          />
+          <div className="flex gap-3">
+            <button onClick={() => setDonationModal(false)} className="btn-ghost flex-1 border border-[#E5E5E5]">
+              বাতিল
+            </button>
+            <button
+              onClick={handleSelfDonation}
+              disabled={!donationDate || donationLoading}
+              className="btn-primary flex-1"
+            >
+              {donationLoading ? 'সংরক্ষণ হচ্ছে...' : 'নিশ্চিত করুন'}
+            </button>
+          </div>
+        </Modal>
 
         {/* Edit form */}
         {editing ? (
