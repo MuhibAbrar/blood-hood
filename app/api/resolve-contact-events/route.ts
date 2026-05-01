@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
     const db = adminDb()
     const batch = db.batch()
 
+    // Mark all contact events resolved
     for (const eventId of eventIds as string[]) {
       batch.update(db.collection('contactEvents').doc(eventId), {
         status: eventId === donatedEventId ? 'donated' : 'not_donated',
@@ -19,10 +20,33 @@ export async function POST(req: NextRequest) {
     }
 
     if (donatedEventId && donorId) {
+      // Update donor's stats
       batch.update(db.collection('users').doc(donorId as string), {
         totalDonations: FieldValue.increment(1),
-        lastDonatedAt: FieldValue.serverTimestamp(),
-        isAvailable: false,
+        lastDonatedAt:  FieldValue.serverTimestamp(),
+        isAvailable:    false,
+      })
+
+      // Create a donations document so monthly stats pick it up
+      const eventSnap = await db.collection('contactEvents').doc(donatedEventId).get()
+      const eventData = eventSnap.data()
+
+      const seekerSnap = await db.collection('users').doc(seekerId).get()
+      const seekerName = seekerSnap.data()?.name ?? 'অজানা'
+
+      const donationRef = db.collection('donations').doc()
+      batch.set(donationRef, {
+        donorId,
+        donorName:          eventData?.donorName   ?? '',
+        requestId:          null,
+        recipientName:      seekerName,
+        hospital:           'সরাসরি যোগাযোগ',
+        bloodGroup:         eventData?.donorBloodGroup ?? '',
+        donatedAt:          FieldValue.serverTimestamp(),
+        verifiedBy:         null,
+        campId:             null,
+        orgId:              null,
+        externalDonorPhone: null,
       })
     }
 
