@@ -50,8 +50,8 @@ export default function DonationFollowUpModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4 pb-4 sm:pb-0">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header strip */}
         <div className="bg-[#D92B2B] px-5 py-4">

@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import TopBar from '@/components/layout/TopBar'
+import { useToast } from '@/components/ui/Toast'
 import { DonorCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { formatBanglaDate, daysSince } from '@/lib/constants'
 import type { User, Donation } from '@/types'
@@ -15,6 +16,7 @@ import type { User, Donation } from '@/types'
 export default function DonorProfilePage() {
   const { id } = useParams<{ id: string }>()
   const { user: currentUser } = useAuth()
+  const { showToast } = useToast()
   const [donor, setDonor] = useState<User | null>(null)
   const [donations, setDonations] = useState<Donation[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,12 +34,15 @@ export default function DonorProfilePage() {
   if (loading) return <div className="px-4 py-4"><DonorCardSkeleton /></div>
   if (!donor) return <div className="px-4 py-8 text-center text-[#555555]">ডোনার পাওয়া যায়নি</div>
 
-  const showContact = !!currentUser && (donor.isAvailable || currentUser.uid === donor.uid)
+  const isSuperAdmin = currentUser?.role === 'superadmin'
+  const showContact = !!currentUser && (donor.isAvailable || currentUser.uid === donor.uid || isSuperAdmin)
   const daysSinceDonation = donor.lastDonatedAt ? daysSince(donor.lastDonatedAt.toDate()) : null
 
   const handleContact = async () => {
     if (currentUser && currentUser.uid !== donor.uid) {
-      logContactEvent(currentUser.uid, donor).catch(() => {})
+      logContactEvent(currentUser.uid, donor)
+        .then(() => { if (isSuperAdmin) showToast('✓ Contact event logged', 'success') })
+        .catch(() => { if (isSuperAdmin) showToast('✗ logContactEvent failed', 'error') })
     }
     setRevealed(true)
   }
