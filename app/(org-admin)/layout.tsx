@@ -1,21 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { OrgAdminContext } from '@/context/OrgAdminContext'
 import { logout } from '@/lib/auth'
-import { getOrgByAdmin } from '@/lib/firestore'
+import { getOrgsByAdmin } from '@/lib/firestore'
 import type { Organization } from '@/types'
-
-const navItems = [
-  { href: '/org-admin', label: 'ড্যাশবোর্ড', icon: '📊', exact: true },
-  { href: '/org-admin/members', label: 'সদস্য', icon: '👥' },
-  { href: '/org-admin/requests', label: 'রক্ত অনুরোধ', icon: '🩸' },
-  { href: '/org-admin/camps', label: 'ক্যাম্প', icon: '🏕️' },
-  { href: '/org-admin/announcements', label: 'ঘোষণা', icon: '📢' },
-]
 
 const orgIcon = (type: string) =>
   type === 'college' || type === 'university' ? '🏫' : type === 'ngo' ? '🤝' : type === 'hospital' ? '🏥' : '🏘️'
@@ -24,14 +16,18 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
   const { user, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const orgId = searchParams.get('orgId')
+
   const [org, setOrg] = useState<Organization | null>(null)
   const [orgLoading, setOrgLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const fetchOrg = async (uid: string) => {
-    const o = await getOrgByAdmin(uid)
-    if (!o) { router.replace('/dashboard'); return }
-    setOrg(o)
+    const orgs = await getOrgsByAdmin(uid)
+    if (orgs.length === 0) { router.replace('/dashboard'); return }
+    const target = orgId ? (orgs.find(o => o.id === orgId) ?? orgs[0]) : orgs[0]
+    setOrg(target)
     setOrgLoading(false)
   }
 
@@ -39,7 +35,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
     if (!loading && !user) { router.replace('/login'); return }
     if (!loading && user) fetchOrg(user.uid)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, user, router])
+  }, [loading, user, router, orgId])
 
   useEffect(() => { setSidebarOpen(false) }, [pathname])
 
@@ -53,6 +49,15 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
   )
 
   if (!org) return null
+
+  const q = `?orgId=${org.id}`
+  const navItems = [
+    { href: `/org-admin${q}`, label: 'ড্যাশবোর্ড', icon: '📊', exact: true },
+    { href: `/org-admin/members${q}`, label: 'সদস্য', icon: '👥' },
+    { href: `/org-admin/requests${q}`, label: 'রক্ত অনুরোধ', icon: '🩸' },
+    { href: `/org-admin/camps${q}`, label: 'ক্যাম্প', icon: '🏕️' },
+    { href: `/org-admin/announcements${q}`, label: 'ঘোষণা', icon: '📢' },
+  ]
 
   // Total unique people = members + admins (deduplicated)
   const totalPeople = new Set([...org.memberIds, ...org.adminIds]).size
@@ -88,7 +93,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map(({ href, label, icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href)
+          const active = exact ? pathname === href.split('?')[0] : pathname.startsWith(href.split('?')[0])
           return (
             <Link key={href} href={href}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
@@ -141,7 +146,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
           </button>
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#111111]">
-              {navItems.find(n => n.exact ? pathname === n.href : pathname.startsWith(n.href))?.label ?? 'Org Admin'}
+              {navItems.find(n => n.exact ? pathname === n.href.split('?')[0] : pathname.startsWith(n.href.split('?')[0]))?.label ?? 'Org Admin'}
             </p>
             <p className="text-xs text-[#555555] hidden md:block">{org.name}</p>
           </div>

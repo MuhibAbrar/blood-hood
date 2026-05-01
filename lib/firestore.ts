@@ -464,6 +464,12 @@ export const getOrgByAdmin = async (uid: string): Promise<Organization | null> =
   return { id: snap.docs[0].id, ...snap.docs[0].data() } as Organization
 }
 
+export const getOrgsByAdmin = async (uid: string): Promise<Organization[]> => {
+  const q = query(collection(db, 'organizations'), where('adminIds', 'array-contains', uid))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Organization))
+}
+
 export const getOrgMembers = async (memberIds: string[]): Promise<User[]> => {
   if (!memberIds.length) return []
   const results: User[] = []

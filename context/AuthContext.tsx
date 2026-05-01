@@ -3,14 +3,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
-import { getUser, updateUser, getOrgByAdmin } from '@/lib/firestore'
+import { getUser, updateUser, getOrgsByAdmin } from '@/lib/firestore'
 import { requestNotificationPermission } from '@/lib/notifications'
 import type { User, Organization } from '@/types'
 
 interface AuthContextType {
   firebaseUser: FirebaseUser | null
   user: User | null
-  orgAdmin: Organization | null
+  orgAdmins: Organization[]
   loading: boolean
   refreshUser: () => Promise<void>
 }
@@ -18,7 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   firebaseUser: null,
   user: null,
-  orgAdmin: null,
+  orgAdmins: [],
   loading: true,
   refreshUser: async () => {},
 })
@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [orgAdmin, setOrgAdmin] = useState<Organization | null>(null)
+  const [orgAdmins, setOrgAdmins] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
 
   const refreshUser = async () => {
@@ -39,12 +39,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser)
       if (fbUser) {
-        const [u, org] = await Promise.all([
+        const [u, orgs] = await Promise.all([
           getUser(fbUser.uid),
-          getOrgByAdmin(fbUser.uid),
+          getOrgsByAdmin(fbUser.uid),
         ])
         setUser(u)
-        setOrgAdmin(org)
+        setOrgAdmins(orgs)
         // request FCM token and update
         const token = await requestNotificationPermission()
         if (token && u && u.fcmToken !== token) {
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } else {
         setUser(null)
-        setOrgAdmin(null)
+        setOrgAdmins([])
       }
       setLoading(false)
     })
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ firebaseUser, user, orgAdmin, loading, refreshUser }}>
+    <AuthContext.Provider value={{ firebaseUser, user, orgAdmins, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

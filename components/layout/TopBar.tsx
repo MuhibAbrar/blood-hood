@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 
@@ -35,7 +36,10 @@ export default function TopBar({ title, back, action }: TopBarProps) {
 }
 
 export function AppBar() {
-  const { user, orgAdmin } = useAuth()
+  const { user, orgAdmins } = useAuth()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  const showDropdown = orgAdmins.length > 2
 
   return (
     <header className="sticky top-0 bg-[#D92B2B] z-40 safe-top shadow-md">
@@ -46,15 +50,51 @@ export function AppBar() {
         </Link>
 
         <div className="flex items-center gap-1">
-          {/* Org-admin panel shortcut */}
-          {orgAdmin && (
+          {/* 1–2 orgs: show pills side by side */}
+          {!showDropdown && orgAdmins.map(org => (
             <Link
-              href="/org-admin"
-              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold max-w-[160px]"
+              key={org.id}
+              href={`/org-admin?orgId=${org.id}`}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold max-w-[140px]"
             >
               <span className="shrink-0">🏢</span>
-              <span className="truncate">{orgAdmin.name}</span>
+              <span className="truncate">{org.name}</span>
             </Link>
+          ))}
+
+          {/* 3+ orgs: dropdown */}
+          {showDropdown && (
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(v => !v)}
+                className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+              >
+                <span>🏢</span>
+                <span>সংগঠন</span>
+                <svg className="w-3 h-3 stroke-white" fill="none" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {dropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl min-w-[200px] z-50 overflow-hidden py-1">
+                    {orgAdmins.map(org => (
+                      <Link
+                        key={org.id}
+                        href={`/org-admin?orgId=${org.id}`}
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 text-sm text-[#111111] hover:bg-gray-50"
+                      >
+                        <span className="shrink-0">🏢</span>
+                        <span className="truncate">{org.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           {/* Superadmin panel shortcut */}

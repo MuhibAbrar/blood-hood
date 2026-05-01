@@ -14,7 +14,7 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const { user, orgAdmin } = useAuth()
+  const { user, orgAdmins } = useAuth()
   const isSuperAdmin = user?.role === 'superadmin'
 
   return (
@@ -68,22 +68,25 @@ export default function BottomNav() {
           )
         })}
 
-        {/* Org Admin Panel link */}
-        {orgAdmin && (
+        {/* Org Admin Panel links */}
+        {orgAdmins.length > 0 && (
           <div className="mt-2 pt-2 border-t border-[#E5E5E5]">
             <p className="text-[10px] font-semibold text-[#555555]/60 px-4 mb-1 uppercase tracking-wide">সংগঠন</p>
-            <Link
-              href="/org-admin"
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
-                pathname.startsWith('/org-admin') ? 'bg-green-50 text-green-700' : 'text-[#555555] hover:bg-gray-100'
-              }`}
-            >
-              <span className="text-lg shrink-0">🏢</span>
-              <div className="min-w-0">
-                <span className="text-sm block truncate">{orgAdmin.name}</span>
-                <span className="text-[10px] text-[#555555]/60">অ্যাডমিন প্যানেল</span>
-              </div>
-            </Link>
+            {orgAdmins.map(org => (
+              <Link
+                key={org.id}
+                href={`/org-admin?orgId=${org.id}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                  pathname.startsWith('/org-admin') ? 'bg-green-50 text-green-700' : 'text-[#555555] hover:bg-gray-100'
+                }`}
+              >
+                <span className="text-lg shrink-0">🏢</span>
+                <div className="min-w-0">
+                  <span className="text-sm block truncate">{org.name}</span>
+                  <span className="text-[10px] text-[#555555]/60">অ্যাডমিন প্যানেল</span>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
 
