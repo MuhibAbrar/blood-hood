@@ -14,7 +14,19 @@ export default function DonationFollowUpModal() {
 
   useEffect(() => {
     if (!user) return
-    getPendingContactEvents(user.uid).then(setEvents).catch(() => {})
+
+    const check = () => {
+      getPendingContactEvents(user.uid).then(setEvents).catch(() => {})
+    }
+
+    check()
+    window.addEventListener('focus', check)
+    const interval = setInterval(check, 30_000)
+
+    return () => {
+      window.removeEventListener('focus', check)
+      clearInterval(interval)
+    }
   }, [user])
 
   // Nothing to show
