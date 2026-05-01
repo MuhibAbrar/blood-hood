@@ -732,15 +732,16 @@ export const logContactEvent = async (
  * than 24 hours — i.e. ready to ask "did you get blood?"
  */
 export const getPendingContactEvents = async (seekerId: string): Promise<ContactEvent[]> => {
-  const oneDayAgo = Timestamp.fromMillis(Date.now() - 1 * 60 * 1000) // TEST: 1 min (change back to 24 * 60 * 60 * 1000)
+  const thresholdMs = Date.now() - 1 * 60 * 1000 // TEST: 1 min (change back to 24 * 60 * 60 * 1000)
   const q = query(
     collection(db, 'contactEvents'),
-    where('seekerId',    '==', seekerId),
-    where('status',      '==', 'contacted'),
-    where('contactedAt', '<=', oneDayAgo)
+    where('seekerId', '==', seekerId),
+    where('status',   '==', 'contacted'),
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ContactEvent))
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as ContactEvent))
+    .filter((e) => e.contactedAt.toMillis() <= thresholdMs)
 }
 
 /**
