@@ -400,7 +400,7 @@ export default function RequestDetailClient() {
                   </p>
                   <div className="space-y-2">
                     {responders.map(r => {
-                      const isSelected = selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === r.uid
+                      const isSelected = selectedDonor !== 'external' && (selectedDonor as User)?.uid === r.uid
                       return (
                       <button
                         key={r.uid}
@@ -454,7 +454,7 @@ export default function RequestDetailClient() {
 
                 {/* Phone search result */}
                 {phoneSearchResult && phoneSearchResult !== 'not_found' && (() => {
-                  const isSelected = selectedDonor !== 'anonymous' && (selectedDonor as User)?.uid === phoneSearchResult.uid
+                  const isSelected = selectedDonor !== 'external' && (selectedDonor as User)?.uid === phoneSearchResult.uid
                   return (
                   <button
                     onClick={() => setSelectedDonor(isSelected ? null : phoneSearchResult)}
