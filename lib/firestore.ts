@@ -732,7 +732,7 @@ export const logContactEvent = async (
  * than 24 hours — i.e. ready to ask "did you get blood?"
  */
 export const getPendingContactEvents = async (seekerId: string): Promise<ContactEvent[]> => {
-  const thresholdMs = Date.now() - 1 * 60 * 1000 // TEST: 1 min (change back to 24 * 60 * 60 * 1000)
+  const thresholdMs = Date.now() - 24 * 60 * 60 * 1000
   const q = query(
     collection(db, 'contactEvents'),
     where('seekerId', '==', seekerId),
