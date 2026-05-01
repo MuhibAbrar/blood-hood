@@ -356,6 +356,7 @@ export const recordSelfDonation = async (
     verifiedBy: null,
     campId: null,
     orgId: null,
+    externalDonorPhone: null,
   })
 }
 
