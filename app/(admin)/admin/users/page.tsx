@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAllUsers, getDonationsByUser } from '@/lib/firestore'
+import { getAllUsers } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import { KHULNA_UPAZILAS, formatBanglaDate } from '@/lib/constants'
+import { KHULNA_UPAZILAS } from '@/lib/constants'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
-import type { User, UserRole, BloodGroup, Gender, Donation } from '@/types'
+import type { User, UserRole, BloodGroup, Gender } from '@/types'
 // BloodGroup and Gender used in addForm state typing only
 
 const roles: { value: UserRole; label: string; icon: string; badge: string }[] = [
@@ -22,9 +22,6 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null)
   const [roleModal, setRoleModal] = useState<User | null>(null)
-  const [donationsModal, setDonationsModal] = useState<User | null>(null)
-  const [donationsList, setDonationsList] = useState<Donation[]>([])
-  const [donationsLoading, setDonationsLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [addModal, setAddModal] = useState(false)
   const [addLoading, setAddLoading] = useState(false)
@@ -97,33 +94,6 @@ export default function AdminUsersPage() {
       setConfirmDelete(null)
       await load()
       showToast('User মুছে ফেলা হয়েছে', 'success')
-    } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
-  const openDonationsModal = async (user: User) => {
-    setDonationsModal(user)
-    setDonationsLoading(true)
-    const docs = await getDonationsByUser(user.uid)
-    setDonationsList(docs)
-    setDonationsLoading(false)
-  }
-
-  const handleDeleteDonation = async (donationId: string) => {
-    setActionLoading('donation_' + donationId)
-    try {
-      const res = await fetch('/api/delete-donation', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ donationId }),
-      })
-      if (!res.ok) throw new Error('failed')
-      setDonationsList(prev => prev.filter(d => d.id !== donationId))
-      await load()
-      showToast('দান মুছে ফেলা হয়েছে', 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
@@ -293,13 +263,6 @@ export default function AdminUsersPage() {
                           {actionLoading === u.uid + '_verify' ? '...' : u.isVerified ? '✓ যাচাই' : 'যাচাই করুন'}
                         </button>
                         <button
-                          onClick={() => openDonationsModal(u)}
-                          disabled={!!actionLoading}
-                          className="text-xs px-2.5 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 font-medium transition-colors"
-                        >
-                          🩸 দান ({u.totalDonations})
-                        </button>
-                        <button
                           onClick={() => setConfirmDelete(u)}
                           disabled={!!actionLoading}
                           className="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-[#D92B2B] hover:bg-red-100 font-medium transition-colors"
@@ -445,49 +408,6 @@ export default function AdminUsersPage() {
                   </span>
                 ) : 'যোগ করুন ✓'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Donations modal */}
-      {donationsModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between shrink-0">
-              <div>
-                <h3 className="font-bold text-[#111111]">{donationsModal.name}-এর দানের ইতিহাস</h3>
-                <p className="text-xs text-[#555555] mt-0.5">মোট {donationsModal.totalDonations} বার</p>
-              </div>
-              <button onClick={() => setDonationsModal(null)} className="text-[#555555] hover:text-[#111111] text-xl">✕</button>
-            </div>
-            <div className="overflow-y-auto flex-1 p-4">
-              {donationsLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}
-                </div>
-              ) : donationsList.length === 0 ? (
-                <div className="text-center py-10 text-[#555555] text-sm">কোনো দানের রেকর্ড নেই</div>
-              ) : (
-                <div className="space-y-2">
-                  {donationsList.map(d => (
-                    <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl border border-[#EEEEEE] bg-[#FAFAFA]">
-                      <span className="bg-red-100 text-[#D92B2B] text-xs font-bold px-2 py-0.5 rounded-full shrink-0">{d.bloodGroup}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#111111] truncate">{d.recipientName}</p>
-                        <p className="text-xs text-[#555555] truncate">{d.hospital} · {formatBanglaDate(d.donatedAt.toDate())}</p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteDonation(d.id)}
-                        disabled={actionLoading === 'donation_' + d.id}
-                        className="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-[#D92B2B] hover:bg-red-100 font-medium transition-colors shrink-0"
-                      >
-                        {actionLoading === 'donation_' + d.id ? '...' : 'মুছুন'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
