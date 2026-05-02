@@ -15,7 +15,7 @@ export async function DELETE(req: NextRequest) {
     if (!orgSnap.exists) return NextResponse.json({ error: 'not-found' }, { status: 404 })
 
     const { memberIds = [], adminIds = [] } = orgSnap.data()!
-    const allUids = [...new Set([...memberIds, ...adminIds])]
+    const allUids = Array.from(new Set([...memberIds, ...adminIds]))
 
     const batch = db.batch()
     batch.delete(db.collection('organizations').doc(orgId))
