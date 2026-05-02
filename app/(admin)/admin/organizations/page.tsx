@@ -75,7 +75,12 @@ export default function AdminOrgsPage() {
   const handleDelete = async () => {
     if (!confirmDelete) return
     try {
-      await deleteOrganization(confirmDelete.id)
+      const res = await fetch('/api/admin/delete-org', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId: confirmDelete.id }),
+      })
+      if (!res.ok) throw new Error('failed')
       setConfirmDelete(null)
       await load()
       showToast('সংগঠন মুছে ফেলা হয়েছে', 'success')
