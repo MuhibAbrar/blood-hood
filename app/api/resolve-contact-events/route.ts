@@ -28,7 +28,12 @@ export async function POST(req: NextRequest) {
 
       const eventData  = eventSnap.data()
       const seekerName = seekerSnap.data()?.name ?? 'অজানা'
-      const orgId: string | null = donorSnap.data()?.organizations?.[0] ?? null
+      let orgId: string | null = donorSnap.data()?.organizations?.[0] ?? null
+      if (!orgId) {
+        const adminOrgSnap = await db.collection('organizations')
+          .where('adminIds', 'array-contains', donorId).limit(1).get()
+        if (!adminOrgSnap.empty) orgId = adminOrgSnap.docs[0].id
+      }
 
       // Update donor's stats
       batch.update(db.collection('users').doc(donorId as string), {

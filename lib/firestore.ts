@@ -351,7 +351,11 @@ export const recordSelfDonation = async (
   donatedAt: Timestamp
 ) => {
   const donorSnap = await getDoc(doc(db, 'users', donorId))
-  const orgId = (donorSnap.data() as User)?.organizations?.[0] ?? null
+  let orgId: string | null = (donorSnap.data() as User)?.organizations?.[0] ?? null
+  if (!orgId) {
+    const adminOrg = await getOrgByAdmin(donorId)
+    if (adminOrg) orgId = adminOrg.id
+  }
 
   await createDonation({
     donorId,
