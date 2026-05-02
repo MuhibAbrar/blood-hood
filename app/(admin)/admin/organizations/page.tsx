@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getOrganizations, createOrganization, updateOrganization, deleteOrganization, getAllUsers } from '@/lib/firestore'
+import { getOrganizations, createOrganization, updateOrganization, getAllUsers } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { KHULNA_UPAZILAS } from '@/lib/constants'
