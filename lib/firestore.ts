@@ -336,6 +336,11 @@ export const createDonation = async (data: Omit<Donation, 'id'>): Promise<string
   await updateDoc(doc(db, 'users', data.donorId), {
     totalDonations: increment(1),
   })
+  if (data.orgId) {
+    await updateDoc(doc(db, 'organizations', data.orgId), {
+      totalDonations: increment(1),
+    })
+  }
   return ref.id
 }
 
@@ -345,6 +350,9 @@ export const recordSelfDonation = async (
   bloodGroup: BloodGroup,
   donatedAt: Timestamp
 ) => {
+  const donorSnap = await getDoc(doc(db, 'users', donorId))
+  const orgId = (donorSnap.data() as User)?.organizations?.[0] ?? null
+
   await createDonation({
     donorId,
     donorName,
@@ -355,7 +363,7 @@ export const recordSelfDonation = async (
     donatedAt,
     verifiedBy: null,
     campId: null,
-    orgId: null,
+    orgId,
     externalDonorPhone: null,
   })
 }

@@ -94,6 +94,15 @@ export async function POST(req: NextRequest) {
       }
 
       await userRef.update(updates)
+
+      // Update org donation count if user belongs to one
+      const orgId: string | null = userDoc.data()?.organizations?.[0] ?? null
+      if (orgId && mergedCount > 0) {
+        await db.collection('organizations').doc(orgId).update({
+          totalDonations: FieldValue.increment(mergedCount),
+        }).catch(() => {})
+      }
+
       merged = true
     }
 

@@ -20,6 +20,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (donatedEventId && donorId) {
+      const [eventSnap, seekerSnap, donorSnap] = await Promise.all([
+        db.collection('contactEvents').doc(donatedEventId).get(),
+        db.collection('users').doc(seekerId).get(),
+        db.collection('users').doc(donorId as string).get(),
+      ])
+
+      const eventData  = eventSnap.data()
+      const seekerName = seekerSnap.data()?.name ?? 'অজানা'
+      const orgId: string | null = donorSnap.data()?.organizations?.[0] ?? null
+
       // Update donor's stats
       batch.update(db.collection('users').doc(donorId as string), {
         totalDonations: FieldValue.increment(1),
@@ -27,13 +37,14 @@ export async function POST(req: NextRequest) {
         isAvailable:    false,
       })
 
+      // Update org's donation count
+      if (orgId) {
+        batch.update(db.collection('organizations').doc(orgId), {
+          totalDonations: FieldValue.increment(1),
+        })
+      }
+
       // Create a donations document so monthly stats pick it up
-      const eventSnap = await db.collection('contactEvents').doc(donatedEventId).get()
-      const eventData = eventSnap.data()
-
-      const seekerSnap = await db.collection('users').doc(seekerId).get()
-      const seekerName = seekerSnap.data()?.name ?? 'অজানা'
-
       const donationRef = db.collection('donations').doc()
       batch.set(donationRef, {
         donorId,
@@ -45,7 +56,7 @@ export async function POST(req: NextRequest) {
         donatedAt:          FieldValue.serverTimestamp(),
         verifiedBy:         null,
         campId:             null,
-        orgId:              null,
+        orgId,
         externalDonorPhone: null,
       })
     }
