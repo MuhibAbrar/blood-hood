@@ -6,6 +6,8 @@ import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
 import type { BloodRequest, RequestStatus, User } from '@/types'
 
+type FulfillSelection = string | 'external' | 'none' | null
+
 const tabs: { value: RequestStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'সব' },
   { value: 'open', label: 'চলমান' },
@@ -22,6 +24,12 @@ export default function AdminRequestsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [notifyRequest, setNotifyRequest] = useState<BloodRequest | null>(null)
   const [notifyLoading, setNotifyLoading] = useState<string | null>(null)
+  const [fulfillModal, setFulfillModal] = useState<BloodRequest | null>(null)
+  const [fulfillResponders, setFulfillResponders] = useState<User[]>([])
+  const [fulfillSelected, setFulfillSelected] = useState<FulfillSelection>(null)
+  const [fulfillLoading, setFulfillLoading] = useState(false)
+  const [externalName, setExternalName] = useState('')
+  const [externalPhone, setExternalPhone] = useState('')
 
   const load = async () => {
     const r = await getBloodRequests()
@@ -41,16 +49,41 @@ export default function AdminRequestsPage() {
 
   const filtered = tab === 'all' ? requests : requests.filter(r => r.status === tab)
 
-  const handleFulfill = async (r: BloodRequest) => {
-    setActionLoading(r.id)
+  const openFulfillModal = async (r: BloodRequest) => {
+    setFulfillModal(r)
+    setFulfillSelected(null)
+    setExternalName('')
+    setExternalPhone('')
+    if (r.respondedBy?.length) {
+      const responders = await getUsersByUids(r.respondedBy)
+      setFulfillResponders(responders)
+    } else {
+      setFulfillResponders([])
+    }
+  }
+
+  const handleFulfillSubmit = async () => {
+    if (!fulfillModal || !fulfillSelected) return
+    if (fulfillSelected === 'external' && !externalName.trim()) {
+      showToast('দাতার নাম দিন', 'error'); return
+    }
+    setFulfillLoading(true)
     try {
-      await fulfillRequest(r.id, r.requestedBy)
+      const isExternal = fulfillSelected === 'external'
+      const isNone = fulfillSelected === 'none'
+      await fulfillRequest(
+        fulfillModal.id,
+        isExternal || isNone ? null : fulfillSelected,
+        { bloodGroup: fulfillModal.bloodGroup, hospital: fulfillModal.hospital },
+        isExternal ? { name: externalName.trim(), phone: externalPhone.trim() } : undefined
+      )
+      setFulfillModal(null)
       await load()
-      showToast('Request পূর্ণ হিসেবে চিহ্নিত করা হয়েছে', 'success')
+      showToast('Request পূর্ণ হিসেবে চিহ্নিত করা হয়েছে ✓', 'success')
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
-      setActionLoading(null)
+      setFulfillLoading(false)
     }
   }
 
@@ -237,11 +270,11 @@ export default function AdminRequestsPage() {
                         {r.status === 'open' && (
                           <>
                             <button
-                              onClick={() => handleFulfill(r)}
+                              onClick={() => openFulfillModal(r)}
                               disabled={!!actionLoading}
                               className="text-xs px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 font-medium transition-colors whitespace-nowrap"
                             >
-                              {actionLoading === r.id ? '...' : '✓ পূর্ণ'}
+                              ✓ পূর্ণ
                             </button>
                             <button
                               onClick={() => handleCancel(r)}
@@ -270,6 +303,83 @@ export default function AdminRequestsPage() {
           </div>
         )}
       </div>
+      {/* Fulfill Modal */}
+      {fulfillModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#D92B2B] px-5 py-4">
+              <p className="text-white font-bold text-lg">কে রক্ত দিয়েছেন?</p>
+              <p className="text-white/80 text-xs mt-0.5">{fulfillModal.patientName} · {fulfillModal.bloodGroup}</p>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+
+              {/* Responders */}
+              {fulfillResponders.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-[#555555] uppercase tracking-wide">যারা সাড়া দিয়েছেন</p>
+                  {fulfillResponders.map(u => (
+                    <label key={u.uid} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                      fulfillSelected === u.uid ? 'border-[#D92B2B] bg-red-50' : 'border-[#EEEEEE] bg-[#FAFAFA] hover:border-[#FFAAAA]'
+                    }`}>
+                      <input type="radio" name="fulfill-select" value={u.uid}
+                        checked={fulfillSelected === u.uid} onChange={() => setFulfillSelected(u.uid)}
+                        className="accent-[#D92B2B] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#111111] truncate">{u.name}</p>
+                        <p className="text-xs text-[#555555]">{u.bloodGroup} · {u.upazila}</p>
+                      </div>
+                      {fulfillSelected === u.uid && <span className="text-[#D92B2B]">✓</span>}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* External donor */}
+              <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                fulfillSelected === 'external' ? 'border-[#D92B2B] bg-red-50' : 'border-[#EEEEEE] bg-[#FAFAFA] hover:border-[#FFAAAA]'
+              }`}>
+                <input type="radio" name="fulfill-select" value="external"
+                  checked={fulfillSelected === 'external'} onChange={() => setFulfillSelected('external')}
+                  className="accent-[#D92B2B] shrink-0" />
+                <p className="text-sm text-[#111111] font-medium">অ্যাপের বাইরের কেউ দিয়েছেন</p>
+              </label>
+
+              {fulfillSelected === 'external' && (
+                <div className="space-y-2 pl-2">
+                  <input value={externalName} onChange={e => setExternalName(e.target.value)}
+                    placeholder="দাতার নাম *" className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]" />
+                  <input value={externalPhone} onChange={e => setExternalPhone(e.target.value)}
+                    placeholder="ফোন নম্বর (ঐচ্ছিক)" inputMode="tel"
+                    className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]" />
+                </div>
+              )}
+
+              {/* No donor */}
+              <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                fulfillSelected === 'none' ? 'border-[#555555] bg-gray-50' : 'border-[#EEEEEE] bg-[#FAFAFA] hover:border-[#CCCCCC]'
+              }`}>
+                <input type="radio" name="fulfill-select" value="none"
+                  checked={fulfillSelected === 'none'} onChange={() => setFulfillSelected('none')}
+                  className="accent-[#555555] shrink-0" />
+                <p className="text-sm text-[#555555]">জানি না / দাতার তথ্য নেই</p>
+              </label>
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setFulfillModal(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E5E5] text-[#555555] text-sm font-medium hover:bg-gray-50">
+                  বাতিল
+                </button>
+                <button onClick={handleFulfillSubmit}
+                  disabled={!fulfillSelected || fulfillLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold hover:bg-[#b82424] transition-colors disabled:opacity-40">
+                  {fulfillLoading ? 'সংরক্ষণ হচ্ছে...' : 'নিশ্চিত করুন'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notify Modal */}
       {notifyRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
