@@ -1,8 +1,12 @@
 import { ImageResponse } from 'next/og'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export async function GET() {
+  const fontData = readFileSync(join(process.cwd(), 'public', 'fonts', 'NotoSansBengali-Bold.ttf'))
+
   return new ImageResponse(
     (
       <div
@@ -14,7 +18,7 @@ export async function GET() {
           alignItems: 'center',
           justifyContent: 'center',
           background: 'linear-gradient(135deg, #D92B2B 0%, #8B1010 100%)',
-          fontFamily: 'sans-serif',
+          fontFamily: 'NotoSansBengali',
           position: 'relative',
         }}
       >
@@ -26,18 +30,18 @@ export async function GET() {
         <div style={{ fontSize: '100px', marginBottom: '24px', display: 'flex' }}>🩸</div>
 
         {/* Title */}
-        <div style={{ fontSize: '72px', fontWeight: 'bold', color: 'white', letterSpacing: '-2px', display: 'flex' }}>
+        <div style={{ fontSize: '72px', fontWeight: 'bold', color: 'white', letterSpacing: '-2px', display: 'flex', fontFamily: 'sans-serif' }}>
           Blood Hood
         </div>
 
         {/* Tagline */}
-        <div style={{ fontSize: '32px', color: 'rgba(255,255,255,0.85)', marginTop: '16px', display: 'flex' }}>
+        <div style={{ fontSize: '32px', color: 'rgba(255,255,255,0.85)', marginTop: '16px', display: 'flex', fontFamily: 'NotoSansBengali' }}>
           খুলনার কমিউনিটি রক্তদান প্ল্যাটফর্ম
         </div>
 
         {/* Features row */}
         <div style={{ display: 'flex', gap: '32px', marginTop: '48px' }}>
-          {['🔍 রক্তদাতা খুঁজুন', '🆘 রক্তের অনুরোধ', '🏕️ ক্যাম্পে অংশ নিন'].map((f) => (
+          {['রক্তদাতা খুঁজুন', 'রক্তের অনুরোধ', 'ক্যাম্পে অংশ নিন'].map((f) => (
             <div key={f} style={{
               background: 'rgba(255,255,255,0.15)',
               borderRadius: '16px',
@@ -45,6 +49,7 @@ export async function GET() {
               color: 'white',
               fontSize: '22px',
               display: 'flex',
+              fontFamily: 'NotoSansBengali',
             }}>
               {f}
             </div>
@@ -52,7 +57,7 @@ export async function GET() {
         </div>
 
         {/* URL */}
-        <div style={{ position: 'absolute', bottom: '32px', color: 'rgba(255,255,255,0.5)', fontSize: '20px', display: 'flex' }}>
+        <div style={{ position: 'absolute', bottom: '32px', color: 'rgba(255,255,255,0.5)', fontSize: '20px', display: 'flex', fontFamily: 'sans-serif' }}>
           bloodhood.pro.bd
         </div>
       </div>
@@ -60,6 +65,14 @@ export async function GET() {
     {
       width: 1200,
       height: 630,
+      fonts: [
+        {
+          name: 'NotoSansBengali',
+          data: fontData,
+          weight: 700,
+          style: 'normal',
+        },
+      ],
     }
   )
 }
