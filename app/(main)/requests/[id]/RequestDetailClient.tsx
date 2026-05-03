@@ -56,6 +56,13 @@ export default function RequestDetailClient() {
     })
   }, [id])
 
+  // Load responders for owner automatically
+  useEffect(() => {
+    if (!request || !user || user.uid !== request.requestedBy) return
+    if (request.respondedBy.length === 0) return
+    getUsersByUids(request.respondedBy).then(setResponders)
+  }, [request, user])
+
   // Close share menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -360,6 +367,42 @@ export default function RequestDetailClient() {
             >
               {actionLoading ? 'হচ্ছে...' : 'বাতিল করুন'}
             </button>
+          </div>
+        )}
+
+        {/* Responders list — owner only */}
+        {isOwner && request.respondedBy.length > 0 && (
+          <div className="card p-4 space-y-3">
+            <p className="font-semibold text-[#111111]">
+              🙋 সাড়া দিয়েছেন ({request.respondedBy.length} জন)
+            </p>
+            {responders.length === 0 ? (
+              <div className="space-y-2">
+                {request.respondedBy.map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {responders.map(r => (
+                  <div key={r.uid} className="flex items-center gap-3 p-3 rounded-xl bg-[#FAFAFA] border border-[#EEEEEE]">
+                    <DefaultAvatar gender={r.gender} size={36} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[#111111] truncate">{r.name}</p>
+                      <p className="text-xs text-[#555555]">
+                        <span className="font-bold text-[#D92B2B]">{r.bloodGroup}</span> · {r.upazila}
+                      </p>
+                    </div>
+                    <a
+                      href={`tel:${r.phone}`}
+                      className="shrink-0 flex items-center gap-1.5 bg-[#D92B2B] text-white text-xs font-semibold px-3 py-2 rounded-xl"
+                    >
+                      📞 কল
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
