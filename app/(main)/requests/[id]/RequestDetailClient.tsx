@@ -47,12 +47,12 @@ export default function RequestDetailClient() {
     if (!id) return
     getBloodRequest(id).then(async (r) => {
       setRequest(r)
+      setLoading(false)
       if (r) {
         const compatible = getCompatibleDonors(r.bloodGroup)
         const { donors } = await getDonors({ isAvailable: true })
         setCompatibleDonors(donors.filter((d) => compatible.includes(d.bloodGroup)).slice(0, 10))
       }
-      setLoading(false)
     })
   }, [id])
 
