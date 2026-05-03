@@ -128,7 +128,10 @@ export default function DonationFollowUpModal() {
                 onChange={() => setSelected('none')}
                 className="accent-[#555555] shrink-0"
               />
-              <p className="text-sm text-[#555555]">পাইনি / অন্যভাবে পেয়েছি</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[#111111]">পাইনি / অন্যভাবে পেয়েছি</p>
+                <p className="text-xs text-[#555555]">রক্ত পাইনি বা অন্য কারো কাছ থেকে পেয়েছি</p>
+              </div>
             </label>
           </div>
 
