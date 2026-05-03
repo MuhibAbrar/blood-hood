@@ -22,7 +22,7 @@ export default function DonorsPage() {
   const [availableOnly, setAvailableOnly] = useState(false)
 
   useEffect(() => {
-    Promise.all([getDonors(), getOrganizations()]).then(([d, orgs]) => {
+    Promise.all([getDonors(), getOrganizations()]).then(([{ donors: d }, orgs]) => {
       setDonors(d)
       // Build orgId → orgName map and adminUid → orgId map (for admins who may not have organizations[] set)
       const map: Record<string, string> = {}

@@ -49,7 +49,7 @@ export default function RequestDetailClient() {
       setRequest(r)
       if (r) {
         const compatible = getCompatibleDonors(r.bloodGroup)
-        const donors = await getDonors({ isAvailable: true })
+        const { donors } = await getDonors({ isAvailable: true })
         setCompatibleDonors(donors.filter((d) => compatible.includes(d.bloodGroup)).slice(0, 10))
       }
       setLoading(false)

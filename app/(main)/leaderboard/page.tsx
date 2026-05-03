@@ -14,7 +14,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     Promise.all([
-      getDonors().then(d => d.sort((a, b) => b.totalDonations - a.totalDonations)),
+      getDonors({ pageSize: 500 }).then(({ donors: d }) => d.sort((a, b) => b.totalDonations - a.totalDonations)),
       getOrganizationsLeaderboard(),
     ]).then(([d, o]) => {
       setDonors(d)

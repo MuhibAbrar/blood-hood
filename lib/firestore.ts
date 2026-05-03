@@ -19,6 +19,8 @@ import {
   writeBatch,
   DocumentSnapshot,
   QuerySnapshot,
+  getCountFromServer,
+  startAfter,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent } from '@/types'
@@ -48,13 +50,23 @@ export const getDonors = async (filters?: {
   bloodGroup?: BloodGroup
   area?: string
   isAvailable?: boolean
-}): Promise<User[]> => {
-  let q = query(collection(db, 'users'), where('role', 'in', ['donor', 'admin', 'superadmin']))
+  pageSize?: number
+  lastDoc?: DocumentSnapshot
+}): Promise<{ donors: User[]; lastDoc: DocumentSnapshot | null; hasMore: boolean }> => {
+  const size = filters?.pageSize ?? 100
+  let q = query(collection(db, 'users'), where('role', 'in', ['donor', 'admin', 'superadmin']), limit(size + 1))
   if (filters?.bloodGroup) q = query(q, where('bloodGroup', '==', filters.bloodGroup))
   if (filters?.area) q = query(q, where('area', '==', filters.area))
   if (filters?.isAvailable !== undefined) q = query(q, where('isAvailable', '==', filters.isAvailable))
+  if (filters?.lastDoc) q = query(q, startAfter(filters.lastDoc))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data() as User)
+  const hasMore = snap.docs.length > size
+  const docs = hasMore ? snap.docs.slice(0, size) : snap.docs
+  return {
+    donors: docs.map((d) => d.data() as User),
+    lastDoc: docs[docs.length - 1] ?? null,
+    hasMore,
+  }
 }
 
 export const subscribeToUser = (uid: string, cb: (user: User | null) => void) => {
@@ -674,40 +686,24 @@ export const markAllNotificationsRead = async (uid: string) => {
 // --- Stats ---
 
 export const getPlatformStats = async () => {
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfMonth = Timestamp.fromDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
 
-  const [usersSnap, requestsSnap, allRequestsSnap] = await Promise.all([
-    getDocs(collection(db, 'users')),
-    getDocs(query(collection(db, 'bloodRequests'), where('status', '==', 'open'))),
-    getDocs(query(collection(db, 'bloodRequests'), where('status', '==', 'fulfilled'))),
+  const results = await Promise.allSettled([
+    getCountFromServer(collection(db, 'users')),
+    getCountFromServer(query(collection(db, 'users'), where('isAvailable', '==', true))),
+    getCountFromServer(query(collection(db, 'bloodRequests'), where('status', '==', 'open'))),
+    getCountFromServer(query(collection(db, 'donations'), where('donatedAt', '>=', startOfMonth))),
+    getCountFromServer(collection(db, 'donations')),
   ])
 
-  // donations may be restricted for guests — handle gracefully
-  let donationsDocs: QuerySnapshot | null = null
-  try { donationsDocs = await getDocs(collection(db, 'donations')) } catch { /* guest */ }
-
-  const users = usersSnap.docs.map((d) => d.data() as User)
-  const availableCount = users.filter((u) => u.isAvailable).length
-
-  const thisMonthFromDonations = donationsDocs?.docs.filter((d) => {
-    const data = d.data() as Donation
-    return data.donatedAt?.toDate() >= startOfMonth
-  }).length ?? 0
-
-  const thisMonthFromRequests = allRequestsSnap.docs.filter((d) => {
-    const data = d.data()
-    return data.fulfilledAt?.toDate() >= startOfMonth
-  }).length
-
-  const thisMonthDonations = Math.max(thisMonthFromDonations, thisMonthFromRequests)
+  const get = (i: number) => results[i].status === 'fulfilled' ? results[i].value.data().count : 0
 
   return {
-    totalMembers: usersSnap.size,
-    availableNow: availableCount,
-    thisMonthDonations,
-    pendingRequests: requestsSnap.size,
-    totalDonations: donationsDocs?.size ?? 0,
+    totalMembers:      get(0),
+    availableNow:      get(1),
+    pendingRequests:   get(2),
+    thisMonthDonations: get(3),
+    totalDonations:    get(4),
   }
 }
 
