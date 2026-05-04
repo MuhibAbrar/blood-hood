@@ -76,6 +76,7 @@ export interface Organization {
   totalDonations: number
   isVerified: boolean
   logo: string | null
+  phone?: string
   createdAt: Timestamp
 }
 

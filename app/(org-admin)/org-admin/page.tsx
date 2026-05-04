@@ -4,20 +4,25 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
-import { getCampsByOrg, getAnnouncements, getDonationsByOrg } from '@/lib/firestore'
+import { getCampsByOrg, getAnnouncements, getDonationsByOrg, updateOrganization } from '@/lib/firestore'
+import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
 import type { Camp, Announcement, Donation } from '@/types'
 
 export default function OrgAdminDashboard() {
   const { user } = useAuth()
   const { org: orgAdmin } = useOrgAdmin()
+  const { showToast } = useToast()
   const [camps, setCamps] = useState<Camp[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [donations, setDonations] = useState<Donation[]>([])
   const [loading, setLoading] = useState(true)
+  const [phone, setPhone] = useState('')
+  const [savingPhone, setSavingPhone] = useState(false)
 
   useEffect(() => {
     if (!orgAdmin) return
+    setPhone(orgAdmin.phone ?? '')
     Promise.all([getCampsByOrg(orgAdmin.id), getAnnouncements(orgAdmin.id), getDonationsByOrg(orgAdmin.id)])
       .then(([c, a, d]) => {
         setCamps(c)
@@ -27,6 +32,19 @@ export default function OrgAdminDashboard() {
       .catch(e => console.error('dashboard load error', e))
       .finally(() => setLoading(false))
   }, [orgAdmin])
+
+  const handleSavePhone = async () => {
+    if (!orgAdmin) return
+    setSavingPhone(true)
+    try {
+      await updateOrganization(orgAdmin.id, { phone: phone.trim() })
+      showToast('ফোন নম্বর সংরক্ষিত হয়েছে', 'success')
+    } catch {
+      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } finally {
+      setSavingPhone(false)
+    }
+  }
 
   const upcomingCamps = camps.filter(c => c.status === 'upcoming')
   const completedCamps = camps.filter(c => c.status === 'completed')
@@ -68,6 +86,29 @@ export default function OrgAdminDashboard() {
             <p className="text-xs text-[#555555] mt-0.5">{sub}</p>
           </Link>
         ))}
+      </div>
+
+      {/* Contact phone */}
+      <div className="bg-white rounded-2xl border border-[#E5E5E5] p-4 space-y-3">
+        <p className="font-semibold text-[#111111] text-sm">📞 যোগাযোগের নম্বর</p>
+        <p className="text-xs text-[#555555]">এই নম্বর সংগঠনের পেজে "কল করুন" বাটনে দেখাবে</p>
+        <div className="flex gap-2">
+          <input
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="01XXXXXXXXX"
+            className="input-field flex-1"
+            maxLength={11}
+          />
+          <button
+            onClick={handleSavePhone}
+            disabled={savingPhone}
+            className="px-4 py-2.5 bg-[#1A9E6B] text-white rounded-xl text-sm font-semibold disabled:opacity-50 shrink-0"
+          >
+            {savingPhone ? '...' : 'সেভ'}
+          </button>
+        </div>
       </div>
 
       {/* Quick actions */}

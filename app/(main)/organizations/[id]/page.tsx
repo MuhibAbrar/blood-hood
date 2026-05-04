@@ -109,6 +109,16 @@ export default function OrgDetailPage() {
               <p className="text-xs text-[#555555]">মোট দান</p>
             </div>
           </div>
+
+          {/* Call button */}
+          {org.phone && (
+            <a
+              href={`tel:${org.phone}`}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#1A9E6B] text-white font-semibold text-sm"
+            >
+              📞 কল করুন — {org.phone}
+            </a>
+          )}
         </div>
 
         {/* Join status */}
