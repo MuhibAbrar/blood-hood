@@ -91,7 +91,7 @@ export default function OrgAdminDashboard() {
       {/* Contact phone */}
       <div className="bg-white rounded-2xl border border-[#E5E5E5] p-4 space-y-3">
         <p className="font-semibold text-[#111111] text-sm">📞 যোগাযোগের নম্বর</p>
-        <p className="text-xs text-[#555555]">এই নম্বর সংগঠনের পেজে "কল করুন" বাটনে দেখাবে</p>
+        <p className="text-xs text-[#555555]">এই নম্বর সংগঠনের পেজে &quot;কল করুন&quot; বাটনে দেখাবে</p>
         <div className="flex gap-2">
           <input
             type="tel"
