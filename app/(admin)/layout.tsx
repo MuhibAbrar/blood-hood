@@ -9,9 +9,10 @@ import { logout } from '@/lib/auth'
 const navItems = [
   { href: '/admin', label: 'ড্যাশবোর্ড', icon: '📊', exact: true },
   { href: '/admin/users', label: 'ব্যবহারকারী', icon: '👥' },
+  { href: '/admin/donations', label: 'সাম্প্রতিক দান', icon: '🩸' },
   { href: '/admin/camps', label: 'ক্যাম্প', icon: '🏕️' },
   { href: '/admin/organizations', label: 'সংগঠন', icon: '🏫' },
-  { href: '/admin/requests', label: 'রক্তের অনুরোধ', icon: '🩸' },
+  { href: '/admin/requests', label: 'রক্তের অনুরোধ', icon: '❤️' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
