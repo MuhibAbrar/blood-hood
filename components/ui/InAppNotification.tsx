@@ -46,6 +46,7 @@ export default function InAppNotification() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
         oscillator.start(ctx.currentTime)
         oscillator.stop(ctx.currentTime + 0.4)
+        oscillator.onended = () => ctx.close()
       } catch {}
     }).then((unsub) => {
       if (typeof unsub === 'function') unsubscribe = unsub
