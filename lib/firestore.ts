@@ -167,7 +167,8 @@ export const fulfillRequest = async (
   requestId: string,
   donorUid: string | null,
   requestData?: { bloodGroup: BloodGroup; hospital: string },
-  externalDonor?: { name: string; phone: string }
+  externalDonor?: { name: string; phone: string },
+  externalOrgId?: string
 ) => {
   const now = Timestamp.now()
 
@@ -206,6 +207,13 @@ export const fulfillRequest = async (
     fulfilledByName = externalDonor.name
     fulfilledByPhone = externalDonor.phone || null
     externalDonorPhone = externalDonor.phone || null
+
+    if (externalOrgId) {
+      orgId = externalOrgId
+      await updateDoc(doc(db, 'organizations', externalOrgId), {
+        totalDonations: increment(1),
+      })
+    }
   }
 
   await updateDoc(doc(db, 'bloodRequests', requestId), {

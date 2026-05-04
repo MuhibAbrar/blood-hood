@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { getBloodRequest, getDonors, respondToRequest, fulfillRequest, cancelRequest, getUsersByUids, getUserByPhone } from '@/lib/firestore'
+import { getBloodRequest, getDonors, respondToRequest, fulfillRequest, cancelRequest, getUsersByUids, getUserByPhone, getOrganizations } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { getCompatibleDonors } from '@/lib/bloodCompatibility'
@@ -12,7 +12,7 @@ import DonorCard from '@/components/donor/DonorCard'
 import TopBar from '@/components/layout/TopBar'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
-import type { BloodRequest, User } from '@/types'
+import type { BloodRequest, User, Organization } from '@/types'
 
 export default function RequestDetailClient() {
   const { id } = useParams<{ id: string }>()
@@ -36,6 +36,8 @@ export default function RequestDetailClient() {
   const [phoneSearchResult, setPhoneSearchResult] = useState<User | null | 'not_found'>(null)
   const [searchingPhone, setSearchingPhone] = useState(false)
   const [fulfilling, setFulfilling] = useState(false)
+  const [orgs, setOrgs] = useState<Organization[]>([])
+  const [externalOrgId, setExternalOrgId] = useState('')
 
   const reload = async () => {
     if (!id) return
@@ -94,10 +96,15 @@ export default function RequestDetailClient() {
     setSelectedDonor(null)
     setExternalName('')
     setExternalPhone('')
+    setExternalOrgId('')
     setPhoneSearch('')
     setPhoneSearchResult(null)
-    const users = await getUsersByUids(request.respondedBy)
+    const [users, orgList] = await Promise.all([
+      getUsersByUids(request.respondedBy),
+      getOrganizations(),
+    ])
     setResponders(users)
+    setOrgs(orgList)
     setShowFulfillModal(true)
   }
 
@@ -132,7 +139,8 @@ export default function RequestDetailClient() {
       const externalDonor = selectedDonor === 'external'
         ? { name: externalName.trim(), phone: externalPhone.trim() }
         : undefined
-      await fulfillRequest(request.id, donorUid, { bloodGroup: request.bloodGroup, hospital: request.hospital }, externalDonor)
+      const extOrgId = selectedDonor === 'external' && externalOrgId ? externalOrgId : undefined
+      await fulfillRequest(request.id, donorUid, { bloodGroup: request.bloodGroup, hospital: request.hospital }, externalDonor, extOrgId)
       showToast('অনুরোধ পূর্ণ হয়েছে! ধন্যবাদ 🩸', 'success')
       setShowFulfillModal(false)
       await reload()
@@ -558,10 +566,20 @@ export default function RequestDetailClient() {
                       type="tel"
                       value={externalPhone}
                       onChange={e => setExternalPhone(e.target.value)}
-                      placeholder="মোবাইল নম্বর (ঐচ্ছিক — future merge এর জন্য)"
+                      placeholder="মোবাইল নম্বর (ঐচ্ছিক)"
                       className="input-field w-full"
                       maxLength={11}
                     />
+                    <select
+                      value={externalOrgId}
+                      onChange={e => setExternalOrgId(e.target.value)}
+                      className="input-field w-full"
+                    >
+                      <option value="">কোন সংগঠনের পক্ষ থেকে? (ঐচ্ছিক)</option>
+                      {orgs.map(o => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>
