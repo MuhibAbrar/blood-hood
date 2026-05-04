@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getPlatformStats, subscribeToRequests } from '@/lib/firestore'
+import { getPlatformStats, getBloodRequests } from '@/lib/firestore'
 import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { StatCardSkeleton, RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -23,10 +23,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     getPlatformStats().then((s) => { setStats(s); setLoadingStats(false) })
-    const unsub = subscribeToRequests((reqs) => {
-      setRequests(reqs.filter((r) => r.status === 'open').slice(0, 5))
-    })
-    return unsub
+    getBloodRequests('open').then((reqs) => setRequests(reqs.slice(0, 5)))
   }, [])
 
   return (
