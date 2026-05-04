@@ -28,19 +28,29 @@ export default function OrganizationsPage() {
           <EmptyState icon="🏫" title="কোনো সংগঠন নেই" />
         ) : (
           orgs.map((org) => (
-            <Link key={org.id} href={`/organizations/${org.id}`} className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-[#FDECEA] rounded-full flex items-center justify-center text-2xl">
-                {org.type === 'college' || org.type === 'university' ? '🏫' : org.type === 'ngo' ? '🤝' : '🏥'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-[#111111] truncate">{org.name}</p>
-                  {org.isVerified && <span className="text-blue-600 text-xs">✓</span>}
+            <div key={org.id} className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+              <Link href={`/organizations/${org.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-12 h-12 bg-[#FDECEA] rounded-full flex items-center justify-center text-2xl shrink-0">
+                  {org.type === 'college' || org.type === 'university' ? '🏫' : org.type === 'ngo' ? '🤝' : '🏥'}
                 </div>
-                <p className="text-sm text-[#555555]">{typeLabel(org.type)} · {org.area}</p>
-                <p className="text-xs text-[#555555]/70">{new Set([...org.memberIds, ...org.adminIds]).size} সদস্য · {org.totalDonations} দান</p>
-              </div>
-            </Link>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-[#111111] truncate">{org.name}</p>
+                    {org.isVerified && <span className="text-blue-600 text-xs">✓</span>}
+                  </div>
+                  <p className="text-sm text-[#555555]">{typeLabel(org.type)} · {org.area}</p>
+                  <p className="text-xs text-[#555555]/70">{new Set([...org.memberIds, ...org.adminIds]).size} সদস্য · {org.totalDonations} দান</p>
+                </div>
+              </Link>
+              {org.phone && (
+                <a
+                  href={`tel:${org.phone}`}
+                  className="shrink-0 flex items-center gap-1 bg-[#1A9E6B] text-white text-xs font-semibold px-3 py-2 rounded-xl"
+                >
+                  📞 কল
+                </a>
+              )}
+            </div>
           ))
         )}
       </div>
