@@ -16,15 +16,19 @@ export default function DonorsPage() {
   const [adminToOrgMap, setAdminToOrgMap] = useState<Record<string, string>>({})
   const [filtered, setFiltered] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [lastDoc, setLastDoc] = useState<import('firebase/firestore').DocumentSnapshot | null>(null)
   const [search, setSearch] = useState('')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
   const [upazilaFilter, setUpazilaFilter] = useState('')
   const [availableOnly, setAvailableOnly] = useState(false)
 
   useEffect(() => {
-    Promise.all([getDonors(), getOrganizations()]).then(([{ donors: d }, orgs]) => {
+    Promise.all([getDonors(), getOrganizations()]).then(([{ donors: d, hasMore: more, lastDoc: last }, orgs]) => {
       setDonors(d)
-      // Build orgId → orgName map and adminUid → orgId map (for admins who may not have organizations[] set)
+      setHasMore(more)
+      setLastDoc(last)
       const map: Record<string, string> = {}
       const adminMap: Record<string, string> = {}
       orgs.forEach(o => {
@@ -36,6 +40,17 @@ export default function DonorsPage() {
       setLoading(false)
     })
   }, [])
+
+  const loadMore = () => {
+    if (!hasMore || loadingMore || !lastDoc) return
+    setLoadingMore(true)
+    getDonors({ lastDoc }).then(({ donors: more, hasMore: moreLeft, lastDoc: newLast }) => {
+      setDonors(prev => [...prev, ...more])
+      setHasMore(moreLeft)
+      setLastDoc(newLast)
+      setLoadingMore(false)
+    })
+  }
 
   useEffect(() => {
     let result = [...donors]
@@ -107,11 +122,22 @@ export default function DonorsPage() {
         ) : filtered.length === 0 ? (
           <EmptyState icon="😔" title="কোনো ডোনার পাওয়া যায়নি" description="ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন" />
         ) : (
-          <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
-            {filtered.map((d) => (
-              <DonorCard key={d.uid} donor={d} orgName={getOrgName(d)} />
-            ))}
-          </div>
+          <>
+            <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
+              {filtered.map((d) => (
+                <DonorCard key={d.uid} donor={d} orgName={getOrgName(d)} />
+              ))}
+            </div>
+            {hasMore && (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full py-3 rounded-xl border-2 border-[#E5E5E5] text-sm font-semibold text-[#555555] hover:bg-gray-50 transition-colors disabled:opacity-40"
+              >
+                {loadingMore ? 'লোড হচ্ছে...' : 'আরো ডোনার দেখুন'}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
