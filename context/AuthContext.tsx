@@ -36,25 +36,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
+    let currentUid: string | null = null
+
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser)
+
       if (fbUser) {
+        // token refresh fires onAuthStateChanged again with same uid — skip reload
+        if (fbUser.uid === currentUid) return
+        currentUid = fbUser.uid
+
         const [u, orgs] = await Promise.all([
           getUser(fbUser.uid),
           getOrgsByAdmin(fbUser.uid),
         ])
         setUser(u)
         setOrgAdmins(orgs)
-        // request FCM token and update
-        const token = await requestNotificationPermission()
-        if (token && u && u.fcmToken !== token) {
-          await updateUser(fbUser.uid, { fcmToken: token })
-        }
+        setLoading(false)
+
+        // FCM token update in background — don't block
+        requestNotificationPermission().then((token) => {
+          if (token && u && u.fcmToken !== token) {
+            updateUser(fbUser.uid, { fcmToken: token })
+          }
+        })
       } else {
+        currentUid = null
         setUser(null)
         setOrgAdmins([])
+        setLoading(false)
       }
-      setLoading(false)
     })
     return unsub
   }, [])
