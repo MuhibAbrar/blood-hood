@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { onForegroundMessage } from '@/lib/notifications'
 
+let audioCtx: AudioContext | null = null
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === 'undefined') return null
+  if (!audioCtx || audioCtx.state === 'closed') {
+    try { audioCtx = new AudioContext() } catch { return null }
+  }
+  return audioCtx
+}
+
 interface NotifPayload {
   title: string
   body: string
@@ -35,18 +44,19 @@ export default function InAppNotification() {
 
       // Sound play করি
       try {
-        const ctx = new AudioContext()
-        const oscillator = ctx.createOscillator()
-        const gain = ctx.createGain()
-        oscillator.connect(gain)
-        gain.connect(ctx.destination)
-        oscillator.frequency.setValueAtTime(880, ctx.currentTime)
-        oscillator.frequency.setValueAtTime(660, ctx.currentTime + 0.1)
-        gain.gain.setValueAtTime(0.3, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
-        oscillator.start(ctx.currentTime)
-        oscillator.stop(ctx.currentTime + 0.4)
-        oscillator.onended = () => ctx.close()
+        const ctx = getAudioCtx()
+        if (ctx) {
+          const oscillator = ctx.createOscillator()
+          const gain = ctx.createGain()
+          oscillator.connect(gain)
+          gain.connect(ctx.destination)
+          oscillator.frequency.setValueAtTime(880, ctx.currentTime)
+          oscillator.frequency.setValueAtTime(660, ctx.currentTime + 0.1)
+          gain.gain.setValueAtTime(0.3, ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+          oscillator.start(ctx.currentTime)
+          oscillator.stop(ctx.currentTime + 0.4)
+        }
       } catch {}
     }).then((unsub) => {
       if (typeof unsub === 'function') unsubscribe = unsub

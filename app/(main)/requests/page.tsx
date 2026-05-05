@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { subscribeToRequests } from '@/lib/firestore'
+import { getBloodRequests } from '@/lib/firestore'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -17,11 +17,10 @@ export default function RequestsPage() {
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
 
   useEffect(() => {
-    const unsub = subscribeToRequests((reqs) => {
+    getBloodRequests().then((reqs) => {
       setRequests(reqs)
       setLoading(false)
     })
-    return unsub
   }, [])
 
   const filtered = requests.filter((r) => {

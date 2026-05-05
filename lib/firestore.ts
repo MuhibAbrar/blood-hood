@@ -110,8 +110,7 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
 }
 
 export const getBloodRequests = async (status?: BloodRequest['status']): Promise<BloodRequest[]> => {
-  // Fetch all sorted by createdAt, then filter client-side to avoid composite index
-  const q = query(collection(db, 'bloodRequests'), orderBy('createdAt', 'desc'))
+  const q = query(collection(db, 'bloodRequests'), orderBy('createdAt', 'desc'), limit(100))
   const snap = await getDocs(q)
   const all = snap.docs.map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
   return status ? all.filter(r => r.status === status) : all
