@@ -25,7 +25,7 @@ export default function DonorsPage() {
   const [availableOnly, setAvailableOnly] = useState(false)
 
   useEffect(() => {
-    Promise.all([getDonors(), getOrganizations()]).then(([{ donors: d, hasMore: more, lastDoc: last }, orgs]) => {
+    Promise.all([getDonors({ pageSize: 500 }), getOrganizations()]).then(([{ donors: d, hasMore: more, lastDoc: last }, orgs]) => {
       setDonors(d)
       setHasMore(more)
       setLastDoc(last)
