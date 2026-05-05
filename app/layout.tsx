@@ -62,8 +62,12 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Blood Hood',
+    startupImage: '/icons/icon-512x512.png',
+  },
+  icons: {
+    apple: '/icons/icon-192x192.png',
   },
   verification: {
     google: 'vDJcWtA92IfK_QgooKa0PVpXjbEYxlfcCtJxMapaRBA',
