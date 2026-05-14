@@ -47,7 +47,7 @@ export default function BottomNav() {
       </nav>
 
       {/* Desktop side nav */}
-      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-[#E5E5E5] flex-col gap-1 p-3 z-40 overflow-y-auto">
+      <nav className="hidden md:flex fixed left-0 top-0 bottom-0 w-56 bg-white border-r border-[#E5E5E5] flex-col gap-1 p-3 z-40 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active =
             href === '/requests/new'

@@ -32,61 +32,63 @@ function MobileSVG() {
     <svg
       className="md:hidden absolute inset-0 w-full h-full"
       viewBox="0 0 400 175"
-      preserveAspectRatio="none"
+      preserveAspectRatio="xMidYMax slice"
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <mask id="bh-crescent-m">
-          <rect x="0" y="0" width="400" height="175" fill="black" />
-          <circle cx="140" cy="72" r="13" fill="white" />
-          <circle cx="147" cy="72" r="11.5" fill="black" />
+        <linearGradient id="ecg-fade-m" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="400" y2="0">
+          <stop offset="0%"   stopColor="white" stopOpacity="0" />
+          <stop offset="35%"  stopColor="white" stopOpacity="1" />
+          <stop offset="100%" stopColor="white" stopOpacity="1" />
+        </linearGradient>
+        <mask id="ecg-mask-m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="175">
+          <rect x="0" y="0" width="400" height="175" fill="url(#ecg-fade-m)" />
         </mask>
       </defs>
 
       <circle cx="340" cy="38" r="60" fill="white" className="animate-bg-glow" />
 
-      {/* ECG */}
+      {/* ECG — fades out on left like a real monitor */}
       <path className="ecg-line" d={ECG_MOBILE}
         stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-        fill="none" opacity="0.10">
+        fill="none" opacity="0.15" mask="url(#ecg-mask-m)">
         <animateTransform attributeName="transform" type="translate"
           from="0 0" to="-160 0" dur="6s" repeatCount="indefinite" />
       </path>
 
       {/* Left buildings */}
-      <rect x="0"  y="133" width="38" height="42" fill="white" opacity="0.06" />
-      <rect x="8"  y="123" width="22" height="13" fill="white" opacity="0.06" />
-      <rect x="42" y="118" width="52" height="57" fill="white" opacity="0.07" />
-      <rect x="50" y="108" width="16" height="14" fill="white" opacity="0.07" />
+      <rect x="0"  y="130" width="32" height="45" fill="white" opacity="0.07" />
+      <rect x="6"  y="118" width="20" height="15" fill="white" opacity="0.07" />
+      <rect x="36" y="115" width="42" height="60" fill="white" opacity="0.08" />
+      <rect x="44" y="104" width="14" height="14" fill="white" opacity="0.08" />
+      <rect x="82" y="121" width="20" height="54" fill="white" opacity="0.07" />
 
       {/* Hospital */}
-      <rect x="106" y="105" width="72" height="70" fill="white" opacity="0.09" />
-      <rect x="124" y="93"  width="36" height="17" fill="white" opacity="0.09" />
-      <rect x="113" y="118" width="13" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="132" y="118" width="13" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="151" y="118" width="13" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="113" y="136" width="13" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="151" y="136" width="13" height="11" rx="1" fill="white" opacity="0.07" />
-
-      {/* Crescent moon — C-shape opening right */}
-      <circle cx="140" cy="72" r="13" fill="white" mask="url(#bh-crescent-m)" opacity="0.45" />
-      {/* Cross in the crescent opening (Red Crescent style) */}
-      <path d="M 150,63 L 150,81 M 144,72 L 157,72"
-        stroke="white" strokeWidth="3.5" strokeLinecap="butt" opacity="0.42" />
+      <rect x="108" y="102" width="72" height="73" fill="white" opacity="0.10" />
+      <rect x="126" y="90"  width="36" height="16" fill="white" opacity="0.10" />
+      <rect x="115" y="116" width="12" height="10" rx="1" fill="white" opacity="0.08" />
+      <rect x="133" y="116" width="12" height="10" rx="1" fill="white" opacity="0.08" />
+      <rect x="151" y="116" width="12" height="10" rx="1" fill="white" opacity="0.08" />
+      <rect x="115" y="133" width="12" height="10" rx="1" fill="white" opacity="0.08" />
+      <rect x="151" y="133" width="12" height="10" rx="1" fill="white" opacity="0.08" />
+      <text x="144" y="80" textAnchor="middle" fill="white" opacity="0.20"
+        fontSize="7" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1.5">HOSPITAL</text>
 
       {/* Right buildings */}
-      <rect x="190" y="120" width="44" height="55" fill="white" opacity="0.07" />
-      <rect x="240" y="124" width="36" height="51" fill="white" opacity="0.06" />
-      <rect x="248" y="113" width="18" height="16" fill="white" opacity="0.06" />
-      <rect x="283" y="122" width="52" height="53" fill="white" opacity="0.06" />
-      <rect x="342" y="126" width="58" height="49" fill="white" opacity="0.05" />
-      <rect x="350" y="116" width="24" height="15" fill="white" opacity="0.05" />
+      <rect x="186" y="118" width="36" height="57" fill="white" opacity="0.08" />
+      <rect x="192" y="107" width="16" height="14" fill="white" opacity="0.08" />
+      <rect x="227" y="123" width="30" height="52" fill="white" opacity="0.07" />
+      <rect x="262" y="116" width="44" height="59" fill="white" opacity="0.07" />
+      <rect x="270" y="105" width="16" height="14" fill="white" opacity="0.07" />
+      <rect x="311" y="121" width="36" height="54" fill="white" opacity="0.07" />
+      <rect x="352" y="124" width="48" height="51" fill="white" opacity="0.06" />
+      <rect x="360" y="113" width="20" height="14" fill="white" opacity="0.06" />
 
       {/* Particles */}
-      <circle cx="78"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
-      <circle cx="195" cy="105" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1s' }} />
-      <circle cx="298" cy="98"  r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2s' }} />
-      <circle cx="355" cy="103" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '0.5s' }} />
+      <circle cx="70"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
+      <circle cx="200" cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1s' }} />
+      <circle cx="300" cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2s' }} />
+      <circle cx="370" cy="106" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '0.5s' }} />
     </svg>
   )
 }
@@ -97,81 +99,89 @@ function DesktopSVG() {
     <svg
       className="hidden md:block absolute inset-0 w-full h-full"
       viewBox="0 0 1440 175"
-      preserveAspectRatio="none"
+      preserveAspectRatio="xMidYMax slice"
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <mask id="bh-crescent-d">
-          <rect x="0" y="0" width="1440" height="175" fill="black" />
-          <circle cx="698" cy="72" r="13" fill="white" />
-          <circle cx="705" cy="72" r="11.5" fill="black" />
+        <linearGradient id="ecg-fade-d" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
+          <stop offset="0%"   stopColor="white" stopOpacity="0" />
+          <stop offset="25%"  stopColor="white" stopOpacity="1" />
+          <stop offset="100%" stopColor="white" stopOpacity="1" />
+        </linearGradient>
+        <mask id="ecg-mask-d" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="175">
+          <rect x="0" y="0" width="1440" height="175" fill="url(#ecg-fade-d)" />
         </mask>
       </defs>
 
-      <circle cx="1300" cy="38" r="70" fill="white" className="animate-bg-glow" />
+      <circle cx="1300" cy="38" r="80" fill="white" className="animate-bg-glow" />
 
-      {/* ECG */}
+      {/* ECG — fades out on left like a real monitor */}
       <path className="ecg-line" d={ECG_DESKTOP}
         stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-        fill="none" opacity="0.10">
+        fill="none" opacity="0.15" mask="url(#ecg-mask-d)">
         <animateTransform attributeName="transform" type="translate"
           from="0 0" to="-160 0" dur="6s" repeatCount="indefinite" />
       </path>
 
-      {/* Left buildings */}
-      <rect x="0"   y="133" width="40" height="42" fill="white" opacity="0.06" />
-      <rect x="8"   y="123" width="24" height="13" fill="white" opacity="0.06" />
-      <rect x="45"  y="118" width="55" height="57" fill="white" opacity="0.07" />
-      <rect x="53"  y="108" width="18" height="14" fill="white" opacity="0.07" />
-      <rect x="105" y="124" width="50" height="51" fill="white" opacity="0.07" />
-      <rect x="112" y="114" width="20" height="14" fill="white" opacity="0.07" />
-      <rect x="162" y="120" width="50" height="55" fill="white" opacity="0.07" />
-      <rect x="219" y="128" width="45" height="47" fill="white" opacity="0.06" />
-      <rect x="271" y="118" width="55" height="57" fill="white" opacity="0.07" />
-      <rect x="279" y="108" width="20" height="14" fill="white" opacity="0.07" />
-      <rect x="333" y="124" width="48" height="51" fill="white" opacity="0.06" />
-      <rect x="388" y="130" width="42" height="45" fill="white" opacity="0.06" />
-      <rect x="437" y="120" width="50" height="55" fill="white" opacity="0.06" />
-      <rect x="495" y="126" width="48" height="49" fill="white" opacity="0.06" />
-      <rect x="550" y="118" width="50" height="57" fill="white" opacity="0.06" />
-      <rect x="607" y="124" width="45" height="51" fill="white" opacity="0.06" />
+      {/* Far-left buildings */}
+      <rect x="0"   y="128" width="32" height="47" fill="white" opacity="0.07" />
+      <rect x="6"   y="116" width="18" height="15" fill="white" opacity="0.07" />
+      <rect x="36"  y="112" width="48" height="63" fill="white" opacity="0.08" />
+      <rect x="44"  y="100" width="16" height="15" fill="white" opacity="0.08" />
+      <rect x="88"  y="120" width="36" height="55" fill="white" opacity="0.07" />
+      <rect x="94"  y="110" width="18" height="13" fill="white" opacity="0.07" />
+      <rect x="129" y="125" width="42" height="50" fill="white" opacity="0.07" />
+      <rect x="175" y="117" width="48" height="58" fill="white" opacity="0.07" />
+      <rect x="183" y="106" width="18" height="14" fill="white" opacity="0.07" />
+      <rect x="228" y="122" width="38" height="53" fill="white" opacity="0.07" />
+      <rect x="271" y="115" width="52" height="60" fill="white" opacity="0.08" />
+      <rect x="279" y="103" width="20" height="15" fill="white" opacity="0.08" />
+      <rect x="328" y="121" width="44" height="54" fill="white" opacity="0.07" />
+      <rect x="377" y="127" width="38" height="48" fill="white" opacity="0.06" />
+      <rect x="420" y="116" width="46" height="59" fill="white" opacity="0.07" />
+      <rect x="428" y="105" width="18" height="14" fill="white" opacity="0.07" />
+      <rect x="471" y="122" width="40" height="53" fill="white" opacity="0.07" />
+      <rect x="516" y="118" width="46" height="57" fill="white" opacity="0.07" />
+      <rect x="567" y="124" width="42" height="51" fill="white" opacity="0.06" />
+      <rect x="614" y="116" width="44" height="59" fill="white" opacity="0.06" />
 
-      {/* Hospital — centered at x=700 */}
-      <rect x="660" y="102" width="80" height="73" fill="white" opacity="0.09" />
-      <rect x="680" y="90"  width="40" height="17" fill="white" opacity="0.09" />
-      <rect x="667" y="115" width="14" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="687" y="115" width="14" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="707" y="115" width="14" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="667" y="133" width="14" height="11" rx="1" fill="white" opacity="0.07" />
-      <rect x="707" y="133" width="14" height="11" rx="1" fill="white" opacity="0.07" />
-
-      {/* Crescent moon — C-shape opening right */}
-      <circle cx="698" cy="72" r="13" fill="white" mask="url(#bh-crescent-d)" opacity="0.45" />
-      {/* Cross in the crescent opening (Red Crescent style) */}
-      <path d="M 708,63 L 708,81 M 702,72 L 715,72"
-        stroke="white" strokeWidth="3.5" strokeLinecap="butt" opacity="0.42" />
+      {/* Hospital — centered at x=720 */}
+      <rect x="678" y="98"  width="84" height="77" fill="white" opacity="0.11" />
+      <rect x="698" y="86"  width="44" height="17" fill="white" opacity="0.11" />
+      <rect x="685" y="112" width="14" height="11" rx="1" fill="white" opacity="0.09" />
+      <rect x="705" y="112" width="14" height="11" rx="1" fill="white" opacity="0.09" />
+      <rect x="725" y="112" width="14" height="11" rx="1" fill="white" opacity="0.09" />
+      <rect x="685" y="130" width="14" height="11" rx="1" fill="white" opacity="0.09" />
+      <rect x="725" y="130" width="14" height="11" rx="1" fill="white" opacity="0.09" />
+      <text x="720" y="76" textAnchor="middle" fill="white" opacity="0.22"
+        fontSize="11" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="2">HOSPITAL</text>
 
       {/* Right buildings */}
-      <rect x="760"  y="120" width="50" height="55" fill="white" opacity="0.07" />
-      <rect x="818"  y="115" width="55" height="60" fill="white" opacity="0.07" />
-      <rect x="826"  y="105" width="22" height="14" fill="white" opacity="0.07" />
-      <rect x="880"  y="124" width="48" height="51" fill="white" opacity="0.06" />
-      <rect x="935"  y="118" width="52" height="57" fill="white" opacity="0.06" />
-      <rect x="994"  y="128" width="46" height="47" fill="white" opacity="0.06" />
-      <rect x="1047" y="120" width="50" height="55" fill="white" opacity="0.06" />
-      <rect x="1104" y="126" width="52" height="49" fill="white" opacity="0.06" />
-      <rect x="1164" y="118" width="48" height="57" fill="white" opacity="0.06" />
-      <rect x="1220" y="124" width="52" height="51" fill="white" opacity="0.05" />
-      <rect x="1280" y="130" width="48" height="45" fill="white" opacity="0.05" />
-      <rect x="1335" y="120" width="52" height="55" fill="white" opacity="0.05" />
-      <rect x="1395" y="128" width="45" height="47" fill="white" opacity="0.05" />
+      <rect x="768"  y="122" width="44" height="53" fill="white" opacity="0.07" />
+      <rect x="817"  y="116" width="50" height="59" fill="white" opacity="0.07" />
+      <rect x="825"  y="104" width="20" height="15" fill="white" opacity="0.07" />
+      <rect x="872"  y="121" width="44" height="54" fill="white" opacity="0.07" />
+      <rect x="921"  y="115" width="50" height="60" fill="white" opacity="0.06" />
+      <rect x="929"  y="103" width="20" height="15" fill="white" opacity="0.06" />
+      <rect x="976"  y="124" width="42" height="51" fill="white" opacity="0.06" />
+      <rect x="1023" y="118" width="46" height="57" fill="white" opacity="0.06" />
+      <rect x="1074" y="122" width="44" height="53" fill="white" opacity="0.06" />
+      <rect x="1082" y="111" width="18" height="14" fill="white" opacity="0.06" />
+      <rect x="1123" y="115" width="48" height="60" fill="white" opacity="0.06" />
+      <rect x="1176" y="122" width="42" height="53" fill="white" opacity="0.05" />
+      <rect x="1223" y="117" width="46" height="58" fill="white" opacity="0.05" />
+      <rect x="1231" y="105" width="18" height="15" fill="white" opacity="0.05" />
+      <rect x="1274" y="123" width="44" height="52" fill="white" opacity="0.05" />
+      <rect x="1323" y="119" width="46" height="56" fill="white" opacity="0.05" />
+      <rect x="1374" y="124" width="42" height="51" fill="white" opacity="0.05" />
+      <rect x="1420" y="118" width="20" height="57" fill="white" opacity="0.05" />
 
       {/* Particles */}
-      <circle cx="250"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.18" />
-      <circle cx="550"  cy="105" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '0.8s' }} />
-      <circle cx="900"  cy="98"  r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '2s' }} />
-      <circle cx="1150" cy="103" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '1.4s' }} />
-      <circle cx="1350" cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.13" style={{ animationDelay: '0.3s' }} />
+      <circle cx="200"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.18" />
+      <circle cx="500"  cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '0.8s' }} />
+      <circle cx="900"  cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '2s' }} />
+      <circle cx="1180" cy="105" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '1.4s' }} />
+      <circle cx="1380" cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.13" style={{ animationDelay: '0.3s' }} />
     </svg>
   )
 }
