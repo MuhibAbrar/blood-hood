@@ -8,7 +8,12 @@ import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { BloodRequest } from '@/types'
-import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, CheckCircleIcon } from '@/components/ui/Icons'
+import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, CheckCircleIcon, GiftIcon } from '@/components/ui/Icons'
+
+const VOWEL_MATRAS = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ো', 'ৌ', 'ঁ']
+function districtGenitive(d: string) {
+  return VOWEL_MATRAS.includes(d.slice(-1)) ? `${d}র` : `${d}এর`
+}
 
 interface Stats {
   totalMembers: number
@@ -37,7 +42,9 @@ export default function DashboardPage() {
       <div className="px-4 mt-4 space-y-5">
         {/* পরিসংখ্যান */}
         <div>
-          <h3 className="font-semibold text-[#111111] mb-3">পরিসংখ্যান</h3>
+          <h3 className="font-semibold text-[#111111] mb-3">
+            {user?.district ? `${districtGenitive(user.district)} পরিসংখ্যান` : 'প্ল্যাটফর্ম পরিসংখ্যান'}
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="মোট সদস্য"
@@ -52,7 +59,7 @@ export default function DashboardPage() {
               bg="bg-green-50" iconColor="text-[#1A9E6B]" valueColor="text-[#1A9E6B]"
             />
             <StatCard
-              label="এই মাসে দান"
+              label="এই মাসে দান (সব)"
               value={loadingStats ? null : (stats?.thisMonthDonations ?? 0)}
               icon={<DropIcon className="w-5 h-5" />}
               bg="bg-red-50" iconColor="text-[#D92B2B]" valueColor="text-[#D92B2B]"
@@ -84,12 +91,12 @@ export default function DashboardPage() {
               icon={<ChartBarIcon className="w-6 h-6" />} />
             <QuickAction href="/notifications" label="নোটিফিকেশন" bg="bg-indigo-50" color="text-indigo-600"
               icon={<BellIcon className="w-6 h-6" />} />
-            {/* Coming soon */}
+            {/* আর্থিক অনুদান — coming soon */}
             <div className="flex flex-col items-center gap-1.5 opacity-40">
-              <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#D92B2B] flex items-center justify-center">
-                <DropIcon className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <GiftIcon className="w-6 h-6" />
               </div>
-              <span className="text-[10px] font-medium text-[#333] text-center leading-tight px-1">দান করুন</span>
+              <span className="text-[10px] font-medium text-[#333] text-center leading-tight px-1">অনুদান করুন</span>
             </div>
           </div>
         </div>
