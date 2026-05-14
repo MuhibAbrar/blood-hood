@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { createUser } from '@/lib/firestore'
 import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
-import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
 import type { BloodGroup, Gender } from '@/types'
 
@@ -30,6 +30,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     name: '',
     bloodGroup: '' as BloodGroup | '',
+    district: '',
     area: '',
     upazila: '',
     age: '',
@@ -91,6 +92,7 @@ export default function RegisterPage() {
         name: form.name,
         phone: authPhone,
         bloodGroup: form.bloodGroup as BloodGroup,
+        district: form.district,
         area: form.area,
         upazila: form.upazila,
         age,
@@ -274,17 +276,32 @@ export default function RegisterPage() {
       {step === 3 && (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
-            <select value={form.upazila} onChange={set('upazila')} className="input-field">
-              <option value="">উপজেলা নির্বাচন করুন</option>
-              {KHULNA_UPAZILAS.map((u) => (
-                <option key={u} value={u}>{u}</option>
+            <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা *</label>
+            <select
+              value={form.district}
+              onChange={(e) => setForm((f) => ({ ...f, district: e.target.value, upazila: '' }))}
+              className="input-field"
+            >
+              <option value="">জেলা নির্বাচন করুন</option>
+              {DISTRICTS.map((d) => (
+                <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </div>
+          {form.district && (
+            <div>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা / এলাকা *</label>
+              <select value={form.upazila} onChange={set('upazila')} className="input-field">
+                <option value="">উপজেলা নির্বাচন করুন</option>
+                {DISTRICTS_DATA[form.district]?.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
-            <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা</label>
-            <input value={form.area} onChange={set('area')} placeholder="মহল্লা / পাড়া" className="input-field" />
+            <label className="block text-sm font-medium text-[#111111] mb-1.5">মহল্লা / পাড়া</label>
+            <input value={form.area} onChange={set('area')} placeholder="যেমন: সোনাডাঙা ১ম ফেজ" className="input-field" />
           </div>
           <p className="text-xs text-[#555555] bg-yellow-50 border border-yellow-200 rounded-xl p-3">
             ⚠️ রক্তদানের যোগ্যতা: বয়স ১৮–৬০, ওজন ন্যূনতম ৫০ কেজি
@@ -293,6 +310,7 @@ export default function RegisterPage() {
             <button onClick={() => setStep(2)} className="btn-ghost flex-1 border border-[#E5E5E5]">← পিছনে</button>
             <button
               onClick={() => {
+                if (!form.district) { showToast('জেলা নির্বাচন করুন', 'error'); return }
                 if (!form.upazila) { showToast('উপজেলা নির্বাচন করুন', 'error'); return }
                 handleSubmit()
               }}

@@ -13,12 +13,14 @@ export interface User {
   name: string
   phone: string
   bloodGroup: BloodGroup
+  district?: string
   area: string
   upazila: string
   age: number
   gender: Gender
   isAvailable: boolean
   lastDonatedAt: Timestamp | null
+  nextAvailableAt?: Timestamp | null
   totalDonations: number
   organizations: string[]
   role: UserRole
@@ -35,6 +37,7 @@ export interface BloodRequest {
   patientName: string
   bloodGroup: BloodGroup
   hospital: string
+  district?: string
   area: string
   contactPhone: string
   requestedBy: string
@@ -47,6 +50,7 @@ export interface BloodRequest {
   note: string | null
   bags: number
   orgId: string | null
+  expiresAt?: Timestamp | null
   createdAt: Timestamp
   fulfilledAt: Timestamp | null
 }
@@ -70,6 +74,7 @@ export interface Organization {
   id: string
   name: string
   type: OrgType
+  district?: string
   area: string
   adminIds: string[]
   memberIds: string[]
