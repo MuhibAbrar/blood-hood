@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import BottomNav from '@/components/layout/BottomNav'
-import { AppBar } from '@/components/layout/TopBar'
 import InAppNotification from '@/components/ui/InAppNotification'
 import InstallBanner from '@/components/ui/InstallBanner'
 import DonationFollowUpModal from '@/components/ui/DonationFollowUpModal'
@@ -12,7 +11,6 @@ import DonationFollowUpModal from '@/components/ui/DonationFollowUpModal'
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { firebaseUser, user, loading } = useAuth()
   const router = useRouter()
-  const pathname = usePathname()
 
   useEffect(() => {
     // Logged in but profile incomplete → go to register
@@ -35,8 +33,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen flex flex-col">
-      {pathname !== '/' && <AppBar />}
-      <InstallBanner />
+<InstallBanner />
       <InAppNotification />
       <DonationFollowUpModal />
       <main className="flex-1 pb-20 md:pb-6 md:ml-56">{children}</main>
