@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { getUser, getDonationsByUser, logContactEvent } from '@/lib/firestore'
+import { getUser, getDonationsByUser, logContactEvent, checkAndIncrementDailyContact } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
@@ -39,10 +39,14 @@ export default function DonorProfilePage() {
   const daysSinceDonation = donor.lastDonatedAt ? daysSince(donor.lastDonatedAt.toDate()) : null
 
   const handleContact = async () => {
-    if (currentUser && currentUser.uid !== donor.uid) {
-      logContactEvent(currentUser.uid, donor)
-        .then(() => { if (isSuperAdmin) showToast('✓ Contact event logged', 'success') })
-        .catch(() => { if (isSuperAdmin) showToast('✗ logContactEvent failed', 'error') })
+    if (!currentUser) return
+    if (currentUser.uid !== donor.uid && !isSuperAdmin) {
+      const allowed = await checkAndIncrementDailyContact(currentUser.uid)
+      if (!allowed) {
+        showToast('আজকের জন্য সর্বোচ্চ ১০টি নম্বর দেখা হয়ে গেছে। কাল আবার চেষ্টা করুন।', 'error')
+        return
+      }
+      logContactEvent(currentUser.uid, donor).catch(() => {})
     }
     setRevealed(true)
   }
@@ -61,7 +65,7 @@ export default function DonorProfilePage() {
           <BloodGroupBadge group={donor.bloodGroup} size="lg" />
           <div>
             <h2 className="text-xl font-bold text-[#111111]">{donor.name}</h2>
-            <p className="text-[#555555] text-sm">{donor.upazila}, খুলনা</p>
+            <p className="text-[#555555] text-sm">{donor.upazila}{donor.district ? `, ${donor.district}` : ''}</p>
           </div>
           <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${donor.isAvailable ? 'bg-green-100 text-[#1A9E6B]' : 'bg-red-50 text-[#D92B2B]'}`}>
             {donor.isAvailable ? '● রক্ত দিতে পারবেন' : '○ এখন Unavailable'}

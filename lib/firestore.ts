@@ -731,6 +731,21 @@ export const getPlatformStats = async (district?: string) => {
   }
 }
 
+// --- Contact Rate Limit ---
+
+const DAILY_CONTACT_LIMIT = 10
+
+/** Returns true and increments if under daily limit, false if limit reached. */
+export const checkAndIncrementDailyContact = async (seekerId: string): Promise<boolean> => {
+  const today = new Date().toISOString().slice(0, 10)
+  const ref = doc(db, 'contactLimits', `${seekerId}_${today}`)
+  const snap = await getDoc(ref)
+  const count = snap.exists() ? (snap.data().count ?? 0) : 0
+  if (count >= DAILY_CONTACT_LIMIT) return false
+  await setDoc(ref, { seekerId, date: today, count: count + 1 }, { merge: true })
+  return true
+}
+
 // --- Contact Events ---
 
 /** Called when a seeker reveals a donor's phone number. */
