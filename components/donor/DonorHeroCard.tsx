@@ -9,16 +9,6 @@ import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 
-// ECG path — 7 cycles of 160px, from x=-320 to x=800
-// SMIL animateTransform shifts it by -160 SVG units per cycle (seamless loop)
-const ECG_PATH =
-  'M -320,95 L -280,95 L -273,86 L -265,95 L -257,97 L -252,52 L -247,113 L -240,95 L -225,84 L -210,95' +
-  ' L -160,95 L -120,95 L -113,86 L -105,95 L -97,97 L -92,52 L -87,113 L -80,95 L -65,84 L -50,95' +
-  ' L 0,95 L 40,95 L 47,86 L 55,95 L 63,97 L 68,52 L 73,113 L 80,95 L 95,84 L 110,95' +
-  ' L 160,95 L 200,95 L 207,86 L 215,95 L 223,97 L 228,52 L 233,113 L 240,95 L 255,84 L 270,95' +
-  ' L 320,95 L 360,95 L 367,86 L 375,95 L 383,97 L 388,52 L 393,113 L 400,95 L 415,84 L 430,95' +
-  ' L 480,95 L 520,95 L 527,86 L 535,95 L 543,97 L 548,52 L 553,113 L 560,95 L 575,84 L 590,95' +
-  ' L 640,95 L 680,95 L 687,86 L 695,95 L 703,97 L 708,52 L 713,113 L 720,95 L 735,84 L 750,95 L 800,95'
 
 function HeroIllustration() {
   return (
@@ -41,27 +31,6 @@ function HeroIllustration() {
         {/* Background glow */}
         <circle cx="340" cy="38" r="60" fill="white" className="animate-bg-glow" />
 
-        {/* ECG scrolling line — SMIL keeps it in SVG coordinate units */}
-        <path
-          className="ecg-line"
-          d={ECG_PATH}
-          stroke="white"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          opacity="0.20"
-        >
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            from="0 0"
-            to="-160 0"
-            dur="4s"
-            repeatCount="indefinite"
-          />
-        </path>
-
         {/* Left buildings */}
         <rect x="0"  y="133" width="38" height="42" fill="white" opacity="0.06" />
         <rect x="8"  y="123" width="22" height="13" fill="white" opacity="0.06" />
@@ -79,11 +48,7 @@ function HeroIllustration() {
         <rect x="151" y="136" width="13" height="11" rx="1" fill="white" opacity="0.07" />
 
         {/* Crescent moon above hospital */}
-        <circle cx="142" cy="72" r="11" fill="white" mask="url(#bh-crescent)" className="animate-crescent-glow" />
-
-        {/* Pulse rings from hospital */}
-        <circle cx="142" cy="72" r="14" stroke="white" strokeWidth="1" fill="none" className="animate-pulse-ring" />
-        <circle cx="142" cy="72" r="14" stroke="white" strokeWidth="1" fill="none" className="animate-pulse-ring" style={{ animationDelay: '1.25s' }} />
+        <circle cx="142" cy="72" r="11" fill="white" mask="url(#bh-crescent)" opacity="0.45" />
 
         {/* Right buildings */}
         <rect x="190" y="120" width="44" height="55" fill="white" opacity="0.07" />
