@@ -698,15 +698,26 @@ export const markAllNotificationsRead = async (uid: string) => {
 
 // --- Stats ---
 
-export const getPlatformStats = async () => {
+export const getPlatformStats = async (district?: string) => {
   const startOfMonth = Timestamp.fromDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const users = collection(db, 'users')
+  const requests = collection(db, 'bloodRequests')
+  const donations = collection(db, 'donations')
+
+  const membersQ = district ? query(users, where('district', '==', district)) : users
+  const availableQ = district
+    ? query(users, where('district', '==', district), where('isAvailable', '==', true))
+    : query(users, where('isAvailable', '==', true))
+  const pendingQ = district
+    ? query(requests, where('status', '==', 'open'), where('district', '==', district))
+    : query(requests, where('status', '==', 'open'))
 
   const results = await Promise.allSettled([
-    getCountFromServer(collection(db, 'users')),
-    getCountFromServer(query(collection(db, 'users'), where('isAvailable', '==', true))),
-    getCountFromServer(query(collection(db, 'bloodRequests'), where('status', '==', 'open'))),
-    getCountFromServer(query(collection(db, 'donations'), where('donatedAt', '>=', startOfMonth))),
-    getCountFromServer(collection(db, 'donations')),
+    getCountFromServer(membersQ),
+    getCountFromServer(availableQ),
+    getCountFromServer(pendingQ),
+    getCountFromServer(query(donations, where('donatedAt', '>=', startOfMonth))),
+    getCountFromServer(donations),
   ])
 
   const get = (i: number) => results[i].status === 'fulfilled' ? results[i].value.data().count : 0

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getPlatformStats, getBloodRequests } from '@/lib/firestore'
+import { useAuth } from '@/context/AuthContext'
 import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { StatCardSkeleton, RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -17,14 +18,15 @@ interface Stats {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
 
   useEffect(() => {
-    getPlatformStats().then((s) => { setStats(s); setLoadingStats(false) })
+    getPlatformStats(user?.district).then((s) => { setStats(s); setLoadingStats(false) })
     getBloodRequests('open').then((reqs) => setRequests(reqs.slice(0, 5)))
-  }, [])
+  }, [user?.district])
 
   return (
     <div className="px-4 py-4 space-y-6">
@@ -33,7 +35,9 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div>
-        <h3 className="font-semibold text-[#111111] mb-3">প্ল্যাটফর্ম পরিসংখ্যান</h3>
+        <h3 className="font-semibold text-[#111111] mb-3">
+          {user?.district ? `${user.district}ের পরিসংখ্যান` : 'প্ল্যাটফর্ম পরিসংখ্যান'}
+        </h3>
         {loadingStats ? (
           <div className="grid grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
@@ -57,7 +61,7 @@ export default function DashboardPage() {
               iconColor="text-[#1A9E6B]"
             />
             <StatCard
-              label="এই মাসে দান"
+              label="এই মাসে দান (সব)"
               value={stats?.thisMonthDonations ?? 0}
               color="text-[#D92B2B]"
               icon={<DropIcon />}
