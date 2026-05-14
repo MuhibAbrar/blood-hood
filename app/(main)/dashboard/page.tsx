@@ -50,25 +50,25 @@ export default function DashboardPage() {
               label="মোট সদস্য"
               value={loadingStats ? null : (stats?.totalMembers ?? 0)}
               icon={<UsersIcon className="w-5 h-5" />}
-              bg="bg-purple-50" iconColor="text-purple-500" valueColor="text-[#555555]"
+              iconColor="text-purple-400" valueColor="text-[#111111]"
             />
             <StatCard
               label="এখন Available"
               value={loadingStats ? null : (stats?.availableNow ?? 0)}
               icon={<CheckCircleIcon className="w-5 h-5" />}
-              bg="bg-green-50" iconColor="text-[#1A9E6B]" valueColor="text-[#1A9E6B]"
+              iconColor="text-[#1A9E6B]" valueColor="text-[#1A9E6B]"
             />
             <StatCard
               label="এই মাসে দান (সব)"
               value={loadingStats ? null : (stats?.thisMonthDonations ?? 0)}
               icon={<DropIcon className="w-5 h-5" />}
-              bg="bg-red-50" iconColor="text-[#D92B2B]" valueColor="text-[#D92B2B]"
+              iconColor="text-[#D92B2B]" valueColor="text-[#D92B2B]"
             />
             <StatCard
               label="অপেক্ষারত Request"
               value={loadingStats ? null : (stats?.pendingRequests ?? 0)}
               icon={<ClockIcon className="w-5 h-5" />}
-              bg="bg-orange-50" iconColor="text-orange-500" valueColor="text-orange-600"
+              iconColor="text-orange-400" valueColor="text-orange-600"
             />
           </div>
         </div>
@@ -120,28 +120,23 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({ label, value, icon, bg, iconColor, valueColor }: {
+function StatCard({ label, value, icon, iconColor, valueColor }: {
   label: string; value: number | null
-  icon: React.ReactNode; bg: string; iconColor: string; valueColor: string
+  icon: React.ReactNode; iconColor: string; valueColor: string
 }) {
   return (
-    <div className="card p-4 flex items-center gap-3">
-      <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center shrink-0 ${iconColor}`}>
-        {icon}
+    <div className="bg-white rounded-2xl border border-[#E5E5E5] p-4 flex flex-col justify-between gap-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-[#777]">{label}</span>
+        <span className={iconColor}>{icon}</span>
       </div>
-      <div className="min-w-0">
-        {value === null ? (
-          <div className="animate-pulse space-y-1.5">
-            <div className="h-6 w-10 bg-gray-200 rounded" />
-            <div className="h-2.5 w-16 bg-gray-100 rounded" />
-          </div>
-        ) : (
-          <>
-            <p className={`text-2xl font-bold leading-none ${valueColor}`}>{value}</p>
-            <p className="text-xs text-[#555555] mt-1 leading-tight">{label}</p>
-          </>
-        )}
-      </div>
+      {value === null ? (
+        <div className="animate-pulse">
+          <div className="h-8 w-12 bg-gray-200 rounded" />
+        </div>
+      ) : (
+        <p className={`text-3xl font-bold leading-none ${valueColor}`}>{value}</p>
+      )}
     </div>
   )
 }
