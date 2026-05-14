@@ -14,6 +14,24 @@ function GuestHeroCard() {
 
   return (
     <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-6 pb-12 text-white">
+
+      {/* Animated background drops */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <svg className="absolute -right-6 -bottom-2 w-36 h-36 animate-hero-pulse"
+             viewBox="0 0 24 24" fill="white">
+          <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+        </svg>
+        <svg className="absolute right-10 -top-3 w-16 h-16 opacity-[0.07] animate-hero-float"
+             viewBox="0 0 24 24" fill="white">
+          <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+        </svg>
+        <svg className="absolute left-2 top-4 w-9 h-9 opacity-[0.06] animate-hero-float-slow"
+             style={{ animationDelay: '1.5s' }}
+             viewBox="0 0 24 24" fill="white">
+          <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+        </svg>
+      </div>
+
       <h2 className="text-xl font-bold leading-tight mb-1">রক্ত দিন, জীবন বাঁচান</h2>
       <p className="text-white/70 text-sm mb-4 leading-relaxed">
         ডোনার হিসেবে যোগ দিন অথবা জরুরি রক্তের অনুরোধ দিন।
@@ -72,6 +90,33 @@ export default function DonorHeroCard() {
   return (
     <>
       <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-5 pb-12 text-white">
+
+        {/* Animated background drops */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          {/* Large drop — bottom-right, slow pulse */}
+          <svg className="absolute -right-6 -bottom-2 w-36 h-36 animate-hero-pulse"
+               viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+          </svg>
+          {/* Medium drop — top-right, floating */}
+          <svg className="absolute right-10 -top-3 w-16 h-16 opacity-[0.07] animate-hero-float"
+               viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+          </svg>
+          {/* Small drop — left side, slow float with delay */}
+          <svg className="absolute left-2 top-6 w-9 h-9 opacity-[0.06] animate-hero-float-slow"
+               style={{ animationDelay: '2s' }}
+               viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+          </svg>
+          {/* Tiny drop — center-left, different delay */}
+          <svg className="absolute left-24 bottom-6 w-5 h-5 opacity-[0.08] animate-hero-float"
+               style={{ animationDelay: '3.5s' }}
+               viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C8 7 4 11 4 15a8 8 0 0 0 16 0c0-4-4-8-8-13z" />
+          </svg>
+        </div>
+
         {/* User info row */}
         <div className="flex items-center gap-3 mb-4">
           <div className="ring-2 ring-white/30 rounded-full shrink-0">

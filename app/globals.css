@@ -73,6 +73,35 @@
   }
 }
 
+@keyframes hero-drop-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(4deg); }
+}
+
+@keyframes hero-drop-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg);   opacity: 0.10; }
+  50%       { transform: scale(1.08) rotate(-3deg); opacity: 0.16; }
+}
+
+.animate-hero-float {
+  animation: hero-drop-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+.animate-hero-float-slow {
+  animation: hero-drop-float 9s ease-in-out infinite;
+  will-change: transform;
+}
+.animate-hero-pulse {
+  animation: hero-drop-pulse 5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-float,
+  .animate-hero-float-slow,
+  .animate-hero-pulse { animation: none; }
+}
+
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
