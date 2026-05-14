@@ -6,40 +6,40 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { updateUser } from '@/lib/firestore'
 import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
+import DefaultAvatar from '@/components/ui/DefaultAvatar'
+import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 
 function GuestHeroCard() {
   const standalone = isStandalonePWA()
 
   return (
-    <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#C0392B] via-[#A93226] to-[#7B241C] p-5 text-white shadow-lg shadow-red-900/30">
-      <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
-      <div className="absolute -bottom-8 -right-2 w-20 h-20 bg-white/5 rounded-full" />
-      <div className="absolute top-3 right-4 text-5xl opacity-10 select-none pointer-events-none">🩸</div>
-
-      <h2 className="text-xl font-bold leading-tight mb-1 relative">রক্ত দিন, জীবন বাঁচান</h2>
-      <p className="text-white/70 text-sm mb-4 relative leading-relaxed">
+    <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-6 pb-12 text-white">
+      <h2 className="text-xl font-bold leading-tight mb-1">রক্ত দিন, জীবন বাঁচান</h2>
+      <p className="text-white/70 text-sm mb-4 leading-relaxed">
         ডোনার হিসেবে যোগ দিন অথবা জরুরি রক্তের অনুরোধ দিন।
       </p>
 
-      {/* Mobile */}
-      <div className="md:hidden relative">
+      <div className="md:hidden">
         {standalone ? (
           <div className="flex gap-2">
             <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center">লগইন করুন</Link>
             <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center">রেজিস্ট্রেশন</Link>
           </div>
         ) : (
-          <button onClick={triggerInstall} className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">
+          <button onClick={triggerInstall} className="w-full py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center">
             📲 অ্যাপ ইনস্টল করুন — বিনামূল্যে
           </button>
         )}
       </div>
 
-      {/* PC */}
-      <div className="hidden md:flex gap-2 relative">
+      <div className="hidden md:flex gap-2">
         <Link href="/login" className="flex-1 py-2.5 rounded-xl bg-white text-[#D92B2B] text-sm font-bold text-center hover:bg-red-50 transition-colors">লগইন করুন</Link>
         <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">রেজিস্ট্রেশন করুন</Link>
       </div>
+
+      <svg viewBox="0 0 1440 40" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-10">
+        <path d="M0,40 Q720,0 1440,40 L1440,40 L0,40 Z" fill="#FAFAFA" />
+      </svg>
     </div>
   )
 }
@@ -71,35 +71,36 @@ export default function DonorHeroCard() {
 
   return (
     <>
-      {/* Hero card */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#C0392B] via-[#A93226] to-[#7B241C] p-5 text-white shadow-lg shadow-red-900/30">
-
-        {/* Decorative blobs */}
-        <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
-        <div className="absolute -bottom-8 -right-2 w-20 h-20 bg-white/5 rounded-full" />
-        <div className="absolute top-3 right-4 text-5xl opacity-10 select-none pointer-events-none">🩸</div>
-
-        {/* Name */}
-        <h2 className="text-2xl font-bold leading-tight mb-0.5 relative">{user.name}</h2>
-
-        {/* Blood group + location */}
-        <div className="flex items-center gap-2 mb-4 relative">
-          <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full border border-white/20">
-            {user.bloodGroup}
-          </span>
-          <span className="text-white/65 text-sm">· {user.upazila}{user.district ? `, ${user.district}` : ''}</span>
+      <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-5 pb-12 text-white">
+        {/* User info row */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="ring-2 ring-white/30 rounded-full shrink-0">
+            {user.profilePhoto ? (
+              <img src={user.profilePhoto} alt="প্রোফাইল" className="w-14 h-14 rounded-full object-cover" />
+            ) : (
+              <DefaultAvatar gender={user.gender} size={56} />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold leading-tight">{user.name}</h2>
+            <p className="text-white/65 text-xs mt-0.5">{user.upazila}{user.district ? `, ${user.district}` : ''}</p>
+          </div>
+          <BloodGroupBadge group={user.bloodGroup} size="md" />
         </div>
 
-        {/* Toggle row */}
+        {/* Availability toggle */}
         <button
           type="button"
           onClick={() => setModalOpen(true)}
           disabled={loading}
-          className="relative w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
+          className="w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
         >
-          <span className="text-sm font-semibold">আমি রক্ত দিতে পারব</span>
-
-          {/* Toggle switch — fixed size, no overflow */}
+          <div>
+            <p className="text-sm font-semibold">আমি রক্ত দিতে পারব</p>
+            <p className={`text-xs mt-0.5 ${user.isAvailable ? 'text-green-300' : 'text-white/40'}`}>
+              {user.isAvailable ? '● Available হিসেবে দেখা যাচ্ছে' : '○ Unavailable'}
+            </p>
+          </div>
           <div className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-colors duration-200 ${user.isAvailable ? 'bg-[#1A9E6B]' : 'bg-white/30'}`}>
             <span
               className={`absolute top-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-all duration-200 ${
@@ -109,10 +110,10 @@ export default function DonorHeroCard() {
           </div>
         </button>
 
-        {/* Status label */}
-        <p className={`text-xs mt-2 text-center font-medium relative ${user.isAvailable ? 'text-green-300' : 'text-white/40'}`}>
-          {user.isAvailable ? '● Available হিসেবে দেখা যাচ্ছে' : '○ Unavailable — নতুন request-এ দেখানো হবে না'}
-        </p>
+        {/* Wave bottom */}
+        <svg viewBox="0 0 1440 40" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-10">
+          <path d="M0,40 Q720,0 1440,40 L1440,40 L0,40 Z" fill="#FAFAFA" />
+        </svg>
       </div>
 
       {/* Confirm modal */}
