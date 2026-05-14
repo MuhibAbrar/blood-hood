@@ -17,6 +17,11 @@ interface Stats {
   totalDonations: number
 }
 
+const VOWEL_MATRAS = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ো', 'ৌ', 'ঁ']
+function districtGenitive(d: string) {
+  return VOWEL_MATRAS.includes(d.slice(-1)) ? `${d}র` : `${d}এর`
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
@@ -36,7 +41,7 @@ export default function DashboardPage() {
       {/* Stats */}
       <div>
         <h3 className="font-semibold text-[#111111] mb-3">
-          {user?.district ? `${user.district}ের পরিসংখ্যান` : 'প্ল্যাটফর্ম পরিসংখ্যান'}
+          {user?.district ? `${districtGenitive(user.district)} পরিসংখ্যান` : 'প্ল্যাটফর্ম পরিসংখ্যান'}
         </h3>
         {loadingStats ? (
           <div className="grid grid-cols-2 gap-3">
