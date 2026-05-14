@@ -8,6 +8,7 @@ import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
+import SelectPicker from '@/components/ui/SelectPicker'
 import type { BloodGroup, Gender } from '@/types'
 
 export default function RegisterPage() {
@@ -277,26 +278,23 @@ export default function RegisterPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা *</label>
-            <select
+            <SelectPicker
               value={form.district}
-              onChange={(e) => setForm((f) => ({ ...f, district: e.target.value, upazila: '' }))}
-              className="input-field"
-            >
-              <option value="">জেলা নির্বাচন করুন</option>
-              {DISTRICTS.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+              onChange={(val) => setForm((f) => ({ ...f, district: val, upazila: '' }))}
+              options={DISTRICTS}
+              placeholder="জেলা নির্বাচন করুন"
+            />
           </div>
           {form.district && (
             <div>
               <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা / এলাকা *</label>
-              <select value={form.upazila} onChange={set('upazila')} className="input-field">
-                <option value="">উপজেলা নির্বাচন করুন</option>
-                {DISTRICTS_DATA[form.district]?.map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
+              <SelectPicker
+                value={form.upazila}
+                onChange={(val) => setForm((f) => ({ ...f, upazila: val }))}
+                options={DISTRICTS_DATA[form.district] ?? []}
+                placeholder="উপজেলা নির্বাচন করুন"
+                searchable
+              />
             </div>
           )}
           <div>

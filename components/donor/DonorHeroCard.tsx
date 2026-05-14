@@ -87,7 +87,7 @@ export default function DonorHeroCard() {
           <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full border border-white/20">
             {user.bloodGroup}
           </span>
-          <span className="text-white/65 text-sm">· {user.upazila}, খুলনা</span>
+          <span className="text-white/65 text-sm">· {user.upazila}{user.district ? `, ${user.district}` : ''}</span>
         </div>
 
         {/* Toggle row */}

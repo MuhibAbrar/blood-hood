@@ -6,7 +6,8 @@ import { useAuth } from '@/context/AuthContext'
 import { updateUser } from '@/lib/firestore'
 import { logout } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
-import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import AvailabilityToggle from '@/components/donor/AvailabilityToggle'
@@ -23,7 +24,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ name: user?.name ?? '', area: user?.area ?? '', upazila: user?.upazila ?? '' })
+  const [form, setForm] = useState({ name: user?.name ?? '', district: user?.district ?? '', area: user?.area ?? '', upazila: user?.upazila ?? '' })
   const [donationModal, setDonationModal] = useState(false)
   const [donationDate, setDonationDate] = useState('')
   const [donationLoading, setDonationLoading] = useState(false)
@@ -52,7 +53,7 @@ export default function ProfilePage() {
     if (!user) return
     setLoading(true)
     try {
-      await updateUser(user.uid, { name: form.name, area: form.area, upazila: form.upazila })
+      await updateUser(user.uid, { name: form.name, district: form.district, area: form.area, upazila: form.upazila })
       await refreshUser()
       showToast('প্রোফাইল আপডেট হয়েছে', 'success')
       setEditing(false)
@@ -106,7 +107,7 @@ export default function ProfilePage() {
           <div className="text-center">
             <h2 className="text-xl font-bold text-[#111111]">{user.name}</h2>
             <p className="text-[#555555] text-sm">{user.phone}</p>
-            <p className="text-[#555555] text-sm">{user.upazila}, খুলনা</p>
+            <p className="text-[#555555] text-sm">{user.upazila}{user.district ? `, ${user.district}` : ''}</p>
           </div>
           <div className="flex gap-6 mt-2">
             <div className="text-center">
@@ -204,11 +205,26 @@ export default function ProfilePage() {
               <input value={form.name} onChange={set('name')} className="input-field" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা</label>
-              <select value={form.upazila} onChange={set('upazila')} className="input-field">
-                {KHULNA_UPAZILAS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+              <SelectPicker
+                value={form.district}
+                onChange={(val) => setForm((f) => ({ ...f, district: val, upazila: '' }))}
+                options={DISTRICTS}
+                placeholder="জেলা নির্বাচন করুন"
+              />
             </div>
+            {form.district && (
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা</label>
+                <SelectPicker
+                  value={form.upazila}
+                  onChange={(val) => setForm((f) => ({ ...f, upazila: val }))}
+                  options={DISTRICTS_DATA[form.district] ?? []}
+                  placeholder="উপজেলা নির্বাচন করুন"
+                  searchable
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা</label>
               <input value={form.area} onChange={set('area')} placeholder="মহল্লা / পাড়া" className="input-field" />
@@ -221,6 +237,7 @@ export default function ProfilePage() {
           <div className="card p-4 space-y-3">
             <InfoRow label="রক্তের গ্রুপ" value={user.bloodGroup} />
             <InfoRow label="বয়স" value={`${user.age} বছর`} />
+            {user.district && <InfoRow label="জেলা" value={user.district} />}
             <InfoRow label="উপজেলা" value={user.upazila} />
             {user.area && <InfoRow label="এলাকা" value={user.area} />}
             <InfoRow label="ভূমিকা" value={user.role === 'superadmin' ? 'সুপার অ্যাডমিন' : user.role === 'admin' ? 'অ্যাডমিন' : 'ডোনার'} />
