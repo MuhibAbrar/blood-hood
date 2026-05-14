@@ -109,7 +109,7 @@ export default function ProfilePage() {
       } />
 
       {/* ── Hero ── */}
-      <div className="bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] pt-6 pb-16 px-4 text-center">
+      <div className="bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] pt-6 pb-16 px-4 text-center rounded-b-[40px]">
         <div className="inline-block ring-4 ring-white/30 rounded-full shadow-xl">
           {user.profilePhoto ? (
             <img src={user.profilePhoto} alt="প্রোফাইল" className="w-24 h-24 rounded-full object-cover" />
