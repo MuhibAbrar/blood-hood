@@ -5,14 +5,18 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { logout } from '@/lib/auth'
+import { ChartBarIcon, UsersIcon, ActivityIcon, TentIcon, BuildingIcon, DropIcon, CrownIcon, HomeIcon, LogOutIcon, HeartIcon } from '@/components/ui/Icons'
+
+const IC = 'w-5 h-5'
 
 const navItems = [
-  { href: '/admin', label: 'ড্যাশবোর্ড', icon: '📊', exact: true },
-  { href: '/admin/users', label: 'ব্যবহারকারী', icon: '👥' },
-  { href: '/admin/donations', label: 'সাম্প্রতিক দান', icon: '🩸' },
-  { href: '/admin/camps', label: 'ক্যাম্প', icon: '🏕️' },
-  { href: '/admin/organizations', label: 'সংগঠন', icon: '🏫' },
-  { href: '/admin/requests', label: 'রক্তের অনুরোধ', icon: '❤️' },
+  { href: '/admin', label: 'ড্যাশবোর্ড', icon: <ChartBarIcon className={IC} />, exact: true },
+  { href: '/admin/users', label: 'ব্যবহারকারী', icon: <UsersIcon className={IC} /> },
+  { href: '/admin/donations', label: 'সাম্প্রতিক দান', icon: <ActivityIcon className={IC} /> },
+  { href: '/admin/camps', label: 'ক্যাম্প', icon: <TentIcon className={IC} /> },
+  { href: '/admin/organizations', label: 'সংগঠন', icon: <BuildingIcon className={IC} /> },
+  { href: '/admin/requests', label: 'রক্তের অনুরোধ', icon: <HeartIcon className={IC} /> },
+  { href: '/admin/analytics', label: 'Analytics', icon: <ChartBarIcon className={IC} /> },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -31,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
       <div className="text-center">
-        <span className="text-5xl block mb-4">👑</span>
+        <CrownIcon className="w-12 h-12 mx-auto mb-4 stroke-[#555555]" />
         <p className="text-[#555555]">যাচাই করা হচ্ছে...</p>
       </div>
     </div>
@@ -46,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🩸</span>
+          <DropIcon className="w-7 h-7 stroke-white" />
           <div>
             <p className="font-bold text-white text-sm">Blood Hood</p>
             <p className="text-[10px] text-white/50 uppercase tracking-wider">Admin Panel</p>
@@ -66,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 active ? 'bg-[#D92B2B] text-white shadow-lg shadow-red-900/30' : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
             >
-              <span className="text-base">{icon}</span>
+              {icon}
               {label}
             </Link>
           )
@@ -78,13 +82,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="px-3 py-2 mb-1">
           <p className="text-xs text-white/40 uppercase tracking-wider">লগইন হিসেবে</p>
           <p className="text-sm text-white font-medium truncate mt-0.5">{user.name}</p>
-          <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full mt-1 inline-block">👑 Superadmin</span>
+          <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full mt-1 inline-flex items-center gap-1"><CrownIcon className="w-3 h-3" /> Superadmin</span>
         </div>
         <Link href="/dashboard" className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
-          <span>🏠</span> মূল App
+          <HomeIcon className="w-4 h-4" /> মূল App
         </Link>
         <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
-          <span>🚪</span> লগ আউট
+          <LogOutIcon className="w-4 h-4" /> লগ আউট
         </button>
       </div>
     </div>

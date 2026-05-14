@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { DropIcon, BuildingIcon, CrownIcon } from '@/components/ui/Icons'
 
 interface TopBarProps {
   title: string
@@ -47,7 +48,7 @@ export function AppBar() {
     <header className="sticky top-0 bg-[#D92B2B] z-40 safe-top shadow-md">
       <div className="flex items-center justify-between h-14 px-4 md:pl-4 md:pr-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="text-2xl">🩸</span>
+          <DropIcon className="w-7 h-7 stroke-white" />
           <span className="text-white font-bold text-lg">Blood Hood</span>
         </Link>
 
@@ -59,7 +60,7 @@ export function AppBar() {
               href={`/org-admin?orgId=${org.id}`}
               className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold max-w-[140px]"
             >
-              <span className="shrink-0">🏢</span>
+              <BuildingIcon className="w-4 h-4 shrink-0 stroke-white" />
               <span className="truncate">{org.name}</span>
             </Link>
           ))}
@@ -71,7 +72,7 @@ export function AppBar() {
                 onClick={() => setDropdownOpen(v => !v)}
                 className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
               >
-                <span>🏢</span>
+                <BuildingIcon className="w-4 h-4 stroke-white" />
                 <span>সংগঠন</span>
                 <svg className="w-3 h-3 stroke-white" fill="none" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -89,7 +90,7 @@ export function AppBar() {
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2 px-4 py-3 text-sm text-[#111111] hover:bg-gray-50"
                       >
-                        <span className="shrink-0">🏢</span>
+                        <BuildingIcon className="w-4 h-4 shrink-0 stroke-[#111111]" />
                         <span className="truncate">{org.name}</span>
                       </Link>
                     ))}
@@ -105,7 +106,7 @@ export function AppBar() {
               href="/admin"
               className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
             >
-              <span>👑</span>
+              <CrownIcon className="w-4 h-4 stroke-white" />
               <span className="hidden xs:inline">অ্যাডমিন</span>
             </Link>
           )}

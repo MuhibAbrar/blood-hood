@@ -15,6 +15,7 @@ import TopBar from '@/components/layout/TopBar'
 import GuestPrompt from '@/components/ui/GuestPrompt'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { recordSelfDonation, getBloodRequestCountByUser } from '@/lib/firestore'
+import { CheckCircleIcon, ClockIcon, DropIcon, BuildingIcon, PhoneIcon } from '@/components/ui/Icons'
 import { Timestamp } from 'firebase/firestore'
 import Modal from '@/components/ui/Modal'
 
@@ -156,7 +157,10 @@ export default function ProfilePage() {
 
         {/* Donation countdown */}
         <div className={`rounded-2xl border-l-4 bg-white border border-[#E5E5E5] p-4 flex items-center gap-3 ${canDonate ? 'border-l-[#1A9E6B]' : 'border-l-amber-400'}`}>
-          <span className="text-2xl shrink-0">{canDonate ? '✅' : '⏳'}</span>
+          {canDonate
+            ? <CheckCircleIcon className="w-7 h-7 shrink-0 stroke-[#1A9E6B]" />
+            : <ClockIcon className="w-7 h-7 shrink-0 stroke-amber-400" />
+          }
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#111111] text-sm">
               {canDonate ? 'এখনই রক্ত দিতে পারবেন!' : `আর `}
@@ -183,7 +187,7 @@ export default function ProfilePage() {
             <p className="font-semibold text-[#111111]">আমি রক্ত দিয়েছি</p>
             <p className="text-xs text-[#555555] mt-0.5">তারিখ দিন — ৯০ দিন unavailable থাকবেন</p>
           </div>
-          <span className="text-2xl">🩸</span>
+          <DropIcon className="w-6 h-6 stroke-[#D92B2B]" />
         </button>
 
         <Modal open={donationModal} onClose={() => setDonationModal(false)} title="রক্তদানের তারিখ">
@@ -265,14 +269,14 @@ export default function ProfilePage() {
         <div className="card divide-y divide-[#F0F0F0]">
           <a href="/history" className="flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center text-sm">🩸</span>
+              <span className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center"><DropIcon className="w-4 h-4 stroke-[#D92B2B]" /></span>
               <span className="font-medium text-[#111111]">দানের ইতিহাস</span>
             </div>
             <span className="text-[#BBBBBB]">›</span>
           </a>
           <a href="/organizations" className="flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-sm">🏫</span>
+              <span className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center"><BuildingIcon className="w-4 h-4 stroke-purple-600" /></span>
               <span className="font-medium text-[#111111]">সংগঠন</span>
             </div>
             <span className="text-[#BBBBBB]">›</span>

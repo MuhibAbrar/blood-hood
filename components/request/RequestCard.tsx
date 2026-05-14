@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import { triggerInstall } from '@/lib/installPrompt'
 import type { BloodRequest } from '@/types'
+import { HospitalIcon, DropIcon, PhoneIcon, UsersIcon } from '@/components/ui/Icons'
 
 interface RequestCardProps {
   request: BloodRequest
@@ -88,8 +89,8 @@ export default function RequestCard({ request }: RequestCardProps) {
         </div>
         {/* Responders count */}
         {request.respondedBy.length > 0 && (
-          <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-semibold shrink-0">
-            👥 {request.respondedBy.length} জন
+          <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-semibold shrink-0 flex items-center gap-1">
+            <UsersIcon className="w-3.5 h-3.5 stroke-current" /> {request.respondedBy.length} জন
           </span>
         )}
       </div>
@@ -97,17 +98,17 @@ export default function RequestCard({ request }: RequestCardProps) {
       {/* Details */}
       <div className="space-y-1.5">
         <p className="text-sm text-[#555555] flex items-center gap-2">
-          <span className="text-base">🏥</span>
+          <HospitalIcon className="w-4 h-4 shrink-0 stroke-[#999]" />
           <span className="truncate">{request.hospital}{request.area ? `, ${request.area}` : ''}</span>
         </p>
         {request.bags > 1 && (
           <p className="text-sm text-[#555555] flex items-center gap-2">
-            <span className="text-base">🩸</span>
+            <DropIcon className="w-4 h-4 shrink-0 stroke-[#D92B2B]" />
             <span className="font-medium text-[#D92B2B]">{request.bags} ব্যাগ রক্ত লাগবে</span>
           </p>
         )}
         <p className="text-sm text-[#555555] flex items-center gap-2">
-          <span className="text-base">📞</span>
+          <PhoneIcon className="w-4 h-4 shrink-0 stroke-[#999]" />
           {user ? (
             <span className="font-medium text-[#111111]">{request.contactPhone}</span>
           ) : (
@@ -158,9 +159,9 @@ export default function RequestCard({ request }: RequestCardProps) {
               {/* PC: login button */}
               <button
                 onClick={() => router.push('/login')}
-                className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold text-center transition-colors hidden md:block"
+                className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold text-center transition-colors hidden md:block flex items-center justify-center gap-1.5"
               >
-                🩸 সাহায্য করতে লগইন করুন
+                <DropIcon className="w-4 h-4 stroke-white inline-block" /> সাহায্য করতে লগইন করুন
               </button>
             </>
           ) : isOwner ? (
@@ -175,7 +176,7 @@ export default function RequestCard({ request }: RequestCardProps) {
               href={`tel:${request.contactPhone}`}
               className="flex-1 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-bold text-center hover:bg-[#b82424] transition-colors"
             >
-              📞 কল করুন
+              <PhoneIcon className="w-4 h-4 stroke-white inline-block mr-1" /> কল করুন
             </a>
           ) : (
             <button
@@ -183,7 +184,7 @@ export default function RequestCard({ request }: RequestCardProps) {
               disabled={responding}
               className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-60"
             >
-              {responding ? 'হচ্ছে...' : '🩸 আমি সাহায্য করব'}
+              {responding ? 'হচ্ছে...' : <span className="flex items-center justify-center gap-1.5"><DropIcon className="w-4 h-4 stroke-white" /> আমি সাহায্য করব</span>}
             </button>
           )}
         </div>

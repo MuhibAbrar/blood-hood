@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { BuildingIcon, CrownIcon } from '@/components/ui/Icons'
 
 const navItems = [
   { href: '/dashboard', label: 'হোম', icon: HomeIcon },
@@ -80,7 +81,7 @@ export default function BottomNav() {
                   pathname.startsWith('/org-admin') ? 'bg-green-50 text-green-700' : 'text-[#555555] hover:bg-gray-100'
                 }`}
               >
-                <span className="text-lg shrink-0">🏢</span>
+                <BuildingIcon className="w-5 h-5 shrink-0 stroke-current" />
                 <div className="min-w-0">
                   <span className="text-sm block truncate">{org.name}</span>
                   <span className="text-[10px] text-[#555555]/60">অ্যাডমিন প্যানেল</span>
@@ -99,7 +100,7 @@ export default function BottomNav() {
                 pathname.startsWith('/admin') ? 'bg-yellow-50 text-yellow-700' : 'text-[#555555] hover:bg-gray-100'
               }`}
             >
-              <span className="text-lg shrink-0">👑</span>
+              <CrownIcon className="w-5 h-5 shrink-0 stroke-current" />
               <span className="text-sm">সুপার অ্যাডমিন</span>
             </Link>
           </div>

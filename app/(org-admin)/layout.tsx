@@ -8,9 +8,9 @@ import { OrgAdminContext } from '@/context/OrgAdminContext'
 import { logout } from '@/lib/auth'
 import { getOrgsByAdmin } from '@/lib/firestore'
 import type { Organization } from '@/types'
+import { ChartBarIcon, UsersIcon, DropIcon, TentIcon, MegaphoneIcon, BuildingIcon, HomeIcon, LogOutIcon } from '@/components/ui/Icons'
 
-const orgIcon = (type: string) =>
-  type === 'college' || type === 'university' ? '🏫' : type === 'ngo' ? '🤝' : type === 'hospital' ? '🏥' : '🏘️'
+const IC = 'w-5 h-5'
 
 export default function OrgAdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -42,7 +42,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
   if (loading || orgLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
       <div className="text-center">
-        <span className="text-5xl block mb-4">🏫</span>
+        <BuildingIcon className="w-12 h-12 mx-auto mb-4 stroke-[#555555]" />
         <p className="text-[#555555]">লোড হচ্ছে...</p>
       </div>
     </div>
@@ -52,11 +52,11 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
 
   const q = `?orgId=${org.id}`
   const navItems = [
-    { href: `/org-admin${q}`, label: 'ড্যাশবোর্ড', icon: '📊', exact: true },
-    { href: `/org-admin/members${q}`, label: 'সদস্য', icon: '👥' },
-    { href: `/org-admin/requests${q}`, label: 'রক্ত অনুরোধ', icon: '🩸' },
-    { href: `/org-admin/camps${q}`, label: 'ক্যাম্প', icon: '🏕️' },
-    { href: `/org-admin/announcements${q}`, label: 'ঘোষণা', icon: '📢' },
+    { href: `/org-admin${q}`, label: 'ড্যাশবোর্ড', icon: <ChartBarIcon className={IC} />, exact: true },
+    { href: `/org-admin/members${q}`, label: 'সদস্য', icon: <UsersIcon className={IC} /> },
+    { href: `/org-admin/requests${q}`, label: 'রক্ত অনুরোধ', icon: <DropIcon className={IC} /> },
+    { href: `/org-admin/camps${q}`, label: 'ক্যাম্প', icon: <TentIcon className={IC} /> },
+    { href: `/org-admin/announcements${q}`, label: 'ঘোষণা', icon: <MegaphoneIcon className={IC} /> },
   ]
 
   // Total unique people = members + admins (deduplicated)
@@ -68,8 +68,8 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
     <div className="flex flex-col h-full">
       {/* Org info */}
       <div className="px-5 py-5 border-b border-white/10">
-        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl mb-3">
-          {orgIcon(org.type)}
+        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-3">
+          <BuildingIcon className="w-6 h-6 stroke-white" />
         </div>
         <p className="font-bold text-white text-sm leading-tight">{org.name}</p>
         <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">Org Admin Panel</p>
@@ -100,7 +100,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
                 active ? 'bg-[#1A9E6B] text-white shadow-lg shadow-green-900/30' : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
             >
-              <span className="text-base">{icon}</span>
+              {icon}
               {label}
             </Link>
           )
@@ -114,10 +114,10 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
           <p className="text-sm text-white font-medium truncate mt-0.5">{user?.name}</p>
         </div>
         <Link href="/dashboard" className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
-          <span>🏠</span> মূল App
+          <HomeIcon className="w-4 h-4" /> মূল App
         </Link>
         <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all">
-          <span>🚪</span> লগ আউট
+          <LogOutIcon className="w-4 h-4" /> লগ আউট
         </button>
       </div>
     </div>

@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import { DonorCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import { formatBanglaDate, daysSince } from '@/lib/constants'
 import type { User, Donation } from '@/types'
+import { PhoneIcon } from '@/components/ui/Icons'
 
 export default function DonorProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -84,19 +85,19 @@ export default function DonorProfilePage() {
 
         {/* Contact */}
         {!currentUser ? (
-          <Link href="/login" className="btn-primary w-full text-center block">
-            📞 নম্বর দেখতে লগইন করুন
+          <Link href="/login" className="btn-primary w-full text-center flex items-center justify-center gap-2">
+            <PhoneIcon className="w-4 h-4 stroke-white" /> নম্বর দেখতে লগইন করুন
           </Link>
         ) : showContact ? (
           revealed ? (
             /* Number revealed — tap to call */
-            <a href={`tel:${donor.phone}`} className="btn-primary w-full text-center block">
-              📞 {donor.phone} — কল করুন
+            <a href={`tel:${donor.phone}`} className="btn-primary w-full text-center flex items-center justify-center gap-2">
+              <PhoneIcon className="w-4 h-4 stroke-white" /> {donor.phone} — কল করুন
             </a>
           ) : (
             /* First tap: log the event, then show number */
-            <button onClick={handleContact} className="btn-primary w-full">
-              📞 নম্বর দেখুন ও যোগাযোগ করুন
+            <button onClick={handleContact} className="btn-primary w-full flex items-center justify-center gap-2">
+              <PhoneIcon className="w-4 h-4 stroke-white" /> নম্বর দেখুন ও যোগাযোগ করুন
             </button>
           )
         ) : (
