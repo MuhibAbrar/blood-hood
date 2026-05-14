@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getPlatformStats, getBloodRequests } from '@/lib/firestore'
 import type { BloodRequest } from '@/types'
+import { UsersIcon, CheckCircleIcon, DropIcon, ClockIcon, ActivityIcon, TentIcon, BuildingIcon, ChartBarIcon, MegaphoneIcon } from '@/components/ui/Icons'
 
 interface Stats {
   totalMembers: number
@@ -34,11 +35,11 @@ export default function AdminDashboard() {
   }, [])
 
   const statCards = [
-    { label: 'মোট সদস্য', value: stats?.totalMembers ?? 0, icon: '👥', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100' },
-    { label: 'এখন Available', value: stats?.availableNow ?? 0, icon: '✅', color: 'bg-green-50 text-green-700', border: 'border-green-100' },
-    { label: 'এই মাসে দান', value: stats?.thisMonthDonations ?? 0, icon: '🩸', color: 'bg-red-50 text-[#D92B2B]', border: 'border-red-100' },
-    { label: 'অপেক্ষারত Request', value: stats?.pendingRequests ?? 0, icon: '⏳', color: 'bg-yellow-50 text-yellow-700', border: 'border-yellow-100' },
-    { label: 'মোট দান', value: stats?.totalDonations ?? 0, icon: '💉', color: 'bg-purple-50 text-purple-700', border: 'border-purple-100' },
+    { label: 'মোট সদস্য', value: stats?.totalMembers ?? 0, icon: <UsersIcon className="w-4 h-4" />, color: 'bg-blue-50 text-blue-700', border: 'border-blue-100' },
+    { label: 'এখন Available', value: stats?.availableNow ?? 0, icon: <CheckCircleIcon className="w-4 h-4" />, color: 'bg-green-50 text-green-700', border: 'border-green-100' },
+    { label: 'এই মাসে দান', value: stats?.thisMonthDonations ?? 0, icon: <DropIcon className="w-4 h-4" />, color: 'bg-red-50 text-[#D92B2B]', border: 'border-red-100' },
+    { label: 'অপেক্ষারত Request', value: stats?.pendingRequests ?? 0, icon: <ClockIcon className="w-4 h-4" />, color: 'bg-yellow-50 text-yellow-700', border: 'border-yellow-100' },
+    { label: 'মোট দান', value: stats?.totalDonations ?? 0, icon: <ActivityIcon className="w-4 h-4" />, color: 'bg-purple-50 text-purple-700', border: 'border-purple-100' },
   ]
 
   const handleBroadcast = async () => {
@@ -63,11 +64,11 @@ export default function AdminDashboard() {
   }
 
   const quickLinks = [
-    { href: '/admin/camps', label: 'নতুন ক্যাম্প', icon: '🏕️', desc: 'ক্যাম্প তৈরি ও পরিচালনা' },
-    { href: '/admin/organizations', label: 'নতুন সংগঠন', icon: '🏫', desc: 'সংগঠন তৈরি ও পরিচালনা' },
-    { href: '/admin/users', label: 'User দেখুন', icon: '👥', desc: 'সদস্য যাচাই ও role পরিবর্তন' },
-    { href: '/admin/requests', label: 'Requests', icon: '🩸', desc: 'রক্তের অনুরোধ পরিচালনা' },
-    { href: '/admin/analytics', label: 'Analytics', icon: '📊', desc: 'জেলাভিত্তিক ডোনার ও Request' },
+    { href: '/admin/camps', label: 'নতুন ক্যাম্প', icon: <TentIcon className="w-8 h-8" />, desc: 'ক্যাম্প তৈরি ও পরিচালনা' },
+    { href: '/admin/organizations', label: 'নতুন সংগঠন', icon: <BuildingIcon className="w-8 h-8" />, desc: 'সংগঠন তৈরি ও পরিচালনা' },
+    { href: '/admin/users', label: 'User দেখুন', icon: <UsersIcon className="w-8 h-8" />, desc: 'সদস্য যাচাই ও role পরিবর্তন' },
+    { href: '/admin/requests', label: 'Requests', icon: <DropIcon className="w-8 h-8" />, desc: 'রক্তের অনুরোধ পরিচালনা' },
+    { href: '/admin/analytics', label: 'Analytics', icon: <ChartBarIcon className="w-8 h-8" />, desc: 'জেলাভিত্তিক ডোনার ও Request' },
   ]
 
   return (
@@ -90,7 +91,7 @@ export default function AdminDashboard() {
               <>
                 <div className={`text-3xl font-bold ${color.split(' ')[1]}`}>{value}</div>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-base">{icon}</span>
+                  <span className={`${color.split(' ')[1]}`}>{icon}</span>
                   <p className="text-xs text-[#555555]">{label}</p>
                 </div>
               </>
@@ -109,7 +110,7 @@ export default function AdminDashboard() {
               href={href}
               className="bg-white rounded-2xl border border-[#E5E5E5] p-5 hover:border-[#D92B2B] hover:shadow-md transition-all group"
             >
-              <span className="text-3xl block mb-3">{icon}</span>
+              <span className="block mb-3 text-[#555555] group-hover:text-[#D92B2B] transition-colors">{icon}</span>
               <p className="font-semibold text-[#111111] text-sm group-hover:text-[#D92B2B] transition-colors">{label}</p>
               <p className="text-xs text-[#555555] mt-1">{desc}</p>
             </Link>
@@ -119,7 +120,7 @@ export default function AdminDashboard() {
 
       {/* Broadcast */}
       <div>
-        <h2 className="font-semibold text-[#111111] mb-4">📣 সবাইকে Broadcast করুন</h2>
+        <h2 className="font-semibold text-[#111111] mb-4 flex items-center gap-2"><MegaphoneIcon className="w-5 h-5 stroke-[#555555]" /> সবাইকে Broadcast করুন</h2>
         <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 space-y-3">
           <input
             type="text"
@@ -143,7 +144,7 @@ export default function AdminDashboard() {
             disabled={broadcasting || !broadcastTitle.trim()}
             className="bg-[#D92B2B] text-white rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
           >
-            {broadcasting ? 'পাঠানো হচ্ছে...' : '📣 সবাইকে পাঠাও'}
+            {broadcasting ? 'পাঠানো হচ্ছে...' : <span className="flex items-center gap-1.5"><MegaphoneIcon className="w-4 h-4 stroke-white" />সবাইকে পাঠাও</span>}
           </button>
         </div>
       </div>
@@ -184,7 +185,7 @@ export default function AdminDashboard() {
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                         r.urgency === 'urgent' ? 'bg-red-50 text-[#D92B2B]' : 'bg-blue-50 text-blue-700'
                       }`}>
-                        {r.urgency === 'urgent' ? '🔴 জরুরি' : '🔵 সাধারণ'}
+                        {r.urgency === 'urgent' ? 'জরুরি' : 'সাধারণ'}
                       </span>
                     </td>
                   </tr>
