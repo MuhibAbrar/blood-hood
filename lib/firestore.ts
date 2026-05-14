@@ -731,6 +731,50 @@ export const getPlatformStats = async (district?: string) => {
   }
 }
 
+// --- Per-user request count ---
+
+export const getBloodRequestCountByUser = async (uid: string): Promise<number> => {
+  const q = query(collection(db, 'bloodRequests'), where('requestedBy', '==', uid))
+  const snap = await getCountFromServer(q)
+  return snap.data().count
+}
+
+// --- District analytics ---
+
+export interface DistrictStat {
+  name: string
+  donors: number
+  available: number
+  requests: number
+}
+
+export const getDistrictAnalytics = async (): Promise<DistrictStat[]> => {
+  const [usersSnap, requestsSnap] = await Promise.all([
+    getDocs(query(collection(db, 'users'), limit(2000))),
+    getDocs(query(collection(db, 'bloodRequests'), limit(1000))),
+  ])
+
+  const map: Record<string, DistrictStat> = {}
+  const ensure = (name: string) => {
+    if (!map[name]) map[name] = { name, donors: 0, available: 0, requests: 0 }
+    return map[name]
+  }
+
+  usersSnap.docs.forEach(d => {
+    const u = d.data() as User
+    const s = ensure(u.district || 'অজানা')
+    s.donors++
+    if (u.isAvailable) s.available++
+  })
+
+  requestsSnap.docs.forEach(d => {
+    const r = d.data() as BloodRequest
+    ensure(r.district || 'অজানা').requests++
+  })
+
+  return Object.values(map).sort((a, b) => b.donors - a.donors)
+}
+
 // --- Contact Rate Limit ---
 
 const DAILY_CONTACT_LIMIT = 10

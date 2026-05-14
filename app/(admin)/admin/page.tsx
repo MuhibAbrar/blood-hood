@@ -67,6 +67,7 @@ export default function AdminDashboard() {
     { href: '/admin/organizations', label: 'নতুন সংগঠন', icon: '🏫', desc: 'সংগঠন তৈরি ও পরিচালনা' },
     { href: '/admin/users', label: 'User দেখুন', icon: '👥', desc: 'সদস্য যাচাই ও role পরিবর্তন' },
     { href: '/admin/requests', label: 'Requests', icon: '🩸', desc: 'রক্তের অনুরোধ পরিচালনা' },
+    { href: '/admin/analytics', label: 'Analytics', icon: '📊', desc: 'জেলাভিত্তিক ডোনার ও Request' },
   ]
 
   return (

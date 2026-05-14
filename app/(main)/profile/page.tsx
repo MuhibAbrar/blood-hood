@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { updateUser } from '@/lib/firestore'
@@ -14,7 +14,7 @@ import AvailabilityToggle from '@/components/donor/AvailabilityToggle'
 import TopBar from '@/components/layout/TopBar'
 import GuestPrompt from '@/components/ui/GuestPrompt'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
-import { recordSelfDonation } from '@/lib/firestore'
+import { recordSelfDonation, getBloodRequestCountByUser } from '@/lib/firestore'
 import { Timestamp } from 'firebase/firestore'
 import Modal from '@/components/ui/Modal'
 
@@ -28,6 +28,11 @@ export default function ProfilePage() {
   const [donationModal, setDonationModal] = useState(false)
   const [donationDate, setDonationDate] = useState('')
   const [donationLoading, setDonationLoading] = useState(false)
+  const [requestCount, setRequestCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (user?.uid) getBloodRequestCountByUser(user.uid).then(setRequestCount)
+  }, [user?.uid])
 
   if (!user) return (
     <div>
@@ -113,6 +118,10 @@ export default function ProfilePage() {
             <div className="text-center">
               <p className="font-bold text-2xl text-[#D92B2B]">{user.totalDonations}</p>
               <p className="text-xs text-[#555555]">মোট দান</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-2xl text-blue-600">{requestCount ?? '—'}</p>
+              <p className="text-xs text-[#555555]">Request</p>
             </div>
             <div className="text-center">
               <p className={`font-bold text-sm mt-1 ${user.isAvailable ? 'text-[#1A9E6B]' : 'text-[#D92B2B]'}`}>
