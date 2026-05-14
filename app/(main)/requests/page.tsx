@@ -23,8 +23,13 @@ export default function RequestsPage() {
     })
   }, [])
 
+  const isExpired = (r: BloodRequest) =>
+    r.status === 'open' && r.expiresAt != null && r.expiresAt.toDate() < new Date()
+
   const filtered = requests.filter((r) => {
-    if (filter !== 'all' && r.status !== filter) return false
+    if (filter === 'open') {
+      if (r.status !== 'open' || isExpired(r)) return false
+    } else if (filter !== 'all' && r.status !== filter) return false
     if (bloodFilter && r.bloodGroup !== bloodFilter) return false
     return true
   })

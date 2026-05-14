@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import { getBloodRequest, getDonors, respondToRequest, fulfillRequest, cancelRequest, getUsersByUids, getUserByPhone, getOrganizations } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
-import { getCompatibleDonors } from '@/lib/bloodCompatibility'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import DonorCard from '@/components/donor/DonorCard'
@@ -51,9 +50,8 @@ export default function RequestDetailClient() {
       setRequest(r)
       setLoading(false)
       if (r) {
-        const compatible = getCompatibleDonors(r.bloodGroup)
         const { donors } = await getDonors({ isAvailable: true })
-        setCompatibleDonors(donors.filter((d) => compatible.includes(d.bloodGroup)).slice(0, 10))
+        setCompatibleDonors(donors.filter((d) => d.bloodGroup === r.bloodGroup).slice(0, 10))
       }
     })
   }, [id])
@@ -218,6 +216,7 @@ export default function RequestDetailClient() {
   const isOwner = user?.uid === request.requestedBy
   const alreadyResponded = user ? request.respondedBy.includes(user.uid) : false
   const daysAgo = daysSince(request.createdAt.toDate())
+  const isExpired = request.status === 'open' && request.expiresAt != null && request.expiresAt.toDate() < new Date()
 
   return (
     <div>
@@ -335,9 +334,15 @@ export default function RequestDetailClient() {
             <p className="text-[#555555] font-semibold">এই অনুরোধ বাতিল করা হয়েছে</p>
           </div>
         )}
+        {isExpired && (
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+            <p className="text-[#555555] font-semibold">এই অনুরোধের মেয়াদ শেষ হয়ে গেছে</p>
+            <p className="text-xs text-[#555555]/70 mt-1">৭ দিনের বেশি পুরনো অনুরোধ স্বয়ংক্রিয়ভাবে বন্ধ হয়ে যায়</p>
+          </div>
+        )}
 
         {/* Donor actions */}
-        {request.status === 'open' && user && !isOwner && (
+        {request.status === 'open' && !isExpired && user && !isOwner && (
           <div className="space-y-3">
             {!alreadyResponded && !showPhone ? (
               <button onClick={handleRespond} disabled={actionLoading} className="btn-primary w-full">
@@ -352,7 +357,7 @@ export default function RequestDetailClient() {
         )}
 
         {/* Owner actions */}
-        {isOwner && request.status === 'open' && (
+        {isOwner && request.status === 'open' && !isExpired && (
           <div className="flex gap-3">
             <button onClick={openFulfillModal} disabled={actionLoading} className="btn-primary flex-1">
               ✓ পূর্ণ হয়েছে

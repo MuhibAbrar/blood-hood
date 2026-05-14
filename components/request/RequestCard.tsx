@@ -35,6 +35,10 @@ export default function RequestCard({ request }: RequestCardProps) {
 
   const isOwner = user?.uid === request.requestedBy
   const isUrgent = request.urgency === 'urgent'
+  const isExpired = request.status === 'open' && request.expiresAt != null && request.expiresAt.toDate() < new Date()
+  const daysLeft = request.status === 'open' && request.expiresAt && !isExpired
+    ? Math.ceil((request.expiresAt.toDate().getTime() - Date.now()) / 86400000)
+    : null
 
   const handleRespond = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -55,7 +59,7 @@ export default function RequestCard({ request }: RequestCardProps) {
     <div
       onClick={() => router.push(`/requests/${request.id}`)}
       className={`card p-4 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow ${
-        isUrgent && request.status === 'open' ? 'border-l-4 border-l-[#D92B2B]' : ''
+        isUrgent && request.status === 'open' && !isExpired ? 'border-l-4 border-l-[#D92B2B]' : ''
       }`}
     >
       {/* Header: blood group + name + urgency + time */}
@@ -64,13 +68,23 @@ export default function RequestCard({ request }: RequestCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-[#111111]">{request.patientName}</p>
-            {isUrgent && request.status === 'open' && (
+            {isUrgent && request.status === 'open' && !isExpired && (
               <span className="text-[10px] bg-[#D92B2B] text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
                 জরুরি
               </span>
             )}
+            {isExpired && (
+              <span className="text-[10px] bg-gray-200 text-[#555555] px-2 py-0.5 rounded-full font-semibold">
+                মেয়াদ শেষ
+              </span>
+            )}
           </div>
-          <p className="text-xs text-[#555555]/60 mt-0.5">{timeAgo(request.createdAt.toDate())}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-[#555555]/60">{timeAgo(request.createdAt.toDate())}</p>
+            {daysLeft !== null && daysLeft <= 2 && (
+              <p className="text-xs text-amber-500 font-medium">· {daysLeft} দিন বাকি</p>
+            )}
+          </div>
         </div>
         {/* Responders count */}
         {request.respondedBy.length > 0 && (
@@ -112,7 +126,7 @@ export default function RequestCard({ request }: RequestCardProps) {
         )}
       </div>
 
-      {/* Fulfilled / Cancelled status */}
+      {/* Fulfilled / Cancelled / Expired status */}
       {request.status === 'fulfilled' && (
         <div className="text-center py-2 bg-green-50 rounded-xl text-[#1A9E6B] text-sm font-semibold">
           ✓ রক্তের ব্যবস্থা হয়েছে
@@ -123,9 +137,14 @@ export default function RequestCard({ request }: RequestCardProps) {
           বাতিল হয়েছে
         </div>
       )}
+      {isExpired && (
+        <div className="text-center py-2 bg-gray-100 rounded-xl text-[#555555] text-sm font-medium">
+          মেয়াদ শেষ হয়ে গেছে
+        </div>
+      )}
 
       {/* Action buttons */}
-      {request.status === 'open' && (
+      {request.status === 'open' && !isExpired && (
         <div onClick={e => e.stopPropagation()} className="flex gap-2">
           {!user ? (
             <>
