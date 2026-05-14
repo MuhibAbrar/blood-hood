@@ -350,8 +350,12 @@ export const subscribeToRequests = (cb: (requests: BloodRequest[]) => void) => {
 
 export const createDonation = async (data: Omit<Donation, 'id'>): Promise<string> => {
   const ref = await addDoc(collection(db, 'donations'), data)
+  const nextAvailableAt = Timestamp.fromDate(
+    new Date(data.donatedAt.toDate().getTime() + 90 * 24 * 60 * 60 * 1000)
+  )
   await updateUser(data.donorId, {
     lastDonatedAt: data.donatedAt,
+    nextAvailableAt,
     isAvailable: false,
   })
   await updateDoc(doc(db, 'users', data.donorId), {

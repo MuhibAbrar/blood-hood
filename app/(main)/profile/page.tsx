@@ -125,7 +125,6 @@ export default function ProfilePage() {
 
         {/* Last donation countdown */}
         {(() => {
-          const DONATION_INTERVAL_DAYS = 120
           if (!user.lastDonatedAt) {
             return (
               <div className="card p-4 flex items-center gap-3 bg-green-50 border border-green-100">
@@ -139,7 +138,9 @@ export default function ProfilePage() {
           }
           const lastDate = user.lastDonatedAt.toDate()
           const elapsed = daysSince(lastDate)
-          const remaining = DONATION_INTERVAL_DAYS - elapsed
+          const remaining = user.nextAvailableAt
+            ? Math.max(0, Math.ceil((user.nextAvailableAt.toDate().getTime() - Date.now()) / 86400000))
+            : 0
           const canDonate = remaining <= 0
 
           return (
