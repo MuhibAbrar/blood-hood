@@ -93,79 +93,83 @@ export default function ProfilePage() {
 
   if (!user) return null
 
+  const lastDate = user.lastDonatedAt?.toDate() ?? null
+  const remaining = user.nextAvailableAt
+    ? Math.max(0, Math.ceil((user.nextAvailableAt.toDate().getTime() - Date.now()) / 86400000))
+    : 0
+  const canDonate = !lastDate || remaining <= 0
+
   return (
-    <div>
-      <TopBar title="আমার প্রোফাইল" action={
-        <button onClick={() => setEditing(!editing)} className="text-[#D92B2B] font-semibold text-sm">
+    <div className="pb-8">
+      <TopBar variant="red" title="আমার প্রোফাইল" action={
+        <button onClick={() => setEditing(!editing)} className="text-white font-semibold text-sm bg-white/20 px-3 py-1 rounded-lg">
           {editing ? 'বাতিল' : 'সম্পাদনা'}
         </button>
       } />
-      <div className="px-4 py-4 space-y-5">
-        {/* Profile Header */}
-        <div className="card p-6 flex flex-col items-center gap-3">
+
+      {/* ── Hero ── */}
+      <div className="bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] pt-6 pb-16 px-4 text-center">
+        <div className="inline-block ring-4 ring-white/30 rounded-full shadow-xl">
           {user.profilePhoto ? (
-            <img src={user.profilePhoto} alt="প্রোফাইল" className="w-20 h-20 rounded-full object-cover" />
+            <img src={user.profilePhoto} alt="প্রোফাইল" className="w-24 h-24 rounded-full object-cover" />
           ) : (
-            <DefaultAvatar gender={user.gender} size={80} />
+            <DefaultAvatar gender={user.gender} size={96} />
           )}
+        </div>
+        <div className="mt-3 flex justify-center">
           <BloodGroupBadge group={user.bloodGroup} size="lg" />
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-[#111111]">{user.name}</h2>
-            <p className="text-[#555555] text-sm">{user.phone}</p>
-            <p className="text-[#555555] text-sm">{user.upazila}{user.district ? `, ${user.district}` : ''}</p>
-          </div>
-          <div className="flex gap-6 mt-2">
-            <div className="text-center">
-              <p className="font-bold text-2xl text-[#D92B2B]">{user.totalDonations}</p>
-              <p className="text-xs text-[#555555]">মোট দান</p>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-2xl text-blue-600">{requestCount ?? '—'}</p>
-              <p className="text-xs text-[#555555]">Request</p>
-            </div>
-            <div className="text-center">
-              <p className={`font-bold text-sm mt-1 ${user.isAvailable ? 'text-[#1A9E6B]' : 'text-[#D92B2B]'}`}>
-                {user.isAvailable ? '● Available' : '○ Unavailable'}
-              </p>
-              <p className="text-xs text-[#555555]">অবস্থা</p>
-            </div>
+        </div>
+        <h2 className="text-xl font-bold text-white mt-2">{user.name}</h2>
+        <p className="text-white/70 text-sm">{user.phone}</p>
+        <p className="text-white/60 text-xs mt-0.5">
+          {user.upazila}{user.district ? `, ${user.district}` : ''}
+        </p>
+        {user.isVerified && (
+          <span className="inline-block mt-2 text-xs bg-white/20 text-white px-3 py-1 rounded-full">
+            ✓ যাচাইকৃত
+          </span>
+        )}
+      </div>
+
+      {/* ── Stat chips (overlap hero) ── */}
+      <div className="flex gap-3 px-4 -mt-8">
+        <StatChip
+          value={String(user.totalDonations)}
+          label="মোট দান"
+          valueColor="text-[#D92B2B]"
+        />
+        <StatChip
+          value={requestCount !== null ? String(requestCount) : '—'}
+          label="Request"
+          valueColor="text-blue-600"
+        />
+        <StatChip
+          value={user.isAvailable ? 'Active' : 'Inactive'}
+          label="অবস্থা"
+          valueColor={user.isAvailable ? 'text-[#1A9E6B]' : 'text-[#D92B2B]'}
+          small
+        />
+      </div>
+
+      {/* ── Body ── */}
+      <div className="px-4 mt-4 space-y-3">
+
+        {/* Donation countdown */}
+        <div className={`rounded-2xl border-l-4 bg-white border border-[#E5E5E5] p-4 flex items-center gap-3 ${canDonate ? 'border-l-[#1A9E6B]' : 'border-l-amber-400'}`}>
+          <span className="text-2xl shrink-0">{canDonate ? '✅' : '⏳'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-[#111111] text-sm">
+              {canDonate ? 'এখনই রক্ত দিতে পারবেন!' : `আর `}
+              {!canDonate && <span className="text-amber-600 font-bold">{remaining} দিন</span>}
+              {!canDonate && ' পরে দিতে পারবেন'}
+            </p>
+            <p className="text-xs text-[#555555] mt-0.5">
+              {lastDate
+                ? `শেষ দান: ${formatBanglaDate(lastDate)} (${daysSince(lastDate)} দিন আগে)`
+                : 'কোনো পূর্বের দানের রেকর্ড নেই'}
+            </p>
           </div>
         </div>
-
-        {/* Last donation countdown */}
-        {(() => {
-          if (!user.lastDonatedAt) {
-            return (
-              <div className="card p-4 flex items-center gap-3 bg-green-50 border border-green-100">
-                <span className="text-2xl">✅</span>
-                <div>
-                  <p className="font-semibold text-[#111111] text-sm">এখনই রক্ত দিতে পারবেন</p>
-                  <p className="text-xs text-[#555555] mt-0.5">আপনার কোনো পূর্বের দানের রেকর্ড নেই</p>
-                </div>
-              </div>
-            )
-          }
-          const lastDate = user.lastDonatedAt.toDate()
-          const elapsed = daysSince(lastDate)
-          const remaining = user.nextAvailableAt
-            ? Math.max(0, Math.ceil((user.nextAvailableAt.toDate().getTime() - Date.now()) / 86400000))
-            : 0
-          const canDonate = remaining <= 0
-
-          return (
-            <div className={`card p-4 flex items-center gap-3 ${canDonate ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
-              <span className="text-2xl">{canDonate ? '✅' : '⏳'}</span>
-              <div className="flex-1">
-                <p className="font-semibold text-[#111111] text-sm">
-                  {canDonate ? 'এখনই রক্ত দিতে পারবেন!' : `আর ${remaining} দিন পরে দিতে পারবেন`}
-                </p>
-                <p className="text-xs text-[#555555] mt-0.5">
-                  শেষ দান: {formatBanglaDate(lastDate)} ({elapsed} দিন আগে)
-                </p>
-              </div>
-            </div>
-          )
-        })()}
 
         {/* Availability Toggle */}
         <AvailabilityToggle />
@@ -173,7 +177,7 @@ export default function ProfilePage() {
         {/* Self-reported donation */}
         <button
           onClick={() => { setDonationDate(''); setDonationModal(true) }}
-          className="w-full card p-4 flex items-center justify-between text-left"
+          className="w-full bg-white rounded-2xl border border-[#E5E5E5] p-4 flex items-center justify-between text-left active:bg-[#FAFAFA] transition-colors"
         >
           <div>
             <p className="font-semibold text-[#111111]">আমি রক্ত দিয়েছি</p>
@@ -207,7 +211,7 @@ export default function ProfilePage() {
           </div>
         </Modal>
 
-        {/* Edit form */}
+        {/* Edit form / Info */}
         {editing ? (
           <div className="card p-4 space-y-4">
             <div>
@@ -244,29 +248,41 @@ export default function ProfilePage() {
             </button>
           </div>
         ) : (
-          <div className="card p-4 space-y-3">
+          <div className="card divide-y divide-[#F0F0F0]">
             <InfoRow label="রক্তের গ্রুপ" value={user.bloodGroup} />
             <InfoRow label="বয়স" value={`${user.age} বছর`} />
             {user.district && <InfoRow label="জেলা" value={user.district} />}
             <InfoRow label="উপজেলা" value={user.upazila} />
             {user.area && <InfoRow label="এলাকা" value={user.area} />}
-            <InfoRow label="ভূমিকা" value={user.role === 'superadmin' ? 'সুপার অ্যাডমিন' : user.role === 'admin' ? 'অ্যাডমিন' : 'ডোনার'} />
+            <InfoRow
+              label="ভূমিকা"
+              value={user.role === 'superadmin' ? 'সুপার অ্যাডমিন' : user.role === 'admin' ? 'অ্যাডমিন' : 'ডোনার'}
+            />
           </div>
         )}
 
         {/* Links */}
-        <div className="card divide-y divide-[#E5E5E5]">
-          <a href="/history" className="flex items-center justify-between p-4">
-            <span className="font-medium text-[#111111]">দানের ইতিহাস</span>
-            <span className="text-[#555555]">›</span>
+        <div className="card divide-y divide-[#F0F0F0]">
+          <a href="/history" className="flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center text-sm">🩸</span>
+              <span className="font-medium text-[#111111]">দানের ইতিহাস</span>
+            </div>
+            <span className="text-[#BBBBBB]">›</span>
           </a>
-          <a href="/organizations" className="flex items-center justify-between p-4">
-            <span className="font-medium text-[#111111]">সংগঠন</span>
-            <span className="text-[#555555]">›</span>
+          <a href="/organizations" className="flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-sm">🏫</span>
+              <span className="font-medium text-[#111111]">সংগঠন</span>
+            </div>
+            <span className="text-[#BBBBBB]">›</span>
           </a>
         </div>
 
-        <button onClick={handleLogout} className="btn-ghost w-full border border-[#E5E5E5] text-[#D92B2B]">
+        <button
+          onClick={handleLogout}
+          className="w-full py-3 rounded-2xl border-2 border-[#FFE5E5] text-[#D92B2B] font-semibold text-sm bg-white active:bg-red-50 transition-colors"
+        >
           লগ আউট করুন
         </button>
       </div>
@@ -274,9 +290,20 @@ export default function ProfilePage() {
   )
 }
 
+function StatChip({ value, label, valueColor, small }: {
+  value: string; label: string; valueColor: string; small?: boolean
+}) {
+  return (
+    <div className="flex-1 bg-white rounded-2xl border border-[#E5E5E5] shadow-sm p-3 flex flex-col items-center gap-1 text-center">
+      <span className={`font-bold leading-tight ${small ? 'text-sm' : 'text-2xl'} ${valueColor}`}>{value}</span>
+      <span className="text-[10px] text-[#999] leading-tight">{label}</span>
+    </div>
+  )
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between px-4 py-3">
       <span className="text-sm text-[#555555]">{label}</span>
       <span className="text-sm font-semibold text-[#111111]">{value}</span>
     </div>

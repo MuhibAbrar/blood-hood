@@ -9,26 +9,28 @@ interface TopBarProps {
   title: string
   back?: boolean
   action?: React.ReactNode
+  variant?: 'default' | 'red'
 }
 
-export default function TopBar({ title, back, action }: TopBarProps) {
+export default function TopBar({ title, back, action, variant = 'default' }: TopBarProps) {
   const router = useRouter()
+  const isRed = variant === 'red'
 
   return (
-    <header className="sticky top-0 bg-white border-b border-[#E5E5E5] z-40 safe-top">
+    <header className={`sticky top-0 z-40 safe-top ${isRed ? 'bg-[#D92B2B]' : 'bg-white border-b border-[#E5E5E5]'}`}>
       <div className="flex items-center h-14 px-4 gap-3">
         {back && (
           <button
             onClick={() => router.back()}
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
+            className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${isRed ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
             aria-label="পিছনে যান"
           >
-            <svg className="w-5 h-5 stroke-[#111111]" fill="none" viewBox="0 0 24 24" strokeWidth={2}>
+            <svg className={`w-5 h-5 ${isRed ? 'stroke-white' : 'stroke-[#111111]'}`} fill="none" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
             </svg>
           </button>
         )}
-        <h1 className="flex-1 text-lg font-semibold text-[#111111] truncate">{title}</h1>
+        <h1 className={`flex-1 text-lg font-semibold truncate ${isRed ? 'text-white' : 'text-[#111111]'}`}>{title}</h1>
         {action}
       </div>
     </header>
