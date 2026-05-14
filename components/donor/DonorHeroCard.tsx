@@ -38,8 +38,8 @@ function MobileSVG() {
       <defs>
         <mask id="bh-crescent-m">
           <rect x="0" y="0" width="400" height="175" fill="black" />
-          <circle cx="142" cy="72" r="12" fill="white" />
-          <circle cx="149" cy="67.5" r="11" fill="black" />
+          <circle cx="140" cy="72" r="13" fill="white" />
+          <circle cx="147" cy="72" r="11.5" fill="black" />
         </mask>
       </defs>
 
@@ -68,11 +68,11 @@ function MobileSVG() {
       <rect x="113" y="136" width="13" height="11" rx="1" fill="white" opacity="0.07" />
       <rect x="151" y="136" width="13" height="11" rx="1" fill="white" opacity="0.07" />
 
-      {/* Crescent moon */}
-      <circle cx="142" cy="72" r="12" fill="white" mask="url(#bh-crescent-m)" opacity="0.45" />
-      {/* + inside crescent */}
-      <path d="M 133,73 L 133,78 M 130.5,75.5 L 135.5,75.5"
-        stroke="white" strokeWidth="1.3" strokeLinecap="round" opacity="0.5" />
+      {/* Crescent moon — C-shape opening right */}
+      <circle cx="140" cy="72" r="13" fill="white" mask="url(#bh-crescent-m)" opacity="0.45" />
+      {/* Cross in the crescent opening (Red Crescent style) */}
+      <path d="M 150,63 L 150,81 M 144,72 L 157,72"
+        stroke="white" strokeWidth="3.5" strokeLinecap="butt" opacity="0.42" />
 
       {/* Right buildings */}
       <rect x="190" y="120" width="44" height="55" fill="white" opacity="0.07" />
@@ -103,8 +103,8 @@ function DesktopSVG() {
       <defs>
         <mask id="bh-crescent-d">
           <rect x="0" y="0" width="1440" height="175" fill="black" />
-          <circle cx="700" cy="72" r="12" fill="white" />
-          <circle cx="707" cy="67.5" r="11" fill="black" />
+          <circle cx="698" cy="72" r="13" fill="white" />
+          <circle cx="705" cy="72" r="11.5" fill="black" />
         </mask>
       </defs>
 
@@ -145,11 +145,11 @@ function DesktopSVG() {
       <rect x="667" y="133" width="14" height="11" rx="1" fill="white" opacity="0.07" />
       <rect x="707" y="133" width="14" height="11" rx="1" fill="white" opacity="0.07" />
 
-      {/* Crescent moon */}
-      <circle cx="700" cy="72" r="12" fill="white" mask="url(#bh-crescent-d)" opacity="0.45" />
-      {/* + inside crescent */}
-      <path d="M 691,73 L 691,78 M 688.5,75.5 L 693.5,75.5"
-        stroke="white" strokeWidth="1.3" strokeLinecap="round" opacity="0.5" />
+      {/* Crescent moon — C-shape opening right */}
+      <circle cx="698" cy="72" r="13" fill="white" mask="url(#bh-crescent-d)" opacity="0.45" />
+      {/* Cross in the crescent opening (Red Crescent style) */}
+      <path d="M 708,63 L 708,81 M 702,72 L 715,72"
+        stroke="white" strokeWidth="3.5" strokeLinecap="butt" opacity="0.42" />
 
       {/* Right buildings */}
       <rect x="760"  y="120" width="50" height="55" fill="white" opacity="0.07" />
