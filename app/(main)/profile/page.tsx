@@ -15,7 +15,7 @@ import TopBar from '@/components/layout/TopBar'
 import GuestPrompt from '@/components/ui/GuestPrompt'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { recordSelfDonation, getBloodRequestCountByUser } from '@/lib/firestore'
-import { CheckCircleIcon, ClockIcon, DropIcon, BuildingIcon, PhoneIcon } from '@/components/ui/Icons'
+import { CheckCircleIcon, ClockIcon, DropIcon, BuildingIcon } from '@/components/ui/Icons'
 import { Timestamp } from 'firebase/firestore'
 import Modal from '@/components/ui/Modal'
 
