@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 import { getCamps, createCamp, updateCamp, deleteCamp, getOrganizations } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
-import { KHULNA_UPAZILAS, formatBanglaDate } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA, formatBanglaDate } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import { Timestamp } from 'firebase/firestore'
 import type { Camp, Organization, CampStatus } from '@/types'
 
-const emptyForm = { title: '', organizationId: '', date: '', venue: '', area: '', status: 'upcoming' as CampStatus }
+const emptyForm = { title: '', organizationId: '', date: '', venue: '', district: '', area: '', status: 'upcoming' as CampStatus }
 
 export default function AdminCampsPage() {
   const { user } = useAuth()
@@ -37,6 +38,7 @@ export default function AdminCampsPage() {
       organizationId: camp.organizationId,
       date: camp.date.toDate().toISOString().slice(0, 16),
       venue: camp.venue,
+      district: '',
       area: camp.area,
       status: camp.status,
     })
@@ -176,12 +178,25 @@ export default function AdminCampsPage() {
               <Field label="স্থান *">
                 <input value={form.venue} onChange={set('venue')} placeholder="যেমন: কেডিএ মিলনায়তন" className="input-field" />
               </Field>
-              <Field label="উপজেলা *">
-                <select value={form.area} onChange={set('area')} className="input-field">
-                  <option value="">উপজেলা নির্বাচন করুন</option>
-                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+              <Field label="জেলা">
+                <SelectPicker
+                  value={form.district}
+                  onChange={(val) => setForm(f => ({ ...f, district: val, area: '' }))}
+                  options={DISTRICTS}
+                  placeholder="জেলা নির্বাচন করুন"
+                />
               </Field>
+              {form.district && (
+                <Field label="উপজেলা *">
+                  <SelectPicker
+                    value={form.area}
+                    onChange={(val) => setForm(f => ({ ...f, area: val }))}
+                    options={DISTRICTS_DATA[form.district] ?? []}
+                    placeholder="উপজেলা নির্বাচন করুন"
+                    searchable
+                  />
+                </Field>
+              )}
               {editing && (
                 <Field label="অবস্থা">
                   <select value={form.status} onChange={set('status')} className="input-field">

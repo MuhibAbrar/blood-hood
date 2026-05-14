@@ -5,7 +5,8 @@ import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getOrgMembers, removeMember, getUserByPhone, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import type { Organization, User, JoinRequest, BloodGroup, Gender } from '@/types'
 
@@ -30,7 +31,7 @@ export default function OrgMembersPage() {
   const [manualLoading, setManualLoading] = useState(false)
   const [manualForm, setManualForm] = useState({
     name: '', phone: '', bloodGroup: '' as BloodGroup | '',
-    upazila: '', area: '', gender: '' as Gender | '', age: '',
+    district: '', upazila: '', area: '', gender: '' as Gender | '', age: '',
   })
 
   const load = async (o: Organization) => {
@@ -125,6 +126,7 @@ export default function OrgMembersPage() {
           name: manualForm.name,
           phone,
           bloodGroup: manualForm.bloodGroup,
+          district: manualForm.district || undefined,
           upazila: manualForm.upazila,
           area: manualForm.area,
           gender: manualForm.gender,
@@ -140,7 +142,7 @@ export default function OrgMembersPage() {
       }
       showToast(`${manualForm.name} সফলভাবে যোগ করা হয়েছে ✓`, 'success')
       setShowManualModal(false)
-      setManualForm({ name: '', phone: '', bloodGroup: '', upazila: '', area: '', gender: '', age: '' })
+      setManualForm({ name: '', phone: '', bloodGroup: '', district: '', upazila: '', area: '', gender: '', age: '' })
       await load(org)
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
@@ -482,12 +484,26 @@ export default function OrgMembersPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
-                <select value={manualForm.upazila} onChange={setManual('upazila')} className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]">
-                  <option value="">উপজেলা নির্বাচন করুন</option>
-                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+                <SelectPicker
+                  value={manualForm.district}
+                  onChange={(val) => setManualForm(f => ({ ...f, district: val, upazila: '' }))}
+                  options={DISTRICTS}
+                  placeholder="জেলা নির্বাচন করুন"
+                />
               </div>
+              {manualForm.district && (
+                <div>
+                  <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
+                  <SelectPicker
+                    value={manualForm.upazila}
+                    onChange={(val) => setManualForm(f => ({ ...f, upazila: val }))}
+                    options={DISTRICTS_DATA[manualForm.district] ?? []}
+                    placeholder="উপজেলা নির্বাচন করুন"
+                    searchable
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা</label>
                 <input value={manualForm.area} onChange={setManual('area')} placeholder="মহল্লা / পাড়া (ঐচ্ছিক)" className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A9E6B]" />

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { getAllUsers } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import type { User, UserRole, BloodGroup, Gender } from '@/types'
 // BloodGroup and Gender used in addForm state typing only
@@ -27,7 +28,7 @@ export default function AdminUsersPage() {
   const [addLoading, setAddLoading] = useState(false)
   const [addForm, setAddForm] = useState({
     name: '', phone: '', bloodGroup: '' as BloodGroup | '',
-    upazila: '', area: '', gender: '' as Gender | '', age: '',
+    district: '', upazila: '', area: '', gender: '' as Gender | '', age: '',
   })
 
   const load = async () => {
@@ -138,6 +139,7 @@ export default function AdminUsersPage() {
           name: addForm.name,
           phone,
           bloodGroup: addForm.bloodGroup,
+          district: addForm.district || undefined,
           upazila: addForm.upazila,
           area: addForm.area,
           gender: addForm.gender,
@@ -152,7 +154,7 @@ export default function AdminUsersPage() {
       }
       showToast(`${addForm.name} সফলভাবে যোগ করা হয়েছে ✓`, 'success')
       setAddModal(false)
-      setAddForm({ name: '', phone: '', bloodGroup: '', upazila: '', area: '', gender: '', age: '' })
+      setAddForm({ name: '', phone: '', bloodGroup: '', district: '', upazila: '', area: '', gender: '', age: '' })
       await load()
     } catch {
       showToast('কিছু একটা সমস্যা হয়েছে', 'error')
@@ -371,14 +373,29 @@ export default function AdminUsersPage() {
                   <option value="other">অন্যান্য</option>
                 </select>
               </div>
-              {/* Upazila */}
+              {/* District */}
               <div>
-                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
-                <select value={addForm.upazila} onChange={setAdd('upazila')} className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]">
-                  <option value="">উপজেলা নির্বাচন করুন</option>
-                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+                <SelectPicker
+                  value={addForm.district}
+                  onChange={(val) => setAddForm(f => ({ ...f, district: val, upazila: '' }))}
+                  options={DISTRICTS}
+                  placeholder="জেলা নির্বাচন করুন"
+                />
               </div>
+              {/* Upazila */}
+              {addForm.district && (
+                <div>
+                  <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
+                  <SelectPicker
+                    value={addForm.upazila}
+                    onChange={(val) => setAddForm(f => ({ ...f, upazila: val }))}
+                    options={DISTRICTS_DATA[addForm.district] ?? []}
+                    placeholder="উপজেলা নির্বাচন করুন"
+                    searchable
+                  />
+                </div>
+              )}
               {/* Area */}
               <div>
                 <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা</label>

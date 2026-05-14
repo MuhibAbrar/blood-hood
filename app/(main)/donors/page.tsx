@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { getDonors, getOrganizations } from '@/lib/firestore'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
-import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import DonorCard from '@/components/donor/DonorCard'
 import { DonorCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import EmptyState from '@/components/shared/EmptyState'
@@ -21,6 +22,7 @@ export default function DonorsPage() {
   const [lastDoc, setLastDoc] = useState<import('firebase/firestore').DocumentSnapshot | null>(null)
   const [search, setSearch] = useState('')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
+  const [districtFilter, setDistrictFilter] = useState('')
   const [upazilaFilter, setUpazilaFilter] = useState('')
   const [availableOnly, setAvailableOnly] = useState(false)
 
@@ -55,14 +57,15 @@ export default function DonorsPage() {
   useEffect(() => {
     let result = [...donors]
     if (bloodFilter) result = result.filter((d) => d.bloodGroup === bloodFilter)
+    if (districtFilter) result = result.filter((d) => d.district === districtFilter)
     if (upazilaFilter) result = result.filter((d) => d.upazila === upazilaFilter)
     if (availableOnly) result = result.filter((d) => d.isAvailable)
     if (search) {
       const q = search.toLowerCase()
-      result = result.filter((d) => d.name.toLowerCase().includes(q) || d.upazila.includes(q))
+      result = result.filter((d) => d.name.toLowerCase().includes(q) || d.upazila.includes(q) || (d.district ?? '').toLowerCase().includes(q))
     }
     setFiltered(result)
-  }, [donors, bloodFilter, upazilaFilter, availableOnly, search])
+  }, [donors, bloodFilter, districtFilter, upazilaFilter, availableOnly, search])
 
   // Get org name for a donor — also checks adminIds as fallback for org admins
   const getOrgName = (donor: User) => {
@@ -90,23 +93,42 @@ export default function DonorsPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          <select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value as BloodGroup | '')} className="input-field w-auto text-sm shrink-0">
-            <option value="">সব গ্রুপ</option>
-            {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-          <select value={upazilaFilter} onChange={(e) => setUpazilaFilter(e.target.value)} className="input-field w-auto text-sm shrink-0">
-            <option value="">সব উপজেলা</option>
-            {KHULNA_UPAZILAS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-          <button
-            onClick={() => setAvailableOnly(!availableOnly)}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-colors ${
-              availableOnly ? 'bg-[#1A9E6B] text-white border-[#1A9E6B]' : 'border-[#E5E5E5] text-[#555555]'
-            }`}
-          >
-            Available
-          </button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value as BloodGroup | '')} className="input-field flex-1 text-sm">
+              <option value="">সব গ্রুপ</option>
+              {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <button
+              onClick={() => setAvailableOnly(!availableOnly)}
+              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                availableOnly ? 'bg-[#1A9E6B] text-white border-[#1A9E6B]' : 'border-[#E5E5E5] text-[#555555]'
+              }`}
+            >
+              Available
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <SelectPicker
+                value={districtFilter}
+                onChange={(val) => { setDistrictFilter(val); setUpazilaFilter('') }}
+                options={DISTRICTS}
+                placeholder="সব জেলা"
+              />
+            </div>
+            {districtFilter && (
+              <div className="flex-1">
+                <SelectPicker
+                  value={upazilaFilter}
+                  onChange={setUpazilaFilter}
+                  options={DISTRICTS_DATA[districtFilter] ?? []}
+                  placeholder="সব উপজেলা"
+                  searchable
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Results count */}

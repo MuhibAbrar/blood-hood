@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import { getOrganizations, createOrganization, updateOrganization, getAllUsers } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
-import { KHULNA_UPAZILAS } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import type { Organization, OrgType, User } from '@/types'
 
-const emptyForm = { name: '', type: 'community' as OrgType, area: '', isVerified: false, adminIds: [] as string[], logo: null as null }
+const emptyForm = { name: '', type: 'community' as OrgType, district: '', area: '', isVerified: false, adminIds: [] as string[], logo: null as null }
 
 const orgTypes: { value: OrgType; label: string; icon: string }[] = [
   { value: 'community', label: 'কমিউনিটি', icon: '🏘️' },
@@ -44,7 +45,7 @@ export default function AdminOrgsPage() {
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (org: Organization) => {
     setEditing(org)
-    setForm({ name: org.name, type: org.type, area: org.area, isVerified: org.isVerified, adminIds: org.adminIds, logo: null })
+    setForm({ name: org.name, type: org.type, district: org.district ?? '', area: org.area, isVerified: org.isVerified, adminIds: org.adminIds, logo: null })
     setShowModal(true)
   }
 
@@ -219,12 +220,26 @@ export default function AdminOrgsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা / এলাকা *</label>
-                <select value={form.area} onChange={set('area')} className="input-field">
-                  <option value="">নির্বাচন করুন</option>
-                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+                <SelectPicker
+                  value={form.district}
+                  onChange={(val) => setForm(f => ({ ...f, district: val, area: '' }))}
+                  options={DISTRICTS}
+                  placeholder="জেলা নির্বাচন করুন"
+                />
               </div>
+              {form.district && (
+                <div>
+                  <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা / এলাকা *</label>
+                  <SelectPicker
+                    value={form.area}
+                    onChange={(val) => setForm(f => ({ ...f, area: val }))}
+                    options={DISTRICTS_DATA[form.district] ?? []}
+                    placeholder="উপজেলা নির্বাচন করুন"
+                    searchable
+                  />
+                </div>
+              )}
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"

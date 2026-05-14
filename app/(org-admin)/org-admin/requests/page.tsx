@@ -6,7 +6,8 @@ import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getBloodRequestsByOrg, createBloodRequest, cancelRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
-import { KHULNA_UPAZILAS, formatBanglaDate } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA, formatBanglaDate } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import type { BloodRequest, BloodGroup, Urgency } from '@/types'
 
 const statusLabel = (s: BloodRequest['status']) => ({
@@ -19,6 +20,7 @@ const defaultForm = {
   patientName: '',
   bloodGroup: '' as BloodGroup | '',
   hospital: '',
+  district: '',
   area: '',
   contactPhone: '',
   urgency: 'normal' as Urgency,
@@ -62,6 +64,7 @@ export default function OrgRequestsPage() {
         patientName: form.patientName,
         bloodGroup: form.bloodGroup as BloodGroup,
         hospital: form.hospital,
+        district: form.district || undefined,
         area: form.area,
         contactPhone: form.contactPhone,
         requestedBy: user.uid,
@@ -271,18 +274,28 @@ export default function OrgRequestsPage() {
                 />
               </div>
 
-              {/* Area */}
+              {/* District + Area */}
               <div>
-                <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা</label>
-                <select
-                  value={form.area}
-                  onChange={e => setForm(f => ({ ...f, area: e.target.value }))}
-                  className="input-field"
-                >
-                  <option value="">উপজেলা নির্বাচন করুন</option>
-                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+                <SelectPicker
+                  value={form.district}
+                  onChange={(val) => setForm(f => ({ ...f, district: val, area: '' }))}
+                  options={DISTRICTS}
+                  placeholder="জেলা নির্বাচন করুন"
+                />
               </div>
+              {form.district && (
+                <div>
+                  <label className="block text-sm font-medium text-[#111111] mb-1.5">এলাকা / উপজেলা</label>
+                  <SelectPicker
+                    value={form.area}
+                    onChange={(val) => setForm(f => ({ ...f, area: val }))}
+                    options={DISTRICTS_DATA[form.district] ?? []}
+                    placeholder="উপজেলা নির্বাচন করুন"
+                    searchable
+                  />
+                </div>
+              )}
 
               {/* Contact phone */}
               <div>

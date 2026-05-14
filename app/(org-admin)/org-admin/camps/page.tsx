@@ -5,12 +5,13 @@ import { useAuth } from '@/context/AuthContext'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
 import { getCampsByOrg, createCamp, updateCamp, deleteCamp, getOrgMembers, recordCampDonation } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
-import { KHULNA_UPAZILAS, formatBanglaDate } from '@/lib/constants'
+import { DISTRICTS, DISTRICTS_DATA, formatBanglaDate } from '@/lib/constants'
+import SelectPicker from '@/components/ui/SelectPicker'
 import { Timestamp } from 'firebase/firestore'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import type { Camp, User, CampStatus } from '@/types'
 
-const emptyForm = { title: '', date: '', venue: '', area: '', status: 'upcoming' as CampStatus }
+const emptyForm = { title: '', date: '', venue: '', district: '', area: '', status: 'upcoming' as CampStatus }
 
 export default function OrgCampsPage() {
   const { user } = useAuth()
@@ -41,7 +42,7 @@ export default function OrgCampsPage() {
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (camp: Camp) => {
     setEditing(camp)
-    setForm({ title: camp.title, date: camp.date.toDate().toISOString().slice(0, 16), venue: camp.venue, area: camp.area, status: camp.status })
+    setForm({ title: camp.title, date: camp.date.toDate().toISOString().slice(0, 16), venue: camp.venue, district: '', area: camp.area, status: camp.status })
     setShowModal(true)
   }
 
@@ -173,12 +174,26 @@ export default function OrgCampsPage() {
                 </div>
               ))}
               <div>
-                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
-                <select value={form.area} onChange={set('area')} className="input-field">
-                  <option value="">নির্বাচন করুন</option>
-                  {KHULNA_UPAZILAS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+                <SelectPicker
+                  value={form.district}
+                  onChange={(val) => setForm(f => ({ ...f, district: val, area: '' }))}
+                  options={DISTRICTS}
+                  placeholder="জেলা নির্বাচন করুন"
+                />
               </div>
+              {form.district && (
+                <div>
+                  <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
+                  <SelectPicker
+                    value={form.area}
+                    onChange={(val) => setForm(f => ({ ...f, area: val }))}
+                    options={DISTRICTS_DATA[form.district] ?? []}
+                    placeholder="উপজেলা নির্বাচন করুন"
+                    searchable
+                  />
+                </div>
+              )}
               {editing && (
                 <div>
                   <label className="block text-sm font-medium text-[#111111] mb-1.5">অবস্থা</label>
