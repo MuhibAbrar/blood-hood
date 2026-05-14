@@ -8,7 +8,7 @@ import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { BloodRequest } from '@/types'
-import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, HeartIcon } from '@/components/ui/Icons'
+import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, CheckCircleIcon } from '@/components/ui/Icons'
 
 interface Stats {
   totalMembers: number
@@ -17,7 +17,6 @@ interface Stats {
   pendingRequests: number
   totalDonations: number
 }
-
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -32,35 +31,42 @@ export default function DashboardPage() {
 
   return (
     <div className="pb-8">
-      {/* Full-width hero — no horizontal padding here */}
+      {/* Full-width hero */}
       <DonorHeroCard />
 
-      {/* Stat chips overlapping wave */}
-      <div className="flex gap-2 px-4 -mt-5">
-        <StatChip
-          value={loadingStats ? '—' : String(stats?.availableNow ?? 0)}
-          label="Available"
-          color="text-[#1A9E6B]"
-        />
-        <StatChip
-          value={loadingStats ? '—' : String(stats?.pendingRequests ?? 0)}
-          label="Request"
-          color="text-[#D92B2B]"
-        />
-        <StatChip
-          value={loadingStats ? '—' : String(stats?.thisMonthDonations ?? 0)}
-          label="এই মাসে দান"
-          color="text-blue-600"
-        />
-        <StatChip
-          value={loadingStats ? '—' : String(stats?.totalMembers ?? 0)}
-          label="সদস্য"
-          color="text-purple-600"
-        />
-      </div>
+      <div className="px-4 mt-4 space-y-5">
+        {/* পরিসংখ্যান */}
+        <div>
+          <h3 className="font-semibold text-[#111111] mb-3">পরিসংখ্যান</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard
+              label="মোট সদস্য"
+              value={loadingStats ? null : (stats?.totalMembers ?? 0)}
+              icon={<UsersIcon className="w-5 h-5" />}
+              bg="bg-purple-50" iconColor="text-purple-500" valueColor="text-[#555555]"
+            />
+            <StatCard
+              label="এখন Available"
+              value={loadingStats ? null : (stats?.availableNow ?? 0)}
+              icon={<CheckCircleIcon className="w-5 h-5" />}
+              bg="bg-green-50" iconColor="text-[#1A9E6B]" valueColor="text-[#1A9E6B]"
+            />
+            <StatCard
+              label="এই মাসে দান"
+              value={loadingStats ? null : (stats?.thisMonthDonations ?? 0)}
+              icon={<DropIcon className="w-5 h-5" />}
+              bg="bg-red-50" iconColor="text-[#D92B2B]" valueColor="text-[#D92B2B]"
+            />
+            <StatCard
+              label="অপেক্ষারত Request"
+              value={loadingStats ? null : (stats?.pendingRequests ?? 0)}
+              icon={<ClockIcon className="w-5 h-5" />}
+              bg="bg-orange-50" iconColor="text-orange-500" valueColor="text-orange-600"
+            />
+          </div>
+        </div>
 
-      <div className="px-4 mt-5 space-y-6">
-        {/* Quick Actions — bKash 4-column grid */}
+        {/* দ্রুত অ্যাকশন */}
         <div className="bg-white rounded-2xl border border-[#E5E5E5] p-4">
           <p className="text-xs font-semibold text-[#999] uppercase tracking-wide mb-3">দ্রুত অ্যাকশন</p>
           <div className="grid grid-cols-4 gap-y-4">
@@ -76,10 +82,15 @@ export default function DashboardPage() {
               icon={<ClockIcon className="w-6 h-6" />} />
             <QuickAction href="/leaderboard" label="লিডারবোর্ড" bg="bg-yellow-50" color="text-yellow-600"
               icon={<ChartBarIcon className="w-6 h-6" />} />
-            <QuickAction href="/history" label="ইতিহাস" bg="bg-pink-50" color="text-pink-600"
-              icon={<HeartIcon className="w-6 h-6" />} />
             <QuickAction href="/notifications" label="নোটিফিকেশন" bg="bg-indigo-50" color="text-indigo-600"
               icon={<BellIcon className="w-6 h-6" />} />
+            {/* Coming soon */}
+            <div className="flex flex-col items-center gap-1.5 opacity-40">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#D92B2B] flex items-center justify-center">
+                <DropIcon className="w-6 h-6" />
+              </div>
+              <span className="text-[10px] font-medium text-[#333] text-center leading-tight px-1">দান করুন</span>
+            </div>
           </div>
         </div>
 
@@ -102,11 +113,28 @@ export default function DashboardPage() {
   )
 }
 
-function StatChip({ value, label, color }: { value: string; label: string; color: string }) {
+function StatCard({ label, value, icon, bg, iconColor, valueColor }: {
+  label: string; value: number | null
+  icon: React.ReactNode; bg: string; iconColor: string; valueColor: string
+}) {
   return (
-    <div className="flex-1 bg-white rounded-2xl border border-[#E5E5E5] shadow-sm p-2.5 flex flex-col items-center gap-0.5 text-center">
-      <span className={`font-bold text-lg leading-tight ${color}`}>{value}</span>
-      <span className="text-[9px] text-[#999] leading-tight">{label}</span>
+    <div className="card p-4 flex items-center gap-3">
+      <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center shrink-0 ${iconColor}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        {value === null ? (
+          <div className="animate-pulse space-y-1.5">
+            <div className="h-6 w-10 bg-gray-200 rounded" />
+            <div className="h-2.5 w-16 bg-gray-100 rounded" />
+          </div>
+        ) : (
+          <>
+            <p className={`text-2xl font-bold leading-none ${valueColor}`}>{value}</p>
+            <p className="text-xs text-[#555555] mt-1 leading-tight">{label}</p>
+          </>
+        )}
+      </div>
     </div>
   )
 }
