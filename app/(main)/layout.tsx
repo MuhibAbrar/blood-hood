@@ -36,7 +36,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 <InstallBanner />
       <InAppNotification />
       <DonationFollowUpModal />
-      <main className="flex-1 pb-20 md:pb-6 md:ml-56">{children}</main>
+      <main className="flex-1 pb-20">{children}</main>
       <BottomNav />
     </div>
   )
