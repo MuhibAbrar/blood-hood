@@ -12,6 +12,21 @@ import EmptyState from '@/components/shared/EmptyState'
 import TopBar from '@/components/layout/TopBar'
 import type { User, BloodGroup } from '@/types'
 
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+function weightedShuffle(donors: User[]): User[] {
+  const tier1 = donors.filter(d => d.isAvailable && d.totalDonations > 0)
+  const tier2 = donors.filter(d => d.isAvailable && d.totalDonations === 0)
+  const tier3 = donors.filter(d => !d.isAvailable)
+  return [...shuffle(tier1), ...shuffle(tier2), ...shuffle(tier3)]
+}
+
 export default function DonorsPage() {
   const { user } = useAuth()
   const userDistrict = user?.district ?? ''
@@ -67,7 +82,7 @@ export default function DonorsPage() {
       const q = search.toLowerCase()
       result = result.filter((d) => d.name.toLowerCase().includes(q) || d.upazila.toLowerCase().includes(q))
     }
-    setFiltered(result)
+    setFiltered(weightedShuffle(result))
   }, [donors, userDistrict, bloodFilter, upazilaFilter, availableOnly, search])
 
   const getOrgName = (donor: User) => {
