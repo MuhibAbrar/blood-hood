@@ -332,9 +332,9 @@ function DesktopSVG() {
 function HeroIllustration() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
-      <HeroCanvas />
       <MobileSVG />
       <DesktopSVG />
+      <HeroCanvas />
     </div>
   )
 }
