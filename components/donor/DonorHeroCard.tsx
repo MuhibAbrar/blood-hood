@@ -7,7 +7,16 @@ import { useToast } from '@/components/ui/Toast'
 import { updateUser } from '@/lib/firestore'
 import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
-import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
+
+// ── Drawer menu items ──────────────────────────────────────────────────────
+const MENU_ITEMS = [
+  { href: '/dashboard', label: 'Home',               icon: 'm3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22v-10h6v10' },
+  { href: '/complain',  label: 'Complain',            icon: 'M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z' },
+  { href: '/contact',   label: 'Contact us',          icon: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.07 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 17z' },
+  { href: '/follow',    label: 'Follow us',           icon: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z' },
+  { href: '/terms',     label: 'Terms & Conditions',  icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z' },
+  { href: '/about',     label: 'About us',            icon: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-7v-3m0-4h.01' },
+]
 
 // ECG waypoints as dy from baseline
 const ECG_A: [number, number][] = [
@@ -329,8 +338,9 @@ function GuestHeroCard() {
 export default function DonorHeroCard() {
   const { user, refreshUser } = useAuth()
   const { showToast } = useToast()
-  const [modalOpen, setModalOpen] = useState(false)
-  const [loading,   setLoading]   = useState(false)
+  const [modalOpen,  setModalOpen]  = useState(false)
+  const [loading,    setLoading]    = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   if (!user) return <GuestHeroCard />
 
@@ -351,16 +361,40 @@ export default function DonorHeroCard() {
         <HeroIllustration />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <div className="ring-2 ring-white/30 rounded-full shrink-0">
-              {user.profilePhoto
-                ? <img src={user.profilePhoto} alt="প্রোফাইল" className="w-14 h-14 rounded-full object-cover"/>
-                : <DefaultAvatar gender={user.gender} size={56}/>}
+            {/* Avatar + blood group badge at bottom-right */}
+            <div className="relative shrink-0">
+              <div className="ring-2 ring-white/30 rounded-full">
+                {user.profilePhoto
+                  ? <img src={user.profilePhoto} alt="প্রোফাইল" className="w-14 h-14 rounded-full object-cover"/>
+                  : <DefaultAvatar gender={user.gender} size={56}/>}
+              </div>
+              <div className="absolute -bottom-1 -right-1 min-w-[22px] h-[22px] rounded-full bg-[#D92B2B] border-2 border-white flex items-center justify-center px-1 shadow-sm">
+                <span className="text-white text-[9px] font-bold leading-none">{user.bloodGroup}</span>
+              </div>
             </div>
+
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-bold leading-tight">{user.name}</h2>
               <p className="text-white/65 text-xs mt-0.5">{user.upazila}{user.district ? `, ${user.district}` : ''}</p>
             </div>
-            <BloodGroupBadge group={user.bloodGroup} size="md"/>
+
+            {/* App logo circle with hamburger badge — opens drawer */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="relative shrink-0 w-11 h-11 rounded-full bg-white/20 border border-white/30 flex items-center justify-center active:scale-90 transition-transform"
+              aria-label="Menu"
+            >
+              {/* Blood drop logo */}
+              <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                <path d="M12 2C7 8 4 12 4 15a8 8 0 0 0 16 0c0-3-3-7-8-13z"/>
+              </svg>
+              {/* Hamburger badge at bottom-right */}
+              <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4 bg-white rounded-full flex flex-col items-center justify-center gap-[2.5px] px-[3px] shadow-sm" style={{ width: 18, height: 16 }}>
+                <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
+                <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
+                <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
+              </span>
+            </button>
           </div>
           <button type="button" onClick={() => setModalOpen(true)} disabled={loading}
             className="w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
@@ -376,6 +410,49 @@ export default function DonorHeroCard() {
           </button>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-9 bg-[#FAFAFA] rounded-t-[32px] z-10"/>
+      </div>
+
+      {/* ── Side drawer ────────────────────────────────────────────────── */}
+      {/* Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-[60] transition-opacity duration-300 ${drawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setDrawerOpen(false)}
+      />
+      {/* Panel */}
+      <div className={`fixed right-0 top-0 h-full w-72 max-w-[85vw] bg-white z-[61] shadow-2xl flex flex-col transition-transform duration-300 ease-out ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        {/* Header */}
+        <div className="bg-gradient-to-br from-[#D92B2B] to-[#9B1B1B] px-5 pt-12 pb-5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 border border-white/30 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
+              <path d="M12 2C7 8 4 12 4 15a8 8 0 0 0 16 0c0-3-3-7-8-13z"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-base leading-tight">Blood Hood</p>
+            <p className="text-white/60 text-xs">রক্তের সন্ধান</p>
+          </div>
+          <button onClick={() => setDrawerOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 active:scale-90 transition-transform shrink-0">
+            <svg className="w-4 h-4 stroke-white" fill="none" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        {/* Menu */}
+        <nav className="flex-1 overflow-y-auto py-2">
+          {MENU_ITEMS.map(({ href, label, icon }) => (
+            <Link key={href} href={href} onClick={() => setDrawerOpen(false)}
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-red-50 transition-colors group">
+              <svg className="w-5 h-5 stroke-[#777] group-hover:stroke-[#D92B2B] transition-colors shrink-0 flex-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={icon}/>
+              </svg>
+              <span className="text-[#222] group-hover:text-[#D92B2B] font-medium text-sm transition-colors">{label}</span>
+            </Link>
+          ))}
+        </nav>
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-[#F0F0F0]">
+          <p className="text-xs text-[#AAA] text-center">Blood Hood · Made with ❤️ in Bangladesh</p>
+        </div>
       </div>
 
       {modalOpen && (
