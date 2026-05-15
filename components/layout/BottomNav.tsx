@@ -48,39 +48,33 @@ export default function BottomNav() {
         className="fixed left-4 right-4 z-50 md:hidden"
         style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >
-        <div className="relative pt-6">
-          {/* Elevated center button — floats above the pill */}
-          {(() => {
-            const centerActive = pathname === '/requests/new'
-            return (
-              <Link
-                href="/requests/new"
-                className="absolute top-0 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center"
-              >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 ${
-                  centerActive
-                    ? 'bg-[#8B1A1A] ring-2 ring-[#D92B2B]/50 ring-offset-1 shadow-lg'
-                    : 'bg-[#D92B2B] shadow-lg shadow-[#D92B2B]/50'
-                }`}>
-                  <BloodIcon className="w-6 h-6 stroke-white" />
-                </div>
-              </Link>
-            )
-          })()}
+        <div className="relative pt-7">
+          {/* Elevated center button — circle + label together in one Link */}
+          <Link
+            href="/donors"
+            className="absolute top-0 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1"
+          >
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+              pathname.startsWith('/donors')
+                ? 'bg-[#8B1A1A] ring-2 ring-[#D92B2B]/50 ring-offset-1 shadow-lg'
+                : 'bg-[#D92B2B] shadow-lg shadow-[#D92B2B]/50'
+            }`}>
+              <BloodIcon className="w-7 h-7 stroke-white" />
+            </div>
+            <span className={`text-[8px] font-semibold text-center leading-tight whitespace-pre-line ${
+              pathname.startsWith('/donors') ? 'text-[#D92B2B]' : 'text-[#555]'
+            }`}>{'ডোনার\nখুঁজুন'}</span>
+          </Link>
 
           {/* Frosted glass pill */}
-          <nav className="flex items-center h-14 px-1 rounded-full bg-white/30 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/10">
+          <nav className="flex items-center h-16 px-1 rounded-full bg-white/30 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/10">
             <PillItem href="/dashboard" label="হোম" icon={HomeIcon}
               active={pathname === '/dashboard'} />
-            <PillItem href="/donors" label="খুঁজুন" icon={SearchIcon}
-              active={pathname.startsWith('/donors')} />
+            <PillItem href="/requests/new" label="রিকোয়েস্ট" icon={RequestIcon}
+              active={pathname === '/requests/new'} />
 
-            {/* Spacer for the floating button + label below it */}
-            <div className="flex-1 flex flex-col items-center justify-end pb-1.5">
-              <span className={`text-[9px] font-medium ${
-                pathname === '/requests/new' ? 'text-[#D92B2B] font-semibold' : 'text-[#777]'
-              }`}>রিকোয়েস্ট</span>
-            </div>
+            {/* Empty spacer — center button lives above this */}
+            <div className="flex-1" />
 
             <PillItem href="/requests" label="ডোনেট" icon={HeartIcon}
               active={pathname.startsWith('/requests') && pathname !== '/requests/new'} />
@@ -159,12 +153,21 @@ function PillItem({ href, label, icon: Icon, active }: {
   href: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean
 }) {
   return (
-    <Link href={href} className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full">
-      <Icon className={`w-5 h-5 transition-colors ${active ? 'stroke-[#D92B2B]' : 'stroke-[#666]'}`} />
-      <span className={`text-[9px] transition-colors ${active ? 'text-[#D92B2B] font-semibold' : 'text-[#777] font-medium'}`}>
+    <Link href={href} className="flex-1 flex flex-col items-center justify-center gap-1 h-full">
+      <Icon className={`w-6 h-6 transition-colors ${active ? 'stroke-[#D92B2B]' : 'stroke-[#666]'}`} />
+      <span className={`text-[10px] transition-colors ${active ? 'text-[#D92B2B] font-semibold' : 'text-[#777] font-medium'}`}>
         {label}
       </span>
     </Link>
+  )
+}
+
+function RequestIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8}>
+      <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8M8 12h8" />
+    </svg>
   )
 }
 
