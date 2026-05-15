@@ -155,41 +155,55 @@ type Bld = { x:number; y:number; w:number; cols:number }
 
 // Mobile (viewBox 400×175)
 const MOB_FAR: Bld[]  = [
-  { x: 18,  y: 90, w: 32, cols: 2 }, { x: 68,  y: 83, w: 44, cols: 3 },
-  { x: 158, y: 76, w: 52, cols: 3 }, { x: 252, y: 80, w: 46, cols: 3 },
-  { x: 334, y: 88, w: 40, cols: 2 },
+  { x: 2,   y: 85, w: 22, cols: 1 }, { x: 30,  y: 74, w: 36, cols: 2 },
+  { x: 78,  y: 81, w: 48, cols: 3 }, { x: 148, y: 70, w: 30, cols: 2 },
+  // gap around center hospital
+  { x: 264, y: 73, w: 34, cols: 2 }, { x: 310, y: 80, w: 46, cols: 2 },
+  { x: 364, y: 77, w: 40, cols: 3 },
 ]
 const MOB_MID: Bld[]  = [
-  { x: 0,   y: 104, w: 28, cols: 2 }, { x: 40,  y: 98,  w: 38, cols: 2 },
-  { x: 106, y: 96,  w: 36, cols: 2 }, { x: 204, y: 98,  w: 40, cols: 3 },
-  { x: 282, y: 101, w: 36, cols: 2 }, { x: 348, y: 104, w: 52, cols: 3 },
+  { x: 0,   y: 102, w: 24, cols: 1 }, { x: 36,  y: 95,  w: 38, cols: 2 },
+  { x: 86,  y: 91,  w: 38, cols: 2 },
+  // hospital rendered separately at x=172
+  { x: 250, y: 93,  w: 42, cols: 2 }, { x: 306, y: 97,  w: 38, cols: 2 },
+  { x: 358, y: 102, w: 46, cols: 3 },
 ]
 const MOB_NEAR: Bld[] = [
-  { x: 0,   y: 117, w: 40, cols: 2 }, { x: 52,  y: 123, w: 28, cols: 2 },
-  { x: 96,  y: 115, w: 48, cols: 3 }, { x: 214, y: 118, w: 38, cols: 2 },
-  { x: 296, y: 116, w: 44, cols: 2 }, { x: 366, y: 121, w: 34, cols: 2 },
+  { x: 0,   y: 117, w: 44, cols: 2 }, { x: 58,  y: 125, w: 26, cols: 1 },
+  { x: 98,  y: 113, w: 54, cols: 3 }, { x: 218, y: 120, w: 42, cols: 2 },
+  { x: 304, y: 115, w: 48, cols: 2 }, { x: 368, y: 122, w: 36, cols: 2 },
 ]
 
-// Desktop (viewBox 1440×175)
+// Desktop (viewBox 1440×175) — denser, more variation
 const DSK_FAR: Bld[]  = [
-  { x: 20,   y: 90, w: 90,  cols: 3 }, { x: 148,  y: 84, w: 108, cols: 3 },
-  { x: 305,  y: 78, w: 92,  cols: 3 }, { x: 440,  y: 83, w: 122, cols: 4 },
-  { x: 610,  y: 75, w: 148, cols: 4 }, { x: 818,  y: 79, w: 112, cols: 3 },
-  { x: 988,  y: 84, w: 102, cols: 3 }, { x: 1148, y: 82, w: 120, cols: 4 },
-  { x: 1325, y: 87, w: 98,  cols: 3 }, { x: 1436, y: 91, w: 6,   cols: 1 },
+  { x: 0,    y: 86, w: 52, cols: 2 }, { x: 62,   y: 76, w: 74, cols: 3 },
+  { x: 150,  y: 82, w: 54, cols: 2 }, { x: 218,  y: 70, w: 90, cols: 3 },
+  { x: 322,  y: 78, w: 66, cols: 2 }, { x: 402,  y: 74, w: 86, cols: 3 },
+  { x: 504,  y: 81, w: 60, cols: 2 },
+  // gap around hospital center (x≈620)
+  { x: 812,  y: 76, w: 74, cols: 3 }, { x: 900,  y: 83, w: 58, cols: 2 },
+  { x: 974,  y: 73, w: 88, cols: 3 }, { x: 1078, y: 80, w: 68, cols: 2 },
+  { x: 1160, y: 76, w: 84, cols: 3 }, { x: 1260, y: 83, w: 60, cols: 2 },
+  { x: 1334, y: 77, w: 76, cols: 3 }, { x: 1420, y: 87, w: 24, cols: 1 },
 ]
 const DSK_MID: Bld[]  = [
-  { x: 0,    y: 104, w: 82,  cols: 3 }, { x: 102,  y: 98,  w: 112, cols: 3 },
-  { x: 270,  y: 96,  w: 98,  cols: 3 }, { x: 415,  y: 100, w: 118, cols: 4 },
-  { x: 590,  y: 97,  w: 134, cols: 4 }, { x: 788,  y: 100, w: 112, cols: 3 },
-  { x: 960,  y: 101, w: 102, cols: 3 }, { x: 1116, y: 99,  w: 122, cols: 4 },
-  { x: 1295, y: 103, w: 145, cols: 4 },
+  { x: 0,    y: 101, w: 78, cols: 3 }, { x: 90,   y: 95,  w: 98, cols: 3 },
+  { x: 204,  y: 93,  w: 82, cols: 3 }, { x: 302,  y: 98,  w: 94, cols: 3 },
+  { x: 412,  y: 96,  w: 86, cols: 3 }, { x: 514,  y: 102, w: 78, cols: 2 },
+  // hospital rendered separately at x=618
+  { x: 806,  y: 97,  w: 88, cols: 3 }, { x: 910,  y: 100, w: 80, cols: 2 },
+  { x: 1006, y: 95,  w: 94, cols: 3 }, { x: 1116, y: 99,  w: 84, cols: 3 },
+  { x: 1216, y: 96,  w: 90, cols: 3 }, { x: 1322, y: 101, w: 78, cols: 2 },
+  { x: 1412, y: 102, w: 30, cols: 1 },
 ]
 const DSK_NEAR: Bld[] = [
-  { x: 0,    y: 117, w: 124, cols: 3 }, { x: 158,  y: 123, w: 82,  cols: 2 },
-  { x: 296,  y: 115, w: 144, cols: 4 }, { x: 500,  y: 120, w: 196, cols: 5 },
-  { x: 762,  y: 117, w: 134, cols: 3 }, { x: 960,  y: 119, w: 124, cols: 3 },
-  { x: 1148, y: 116, w: 156, cols: 4 }, { x: 1368, y: 122, w: 72,  cols: 2 },
+  { x: 0,    y: 116, w: 114, cols: 3 }, { x: 130,  y: 124, w: 74,  cols: 2 },
+  { x: 220,  y: 112, w: 134, cols: 4 }, { x: 372,  y: 118, w: 100, cols: 3 },
+  { x: 490,  y: 114, w: 116, cols: 3 },
+  // hospital visible above (x=618–758)
+  { x: 776,  y: 116, w: 122, cols: 3 }, { x: 916,  y: 123, w: 88,  cols: 2 },
+  { x: 1020, y: 114, w: 132, cols: 4 }, { x: 1170, y: 118, w: 106, cols: 3 },
+  { x: 1294, y: 115, w: 120, cols: 3 }, { x: 1430, y: 122, w: 14,  cols: 1 },
 ]
 
 // ── Mobile SVG scene ───────────────────────────────────────────────────────
@@ -217,11 +231,23 @@ function MobileSVG() {
         </g>
       ))}
 
-      {/* Near buildings — darkest, glowing windows */}
+      {/* Hospital — center landmark (mid layer) */}
+      <g>
+        <rect x={172} y={67} width={62} height={108} fill="#421010"/>
+        <Wins bx={172} by={67} bw={62} cols={3} op={0.35}/>
+        {/* Red cross */}
+        <rect x={200} y={46} width={5} height={22} fill="#D92B2B" opacity="0.85"/>
+        <rect x={193} y={51} width={19} height={6} fill="#D92B2B" opacity="0.85"/>
+        {/* Sign board */}
+        <rect x={178} y={58} width={50} height={11} fill="#140000" rx="1.5" opacity="0.90"/>
+        <text x={203} y={67} textAnchor="middle" fontSize="5" fill="white" fontFamily="sans-serif" opacity="0.90" letterSpacing="0.4">HOSPITAL</text>
+      </g>
+
+      {/* Near buildings — slightly lighter to reduce harshness */}
       {MOB_NEAR.map((b, i) => (
         <g key={`mn${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#1C0404"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.60}/>
+          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#250404"/>
+          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.42}/>
         </g>
       ))}
 
@@ -240,7 +266,7 @@ function MobileSVG() {
 function DesktopSVG() {
   return (
     <svg className="hidden md:block absolute inset-0 w-full h-full"
-      viewBox="0 0 1440 175" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      viewBox="0 0 1440 175" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
       {/* Clouds */}
       <g className="cloud-a"><PuffyCloud cx={190}  cy={22} s={1.6}  op={0.75}/></g>
       <g className="cloud-b"><PuffyCloud cx={680}  cy={16} s={1.1}  op={0.55}/></g>
@@ -262,11 +288,23 @@ function DesktopSVG() {
         </g>
       ))}
 
-      {/* Near buildings */}
+      {/* Hospital — center landmark (mid layer) */}
+      <g>
+        <rect x={618} y={52} width={140} height={123} fill="#421010"/>
+        <Wins bx={618} by={52} bw={140} cols={5} op={0.35} vh={175}/>
+        {/* Red cross */}
+        <rect x={685} y={28} width={10} height={28} fill="#D92B2B" opacity="0.85"/>
+        <rect x={676} y={36} width={28} height={9} fill="#D92B2B" opacity="0.85"/>
+        {/* Sign board */}
+        <rect x={624} y={43} width={128} height={16} fill="#140000" rx="2" opacity="0.90"/>
+        <text x={688} y={55} textAnchor="middle" fontSize="10" fill="white" fontFamily="sans-serif" opacity="0.90" letterSpacing="1">HOSPITAL</text>
+      </g>
+
+      {/* Near buildings — slightly lighter */}
       {DSK_NEAR.map((b, i) => (
         <g key={`dn${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#1C0404"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.60} vh={175}/>
+          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#250404"/>
+          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.42} vh={175}/>
         </g>
       ))}
 
@@ -395,7 +433,7 @@ export default function DonorHeroCard() {
             </div>
           </div>
           <button type="button" onClick={() => setModalOpen(true)} disabled={loading}
-            className="w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            className="w-full bg-white/15 backdrop-blur-sm border border-white/25 hover:bg-white/22 active:bg-white/28 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">আমি রক্ত দিতে পারব</p>
               <p className={`text-xs mt-0.5 ${user.isAvailable ? 'text-green-300' : 'text-white/40'}`}>
