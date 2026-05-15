@@ -9,22 +9,27 @@ import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 
-// One ECG cycle = 160 SVG units. SMIL shifts by -160 per loop → seamless.
-const mkEcg = (from: number, to: number) => {
-  const pts: [number, number][] = [
-    [0,95],[40,95],[47,87],[55,95],[63,97],[68,55],[73,110],[80,95],[95,85],[110,95],[160,95],
+// Two alternating ECG cycles — loop = 320 units (2 cycles) for seamless repeat
+const mkEcgVaried = (from: number, to: number) => {
+  const cycleA: [number, number][] = [
+    [0,95],[34,95],[40,92],[46,95],[60,96],[65,50],[70,115],[76,95],[90,86],[108,95],[160,95],
   ]
-  let d = ''
+  const cycleB: [number, number][] = [
+    [0,95],[34,95],[41,93],[46,95],[60,96],[65,60],[70,108],[76,95],[88,88],[106,95],[160,95],
+  ]
+  let d = '', first = true, ci = 0
   for (let o = from; o <= to; o += 160) {
-    pts.forEach(([x, y], i) => {
-      d += `${i === 0 && o === from ? 'M' : 'L'} ${o + x},${y} `
+    ;(ci % 2 === 0 ? cycleA : cycleB).forEach(([x, y]) => {
+      d += `${first ? 'M' : 'L'} ${o + x},${y} `
+      first = false
     })
+    ci++
   }
   return d.trim()
 }
 
-const ECG_MOBILE  = mkEcg(-320, 800)   // 7 cycles, fits 400px viewBox
-const ECG_DESKTOP = mkEcg(-320, 1760)  // 13 cycles, fits 1440px viewBox
+const ECG_MOBILE  = mkEcgVaried(-480, 900)
+const ECG_DESKTOP = mkEcgVaried(-480, 2080)
 
 // ── Mobile illustration (viewBox 400) ──────────────────────────────────────
 function MobileSVG() {
@@ -38,7 +43,8 @@ function MobileSVG() {
       <defs>
         <linearGradient id="ecg-fade-m" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="400" y2="0">
           <stop offset="0%"   stopColor="white" stopOpacity="0" />
-          <stop offset="35%"  stopColor="white" stopOpacity="1" />
+          <stop offset="15%"  stopColor="white" stopOpacity="0" />
+          <stop offset="55%"  stopColor="white" stopOpacity="1" />
           <stop offset="100%" stopColor="white" stopOpacity="1" />
         </linearGradient>
         <mask id="ecg-mask-m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="175">
@@ -46,49 +52,33 @@ function MobileSVG() {
         </mask>
       </defs>
 
-      <circle cx="340" cy="38" r="60" fill="white" className="animate-bg-glow" />
+      <circle cx="340" cy="38" r="65" fill="white" className="animate-bg-glow" />
 
-      {/* ECG — fades out on left like a real monitor */}
+      {/* ECG — 2-cycle loop (320 units) → seamless, varied peaks */}
       <path className="ecg-line" d={ECG_MOBILE}
-        stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-        fill="none" opacity="0.15" mask="url(#ecg-mask-m)">
+        stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        fill="none" opacity="0.22" mask="url(#ecg-mask-m)">
         <animateTransform attributeName="transform" type="translate"
-          from="0 0" to="-160 0" dur="6s" repeatCount="indefinite" />
+          from="0 0" to="-320 0" dur="10s" repeatCount="indefinite" />
       </path>
 
-      {/* Left buildings */}
-      <rect x="0"  y="130" width="32" height="45" fill="white" opacity="0.07" />
-      <rect x="6"  y="118" width="20" height="15" fill="white" opacity="0.07" />
-      <rect x="36" y="115" width="42" height="60" fill="white" opacity="0.08" />
-      <rect x="44" y="104" width="14" height="14" fill="white" opacity="0.08" />
-      <rect x="82" y="121" width="20" height="54" fill="white" opacity="0.07" />
+      {/* Background city layer */}
+      <path d="M0,175 L0,142 L55,142 L55,122 L105,122 L105,138 L148,138 L148,104 L182,104 L182,120 L238,120 L238,108 L282,108 L282,128 L334,128 L334,114 L384,114 L384,140 L400,140 L400,175 Z"
+        fill="#771212" />
 
-      {/* Hospital */}
-      <rect x="108" y="102" width="72" height="73" fill="white" opacity="0.10" />
-      <rect x="126" y="90"  width="36" height="16" fill="white" opacity="0.10" />
-      <rect x="115" y="116" width="12" height="10" rx="1" fill="white" opacity="0.08" />
-      <rect x="133" y="116" width="12" height="10" rx="1" fill="white" opacity="0.08" />
-      <rect x="151" y="116" width="12" height="10" rx="1" fill="white" opacity="0.08" />
-      <rect x="115" y="133" width="12" height="10" rx="1" fill="white" opacity="0.08" />
-      <rect x="151" y="133" width="12" height="10" rx="1" fill="white" opacity="0.08" />
-      <text x="144" y="80" textAnchor="middle" fill="white" opacity="0.20"
+      {/* Foreground city skyline — dense dark silhouette */}
+      <path d="M0,175 L0,148 L22,148 L22,128 L38,128 L38,112 L55,112 L55,132 L68,132 L68,106 L84,106 L84,145 L92,145 L92,118 L104,118 L104,96 L116,96 L116,83 L148,83 L148,96 L162,96 L162,115 L178,115 L178,130 L196,130 L196,112 L214,112 L214,128 L230,128 L230,114 L248,114 L248,128 L266,128 L266,106 L284,106 L284,132 L300,132 L300,118 L318,118 L318,110 L338,110 L338,128 L355,128 L355,116 L375,116 L375,138 L400,138 L400,175 Z"
+        fill="#550909" />
+
+      {/* Hospital label */}
+      <text x="132" y="76" textAnchor="middle" fill="white" opacity="0.22"
         fontSize="7" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1.5">HOSPITAL</text>
 
-      {/* Right buildings */}
-      <rect x="186" y="118" width="36" height="57" fill="white" opacity="0.08" />
-      <rect x="192" y="107" width="16" height="14" fill="white" opacity="0.08" />
-      <rect x="227" y="123" width="30" height="52" fill="white" opacity="0.07" />
-      <rect x="262" y="116" width="44" height="59" fill="white" opacity="0.07" />
-      <rect x="270" y="105" width="16" height="14" fill="white" opacity="0.07" />
-      <rect x="311" y="121" width="36" height="54" fill="white" opacity="0.07" />
-      <rect x="352" y="124" width="48" height="51" fill="white" opacity="0.06" />
-      <rect x="360" y="113" width="20" height="14" fill="white" opacity="0.06" />
-
       {/* Particles */}
-      <circle cx="70"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
-      <circle cx="200" cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1s' }} />
-      <circle cx="300" cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2s' }} />
-      <circle cx="370" cy="106" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '0.5s' }} />
+      <circle cx="70"  cy="102" r="2.5" fill="white" className="animate-rise-particle" opacity="0.22" />
+      <circle cx="200" cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '1.2s' }} />
+      <circle cx="300" cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '2.4s' }} />
+      <circle cx="370" cy="106" r="1.5" fill="white" className="animate-rise-particle" opacity="0.13" style={{ animationDelay: '0.6s' }} />
     </svg>
   )
 }
@@ -105,7 +95,8 @@ function DesktopSVG() {
       <defs>
         <linearGradient id="ecg-fade-d" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
           <stop offset="0%"   stopColor="white" stopOpacity="0" />
-          <stop offset="25%"  stopColor="white" stopOpacity="1" />
+          <stop offset="10%"  stopColor="white" stopOpacity="0" />
+          <stop offset="45%"  stopColor="white" stopOpacity="1" />
           <stop offset="100%" stopColor="white" stopOpacity="1" />
         </linearGradient>
         <mask id="ecg-mask-d" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="175">
@@ -115,73 +106,32 @@ function DesktopSVG() {
 
       <circle cx="1300" cy="38" r="80" fill="white" className="animate-bg-glow" />
 
-      {/* ECG — fades out on left like a real monitor */}
+      {/* ECG — 2-cycle loop (320 units) → seamless, varied peaks */}
       <path className="ecg-line" d={ECG_DESKTOP}
-        stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-        fill="none" opacity="0.15" mask="url(#ecg-mask-d)">
+        stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        fill="none" opacity="0.22" mask="url(#ecg-mask-d)">
         <animateTransform attributeName="transform" type="translate"
-          from="0 0" to="-160 0" dur="6s" repeatCount="indefinite" />
+          from="0 0" to="-320 0" dur="10s" repeatCount="indefinite" />
       </path>
 
-      {/* Far-left buildings */}
-      <rect x="0"   y="128" width="32" height="47" fill="white" opacity="0.07" />
-      <rect x="6"   y="116" width="18" height="15" fill="white" opacity="0.07" />
-      <rect x="36"  y="112" width="48" height="63" fill="white" opacity="0.08" />
-      <rect x="44"  y="100" width="16" height="15" fill="white" opacity="0.08" />
-      <rect x="88"  y="120" width="36" height="55" fill="white" opacity="0.07" />
-      <rect x="94"  y="110" width="18" height="13" fill="white" opacity="0.07" />
-      <rect x="129" y="125" width="42" height="50" fill="white" opacity="0.07" />
-      <rect x="175" y="117" width="48" height="58" fill="white" opacity="0.07" />
-      <rect x="183" y="106" width="18" height="14" fill="white" opacity="0.07" />
-      <rect x="228" y="122" width="38" height="53" fill="white" opacity="0.07" />
-      <rect x="271" y="115" width="52" height="60" fill="white" opacity="0.08" />
-      <rect x="279" y="103" width="20" height="15" fill="white" opacity="0.08" />
-      <rect x="328" y="121" width="44" height="54" fill="white" opacity="0.07" />
-      <rect x="377" y="127" width="38" height="48" fill="white" opacity="0.06" />
-      <rect x="420" y="116" width="46" height="59" fill="white" opacity="0.07" />
-      <rect x="428" y="105" width="18" height="14" fill="white" opacity="0.07" />
-      <rect x="471" y="122" width="40" height="53" fill="white" opacity="0.07" />
-      <rect x="516" y="118" width="46" height="57" fill="white" opacity="0.07" />
-      <rect x="567" y="124" width="42" height="51" fill="white" opacity="0.06" />
-      <rect x="614" y="116" width="44" height="59" fill="white" opacity="0.06" />
+      {/* Background city layer */}
+      <path d="M0,175 L0,140 L180,140 L180,118 L360,118 L360,132 L560,132 L560,108 L660,108 L660,95 L700,95 L700,80 L760,80 L760,95 L860,95 L860,108 L1060,108 L1060,125 L1260,125 L1260,140 L1440,140 L1440,175 Z"
+        fill="#771212" />
 
-      {/* Hospital — centered at x=720 */}
-      <rect x="678" y="98"  width="84" height="77" fill="white" opacity="0.11" />
-      <rect x="698" y="86"  width="44" height="17" fill="white" opacity="0.11" />
-      <rect x="685" y="112" width="14" height="11" rx="1" fill="white" opacity="0.09" />
-      <rect x="705" y="112" width="14" height="11" rx="1" fill="white" opacity="0.09" />
-      <rect x="725" y="112" width="14" height="11" rx="1" fill="white" opacity="0.09" />
-      <rect x="685" y="130" width="14" height="11" rx="1" fill="white" opacity="0.09" />
-      <rect x="725" y="130" width="14" height="11" rx="1" fill="white" opacity="0.09" />
-      <text x="720" y="76" textAnchor="middle" fill="white" opacity="0.22"
+      {/* Foreground city skyline — dense dark silhouette */}
+      <path d="M0,175 L0,148 L28,148 L28,128 L50,128 L50,110 L72,110 L72,130 L90,130 L90,112 L112,112 L112,128 L130,128 L130,108 L152,108 L152,122 L172,122 L172,110 L194,110 L194,128 L212,128 L212,114 L234,114 L234,126 L254,126 L254,108 L276,108 L276,124 L296,124 L296,112 L318,112 L318,128 L336,128 L336,110 L358,110 L358,124 L378,124 L378,112 L400,112 L400,128 L418,128 L418,110 L440,110 L440,126 L460,126 L460,108 L482,108 L482,124 L502,124 L502,112 L524,112 L524,126 L542,126 L542,108 L564,108 L564,122 L582,122 L582,110 L604,110 L604,122 L622,122 L622,100 L645,100 L645,90 L668,90 L668,80 L692,80 L692,70 L748,70 L748,80 L772,80 L772,90 L795,90 L795,102 L818,102 L818,118 L836,118 L836,108 L858,108 L858,124 L876,124 L876,112 L898,112 L898,126 L916,126 L916,108 L938,108 L938,122 L958,122 L958,110 L980,110 L980,126 L998,126 L998,112 L1020,112 L1020,128 L1038,128 L1038,110 L1060,110 L1060,126 L1078,126 L1078,112 L1100,112 L1100,128 L1118,128 L1118,110 L1140,110 L1140,124 L1160,124 L1160,108 L1182,108 L1182,126 L1200,126 L1200,112 L1222,112 L1222,128 L1240,128 L1240,110 L1262,110 L1262,124 L1282,124 L1282,112 L1304,112 L1304,128 L1322,128 L1322,112 L1344,112 L1344,126 L1362,126 L1362,110 L1384,110 L1384,128 L1402,128 L1402,115 L1424,115 L1424,135 L1440,135 L1440,175 Z"
+        fill="#550909" />
+
+      {/* Hospital label */}
+      <text x="720" y="60" textAnchor="middle" fill="white" opacity="0.22"
         fontSize="11" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="2">HOSPITAL</text>
 
-      {/* Right buildings */}
-      <rect x="768"  y="122" width="44" height="53" fill="white" opacity="0.07" />
-      <rect x="817"  y="116" width="50" height="59" fill="white" opacity="0.07" />
-      <rect x="825"  y="104" width="20" height="15" fill="white" opacity="0.07" />
-      <rect x="872"  y="121" width="44" height="54" fill="white" opacity="0.07" />
-      <rect x="921"  y="115" width="50" height="60" fill="white" opacity="0.06" />
-      <rect x="929"  y="103" width="20" height="15" fill="white" opacity="0.06" />
-      <rect x="976"  y="124" width="42" height="51" fill="white" opacity="0.06" />
-      <rect x="1023" y="118" width="46" height="57" fill="white" opacity="0.06" />
-      <rect x="1074" y="122" width="44" height="53" fill="white" opacity="0.06" />
-      <rect x="1082" y="111" width="18" height="14" fill="white" opacity="0.06" />
-      <rect x="1123" y="115" width="48" height="60" fill="white" opacity="0.06" />
-      <rect x="1176" y="122" width="42" height="53" fill="white" opacity="0.05" />
-      <rect x="1223" y="117" width="46" height="58" fill="white" opacity="0.05" />
-      <rect x="1231" y="105" width="18" height="15" fill="white" opacity="0.05" />
-      <rect x="1274" y="123" width="44" height="52" fill="white" opacity="0.05" />
-      <rect x="1323" y="119" width="46" height="56" fill="white" opacity="0.05" />
-      <rect x="1374" y="124" width="42" height="51" fill="white" opacity="0.05" />
-      <rect x="1420" y="118" width="20" height="57" fill="white" opacity="0.05" />
-
       {/* Particles */}
-      <circle cx="200"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.18" />
-      <circle cx="500"  cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '0.8s' }} />
-      <circle cx="900"  cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '2s' }} />
-      <circle cx="1180" cy="105" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '1.4s' }} />
-      <circle cx="1380" cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.13" style={{ animationDelay: '0.3s' }} />
+      <circle cx="200"  cy="102" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
+      <circle cx="500"  cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1.2s' }} />
+      <circle cx="900"  cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2.4s' }} />
+      <circle cx="1180" cy="106" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '0.6s' }} />
+      <circle cx="1380" cy="104" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '1.8s' }} />
     </svg>
   )
 }
@@ -223,9 +173,7 @@ function GuestHeroCard() {
           <Link href="/register" className="flex-1 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white text-sm font-semibold text-center hover:bg-white/20 transition-colors">রেজিস্ট্রেশন করুন</Link>
         </div>
       </div>
-      <svg viewBox="0 0 1440 40" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-10 z-10">
-        <path d="M0,40 Q720,0 1440,40 L1440,40 L0,40 Z" fill="#FAFAFA" />
-      </svg>
+      <div className="absolute bottom-0 left-0 right-0 h-9 bg-[#FAFAFA] rounded-t-[32px] z-10" />
     </div>
   )
 }
