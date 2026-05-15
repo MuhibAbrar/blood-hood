@@ -197,11 +197,6 @@ function MobileSVG() {
   return (
     <svg className="md:hidden absolute inset-0 w-full h-full"
       viewBox="0 0 400 175" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-      {/* Sun */}
-      <circle cx="345" cy="28" r="52" fill="white" opacity="0.05"/>
-      <circle cx="345" cy="28" r="34" fill="white" opacity="0.10"/>
-      <circle cx="345" cy="28" r="20" fill="white" opacity="0.22"/>
-
       {/* Clouds */}
       <g className="cloud-a"><PuffyCloud cx={70}  cy={21} s={0.72} op={0.72}/></g>
       <g className="cloud-b"><PuffyCloud cx={220} cy={15} s={0.48} op={0.50}/></g>
@@ -246,11 +241,6 @@ function DesktopSVG() {
   return (
     <svg className="hidden md:block absolute inset-0 w-full h-full"
       viewBox="0 0 1440 175" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-      {/* Sun */}
-      <circle cx="1320" cy="30" r="88" fill="white" opacity="0.05"/>
-      <circle cx="1320" cy="30" r="57" fill="white" opacity="0.10"/>
-      <circle cx="1320" cy="30" r="34" fill="white" opacity="0.22"/>
-
       {/* Clouds */}
       <g className="cloud-a"><PuffyCloud cx={190}  cy={22} s={1.6}  op={0.75}/></g>
       <g className="cloud-b"><PuffyCloud cx={680}  cy={16} s={1.1}  op={0.55}/></g>
@@ -359,6 +349,12 @@ export default function DonorHeroCard() {
     <>
       <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-5 pb-12 text-white">
         <HeroIllustration />
+        {/* Sun — centered exactly behind the menu button (pt-5=20 + h-11/2=22 → top:42, px-4=16 + w-11/2=22 → right:38) */}
+        <div className="absolute top-[42px] right-[38px] z-[1] pointer-events-none" aria-hidden="true">
+          <div className="absolute -translate-x-1/2 -translate-y-1/2 w-[110px] h-[110px] rounded-full bg-white/[0.05]"/>
+          <div className="absolute -translate-x-1/2 -translate-y-1/2 w-[72px]  h-[72px]  rounded-full bg-white/[0.10]"/>
+          <div className="absolute -translate-x-1/2 -translate-y-1/2 w-[40px]  h-[40px]  rounded-full bg-white/[0.20]"/>
+        </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
             {/* Avatar + blood group badge at bottom-right */}
@@ -380,10 +376,6 @@ export default function DonorHeroCard() {
 
             {/* App logo circle with hamburger badge — opens drawer */}
             <div className="relative shrink-0 flex items-center justify-center">
-              {/* Sun glow rings behind button */}
-              <div className="absolute w-[84px] h-[84px] rounded-full bg-white/5  pointer-events-none"/>
-              <div className="absolute w-[64px] h-[64px] rounded-full bg-white/10 pointer-events-none"/>
-              <div className="absolute w-[52px] h-[52px] rounded-full bg-white/15 pointer-events-none"/>
               <button
                 onClick={() => setDrawerOpen(true)}
                 className="relative w-11 h-11 rounded-full bg-[#D92B2B] border border-[#FF6B6B]/40 flex items-center justify-center active:scale-90 transition-transform shadow-lg"
