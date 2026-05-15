@@ -46,9 +46,9 @@ export default function BottomNav() {
       {/* ── NEW: Frosted glass floating pill nav ─────────────────────────────── */}
       <div
         className="fixed left-4 right-4 z-50 md:hidden"
-        style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))', transform: 'translateZ(0)', willChange: 'transform' }}
+        style={{ bottom: '1rem', transform: 'translateZ(0)' }}
       >
-        <div className="relative pt-7">
+        <div className="relative pt-7" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           {/* Elevated center button — circle + label together in one Link */}
           <Link
             href="/donors"

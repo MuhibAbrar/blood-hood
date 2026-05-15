@@ -255,9 +255,6 @@ function MobileSVG() {
         ))}
       </g>
 
-      {/* Ground base */}
-      <rect x="0" y="148" width="400" height="27" fill="#100202"/>
-
       {/* Rise particles */}
       <circle cx="68"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.22"/>
       <circle cx="205" cy="106" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '1.2s' }}/>
@@ -316,9 +313,6 @@ function DesktopSVG() {
         ))}
       </g>
 
-      {/* Ground base */}
-      <rect x="0" y="148" width="1440" height="27" fill="#100202"/>
-
       {/* Rise particles */}
       <circle cx="200"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20"/>
       <circle cx="550"  cy="106" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1.2s' }}/>
@@ -343,7 +337,7 @@ function HeroIllustration() {
 function GuestHeroCard() {
   const standalone = isStandalonePWA()
   return (
-    <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-6 pb-12 text-white">
+    <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-6 pb-12 text-white overflow-hidden">
       <HeroIllustration />
       <div className="relative z-10">
         <h2 className="text-xl font-bold leading-tight mb-1">রক্ত দিন, জীবন বাঁচান</h2>
@@ -393,7 +387,7 @@ export default function DonorHeroCard() {
 
   return (
     <>
-      <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-5 pb-12 text-white">
+      <div className="relative bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] px-4 pt-5 pb-12 text-white overflow-hidden">
         <HeroIllustration />
         {/* Sun — centered exactly behind the menu button (pt-5=20 + h-11/2=22 → top:42, px-4=16 + w-11/2=22 → right:38) */}
         <div className="absolute top-[42px] right-[38px] z-[1] pointer-events-none" aria-hidden="true">
