@@ -9,7 +9,7 @@ import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 
-// ECG waypoints as dy from baseline (original SVG: baseline=95, height=175)
+// ECG waypoints as dy from baseline
 const ECG_A: [number, number][] = [
   [0,0],[34,0],[40,-3],[46,0],[60,1],[65,-45],[70,20],[76,0],[90,-9],[108,0],[160,0],
 ]
@@ -37,7 +37,7 @@ interface Bird {
   phase: number; phaseSpd: number; alpha: number
 }
 
-// ── Canvas: ECG drawing-tip effect + flying birds ─────────────────────────
+// ── Canvas: ECG tip effect + crow birds ───────────────────────────────────
 function HeroCanvas() {
   const cvRef  = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
@@ -69,29 +69,65 @@ function HeroCanvas() {
       const n = Math.random() < 0.35 ? 2 : 1
       for (let i = 0; i < n; i++)
         stRef.current.birds.push({
-          x: -25 - i * 30,
-          y: h * (0.05 + Math.random() * 0.30),
-          spd: 1.2 + Math.random() * 1.0,
-          sz:  6   + Math.random() * 5,
+          x: -30 - i * 35,
+          y: h * (0.06 + Math.random() * 0.28),
+          spd: 1.1 + Math.random() * 0.9,
+          sz:  8   + Math.random() * 6,
           phase:    Math.random() * Math.PI * 2,
-          phaseSpd: 0.06 + Math.random() * 0.05,
-          alpha: 0.45 + Math.random() * 0.35,
+          phaseSpd: 0.05 + Math.random() * 0.04,
+          alpha: 0.55 + Math.random() * 0.3,
         })
     }
 
+    // Crow silhouette — filled bezier wings
     function drawBird(ctx: CanvasRenderingContext2D, b: Bird) {
       const flap = Math.sin(b.phase)
+      const { x, y, sz } = b
+
       ctx.save()
       ctx.globalAlpha = b.alpha
-      ctx.strokeStyle = 'white'
-      ctx.lineWidth   = 1.6
-      ctx.lineCap     = 'round'
+      ctx.fillStyle = 'rgba(5, 2, 10, 0.88)'
+
+      // Left wing (filled)
       ctx.beginPath()
-      ctx.moveTo(b.x, b.y)
-      ctx.quadraticCurveTo(b.x - b.sz * 0.6, b.y + flap * b.sz * 0.55, b.x - b.sz, b.y + flap * b.sz * 0.2)
-      ctx.moveTo(b.x, b.y)
-      ctx.quadraticCurveTo(b.x + b.sz * 0.6, b.y + flap * b.sz * 0.55, b.x + b.sz, b.y + flap * b.sz * 0.2)
-      ctx.stroke()
+      ctx.moveTo(x, y)
+      ctx.bezierCurveTo(
+        x - sz * 0.45, y + flap * sz * 0.65 - sz * 0.05,
+        x - sz * 0.88, y + flap * sz * 0.50,
+        x - sz,        y + flap * sz * 0.20
+      )
+      ctx.bezierCurveTo(
+        x - sz * 0.75, y + flap * sz * 0.42 + sz * 0.14,
+        x - sz * 0.35, y + flap * sz * 0.30 + sz * 0.12,
+        x,             y + sz * 0.10
+      )
+      ctx.closePath()
+      ctx.fill()
+
+      // Right wing (filled, mirror)
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.bezierCurveTo(
+        x + sz * 0.45, y + flap * sz * 0.65 - sz * 0.05,
+        x + sz * 0.88, y + flap * sz * 0.50,
+        x + sz,        y + flap * sz * 0.20
+      )
+      ctx.bezierCurveTo(
+        x + sz * 0.75, y + flap * sz * 0.42 + sz * 0.14,
+        x + sz * 0.35, y + flap * sz * 0.30 + sz * 0.12,
+        x,             y + sz * 0.10
+      )
+      ctx.closePath()
+      ctx.fill()
+
+      // Tail (pointing left — bird flies right)
+      ctx.beginPath()
+      ctx.moveTo(x - sz * 0.12, y + sz * 0.04)
+      ctx.lineTo(x - sz * 0.38, y + sz * 0.20)
+      ctx.lineTo(x - sz * 0.28, y - sz * 0.06)
+      ctx.closePath()
+      ctx.fill()
+
       ctx.restore()
     }
 
@@ -105,10 +141,15 @@ function HeroCanvas() {
       const ctx = canvas.getContext('2d')!
       ctx.clearRect(0, 0, w, h)
 
-      // ECG gradient-trail — baseline sits above buildings
-      const spd   = w * dt / 8000            // crosses screen in 8 s
-      st.tipX    += spd
-      if (st.tipX > w + 12) st.tipX = 0
+      // — ECG tip with smooth fade-in at left and fade-out at right —
+      const spd = w * dt / 8000
+      st.tipX  += spd
+      if (st.tipX > w + 16) st.tipX = 0
+
+      // Fade out as tip approaches right edge
+      const rightFade = st.tipX > w * 0.84
+        ? Math.max(0, (w + 16 - st.tipX) / (w * 0.16 + 16))
+        : 1
 
       const base  = h * 0.42
       const amp   = Math.min(h * 0.21, 38)
@@ -120,7 +161,7 @@ function HeroCanvas() {
         const xa = st.tipX - trail + i * dx
         const xb = xa + dx
         if (xb < 0 || xa > w) continue
-        const a  = Math.pow((i + 1) / segs, 1.8) * 0.5
+        const a  = Math.pow((i + 1) / segs, 1.8) * 0.50 * rightFade
         const ya = base + getEcgDy(xa) * (amp / 45)
         const yb = base + getEcgDy(xb) * (amp / 45)
         ctx.beginPath()
@@ -132,13 +173,13 @@ function HeroCanvas() {
         ctx.stroke()
       }
 
-      // Birds
+      // — Birds —
       st.t += dt
       if (st.t >= st.nextBird) {
         spawnBirds()
         st.nextBird = st.t + 8000 + Math.random() * 7000
       }
-      st.birds = st.birds.filter(b => b.x < w + 40)
+      st.birds = st.birds.filter(b => b.x < w + 45)
       for (const b of st.birds) {
         drawBird(ctx, b)
         b.x     += b.spd     * (dt / 16.67)
@@ -156,7 +197,7 @@ function HeroCanvas() {
   return <canvas ref={cvRef} className="absolute inset-0 w-full h-full" />
 }
 
-// ── Mobile scene SVG (viewBox 400×175) ────────────────────────────────────
+// ── Mobile scene SVG (400×175) ─────────────────────────────────────────────
 function MobileSVG() {
   return (
     <svg
@@ -165,45 +206,90 @@ function MobileSVG() {
       preserveAspectRatio="xMidYMax slice"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Sun — 3 concentric halos */}
+      {/* Sun */}
       <circle cx="345" cy="28" r="52" fill="white" opacity="0.05" />
       <circle cx="345" cy="28" r="34" fill="white" opacity="0.10" />
       <circle cx="345" cy="28" r="20" fill="white" opacity="0.22" />
 
-      {/* Cloud A — drifts left */}
+      {/* Cloud A */}
       <g className="cloud-a">
         <ellipse cx="55"  cy="22" rx="24" ry="11" fill="white" opacity="0.11" />
         <ellipse cx="72"  cy="18" rx="19" ry="10" fill="white" opacity="0.11" />
         <ellipse cx="88"  cy="23" rx="16" ry="9"  fill="white" opacity="0.11" />
       </g>
 
-      {/* Cloud B — drifts right */}
+      {/* Cloud B */}
       <g className="cloud-b">
-        <ellipse cx="195" cy="17" rx="22" ry="10" fill="white" opacity="0.08" />
-        <ellipse cx="213" cy="13" rx="18" ry="9"  fill="white" opacity="0.08" />
-        <ellipse cx="228" cy="18" rx="15" ry="8"  fill="white" opacity="0.08" />
+        <ellipse cx="200" cy="17" rx="22" ry="10" fill="white" opacity="0.08" />
+        <ellipse cx="218" cy="13" rx="18" ry="9"  fill="white" opacity="0.08" />
+        <ellipse cx="233" cy="18" rx="15" ry="8"  fill="white" opacity="0.08" />
       </g>
 
-      {/* Background city layer */}
-      <path d="M0,175 L0,142 L55,142 L55,122 L105,122 L105,138 L148,138 L148,104 L182,104 L182,120 L238,120 L238,108 L282,108 L282,128 L334,128 L334,114 L384,114 L384,140 L400,140 L400,175 Z"
-        fill="#771212" />
+      {/* ── Buildings 3-layer ── */}
 
-      {/* Foreground city skyline */}
-      <path d="M0,175 L0,148 L22,148 L22,128 L38,128 L38,112 L55,112 L55,132 L68,132 L68,106 L84,106 L84,145 L92,145 L92,118 L104,118 L104,96 L116,96 L116,83 L148,83 L148,96 L162,96 L162,115 L178,115 L178,130 L196,130 L196,112 L214,112 L214,128 L230,128 L230,114 L248,114 L248,128 L266,128 L266,106 L284,106 L284,132 L300,132 L300,118 L318,118 L318,110 L338,110 L338,128 L355,128 L355,116 L375,116 L375,138 L400,138 L400,175 Z"
-        fill="#550909" />
+      {/* Layer 3 — far background, lightest */}
+      <path fill="#5A1010" d="
+        M0,175 L0,162 L30,162 L30,152 L62,152 L62,158 L95,158
+        L95,148 L128,148 L128,155 L162,155 L162,146 L196,146
+        L196,154 L230,154 L230,144 L264,144 L264,152 L298,152
+        L298,144 L332,144 L332,152 L366,152 L366,158 L400,158
+        L400,175 Z
+      "/>
 
-      <text x="132" y="76" textAnchor="middle" fill="white" opacity="0.18"
-        fontSize="7" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1.5">HOSPITAL</text>
+      {/* Layer 2 — mid */}
+      <path fill="#440B0B" d="
+        M0,175 L0,158 L18,158 L18,142 L36,142 L36,128 L54,128
+        L54,138 L72,138 L72,122 L90,122 L90,132 L108,132
+        L108,116 L126,116 L126,125 L144,125 L144,112 L162,112
+        L162,124 L180,124 L180,112 L198,112 L198,124 L216,124
+        L216,112 L234,112 L234,126 L252,126 L252,115 L270,115
+        L270,128 L288,128 L288,118 L306,118 L306,130 L324,130
+        L324,140 L342,140 L342,150 L360,150 L360,158 L380,158
+        L380,165 L400,165 L400,175 Z
+      "/>
 
-      <circle cx="70"  cy="102" r="2.5" fill="white" className="animate-rise-particle" opacity="0.22" />
-      <circle cx="200" cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '1.2s' }} />
-      <circle cx="300" cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '2.4s' }} />
-      <circle cx="370" cy="106" r="1.5" fill="white" className="animate-rise-particle" opacity="0.13" style={{ animationDelay: '0.6s' }} />
+      {/* Layer 1 — near foreground, darkest */}
+      <path fill="#1A0303" d="
+        M0,175 L0,155 L14,155 L14,138 L26,138 L26,122 L38,122
+        L38,130 L48,130 L48,112 L60,112 L60,125 L70,125 L70,105
+        L80,105 L80,115 L90,115 L90,95 L100,95 L100,88 L108,88
+        L108,82 L118,82 L118,90 L128,90 L128,100 L140,100
+        L140,112 L152,112 L152,108 L164,108 L164,118 L176,118
+        L176,108 L190,108 L190,118 L204,118 L204,108 L218,108
+        L218,118 L232,118 L232,108 L246,108 L246,120 L260,120
+        L260,112 L275,112 L275,124 L290,124 L290,115 L305,115
+        L305,128 L320,128 L320,138 L336,138 L336,147 L352,147
+        L352,153 L370,153 L370,160 L390,160 L390,165 L400,165
+        L400,175 Z
+      "/>
+
+      {/* Antennae on tallest buildings */}
+      <path fill="#1A0303" d="M111,82 L111,73 L115,73 L115,82 Z"/>
+      <path fill="#1A0303" d="M93,95  L93,87  L96,87  L96,95  Z"/>
+
+      {/* Subtle window lights on tallest building */}
+      <g fill="white" opacity="0.10">
+        <rect x="110" y="84" width="2" height="1.5"/>
+        <rect x="113" y="84" width="2" height="1.5"/>
+        <rect x="110" y="88" width="2" height="1.5"/>
+        <rect x="113" y="88" width="2" height="1.5"/>
+        <rect x="110" y="92" width="2" height="1.5"/>
+        <rect x="113" y="92" width="2" height="1.5"/>
+      </g>
+
+      <text x="113" y="76" textAnchor="middle" fill="white" opacity="0.14"
+        fontSize="6" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1.2">HOSPITAL</text>
+
+      {/* Rise particles */}
+      <circle cx="70"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.22" />
+      <circle cx="200" cy="106" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '1.2s' }} />
+      <circle cx="300" cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '2.4s' }} />
+      <circle cx="360" cy="104" r="1.5" fill="white" className="animate-rise-particle" opacity="0.13" style={{ animationDelay: '0.6s' }} />
     </svg>
   )
 }
 
-// ── Desktop scene SVG (viewBox 1440×175) ──────────────────────────────────
+// ── Desktop scene SVG (1440×175) ───────────────────────────────────────────
 function DesktopSVG() {
   return (
     <svg
@@ -238,22 +324,67 @@ function DesktopSVG() {
         <ellipse cx="1057" cy="28" rx="34" ry="15" fill="white" opacity="0.06" />
       </g>
 
-      {/* Background city layer */}
-      <path d="M0,175 L0,140 L180,140 L180,118 L360,118 L360,132 L560,132 L560,108 L660,108 L660,95 L700,95 L700,80 L760,80 L760,95 L860,95 L860,108 L1060,108 L1060,125 L1260,125 L1260,140 L1440,140 L1440,175 Z"
-        fill="#771212" />
+      {/* ── Buildings 3-layer ── */}
 
-      {/* Foreground city skyline */}
-      <path d="M0,175 L0,148 L28,148 L28,128 L50,128 L50,110 L72,110 L72,130 L90,130 L90,112 L112,112 L112,128 L130,128 L130,108 L152,108 L152,122 L172,122 L172,110 L194,110 L194,128 L212,128 L212,114 L234,114 L234,126 L254,126 L254,108 L276,108 L276,124 L296,124 L296,112 L318,112 L318,128 L336,128 L336,110 L358,110 L358,124 L378,124 L378,112 L400,112 L400,128 L418,128 L418,110 L440,110 L440,126 L460,126 L460,108 L482,108 L482,124 L502,124 L502,112 L524,112 L524,126 L542,126 L542,108 L564,108 L564,122 L582,122 L582,110 L604,110 L604,122 L622,122 L622,100 L645,100 L645,90 L668,90 L668,80 L692,80 L692,70 L748,70 L748,80 L772,80 L772,90 L795,90 L795,102 L818,102 L818,118 L836,118 L836,108 L858,108 L858,124 L876,124 L876,112 L898,112 L898,126 L916,126 L916,108 L938,108 L938,122 L958,122 L958,110 L980,110 L980,126 L998,126 L998,112 L1020,112 L1020,128 L1038,128 L1038,110 L1060,110 L1060,126 L1078,126 L1078,112 L1100,112 L1100,128 L1118,128 L1118,110 L1140,110 L1140,124 L1160,124 L1160,108 L1182,108 L1182,126 L1200,126 L1200,112 L1222,112 L1222,128 L1240,128 L1240,110 L1262,110 L1262,124 L1282,124 L1282,112 L1304,112 L1304,128 L1322,128 L1322,112 L1344,112 L1344,126 L1362,126 L1362,110 L1384,110 L1384,128 L1402,128 L1402,115 L1424,115 L1424,135 L1440,135 L1440,175 Z"
-        fill="#550909" />
+      {/* Layer 3 — far background */}
+      <path fill="#5A1010" d="
+        M0,175 L0,162 L108,162 L108,152 L223,152 L223,158 L342,158
+        L342,148 L461,148 L461,155 L583,155 L583,146 L706,146
+        L706,154 L828,154 L828,144 L950,144 L950,152 L1073,152
+        L1073,144 L1196,144 L1196,152 L1318,152 L1318,158 L1440,158
+        L1440,175 Z
+      "/>
 
-      <text x="720" y="60" textAnchor="middle" fill="white" opacity="0.18"
-        fontSize="11" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="2">HOSPITAL</text>
+      {/* Layer 2 — mid */}
+      <path fill="#440B0B" d="
+        M0,175 L0,158 L65,158 L65,142 L130,142 L130,128 L194,128
+        L194,138 L259,138 L259,122 L324,122 L324,132 L389,132
+        L389,116 L454,116 L454,125 L518,125 L518,112 L583,112
+        L583,124 L648,124 L648,112 L713,112 L713,124 L778,124
+        L778,112 L842,112 L842,126 L907,126 L907,115 L972,115
+        L972,128 L1037,128 L1037,118 L1102,118 L1102,130 L1166,130
+        L1166,140 L1231,140 L1231,150 L1296,150 L1296,158 L1368,158
+        L1368,165 L1440,165 L1440,175 Z
+      "/>
 
-      <circle cx="200"  cy="102" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
-      <circle cx="500"  cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1.2s' }} />
-      <circle cx="900"  cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2.4s' }} />
-      <circle cx="1180" cy="106" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '0.6s' }} />
-      <circle cx="1380" cy="104" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '1.8s' }} />
+      {/* Layer 1 — near foreground, darkest */}
+      <path fill="#1A0303" d="
+        M0,175 L0,155 L50,155 L50,138 L94,138 L94,122 L137,122
+        L137,130 L173,130 L173,112 L216,112 L216,125 L252,125
+        L252,105 L288,105 L288,115 L324,115 L324,95 L360,95
+        L360,88 L389,88 L389,82 L425,82 L425,90 L461,90 L461,100
+        L504,100 L504,112 L547,112 L547,108 L590,108 L590,118
+        L634,118 L634,108 L677,108 L677,118 L720,118 L720,108
+        L763,108 L763,118 L806,118 L806,108 L850,108 L850,120
+        L893,120 L893,112 L936,112 L936,124 L979,124 L979,115
+        L1022,115 L1022,128 L1066,128 L1066,138 L1109,138
+        L1109,147 L1152,147 L1152,153 L1195,153 L1195,160
+        L1238,160 L1238,165 L1440,165 L1440,175 Z
+      "/>
+
+      {/* Antennae */}
+      <path fill="#1A0303" d="M400,82 L400,70 L410,70 L410,82 Z"/>
+      <path fill="#1A0303" d="M336,95 L336,85 L344,85 L344,95 Z"/>
+
+      {/* Window lights on tallest building */}
+      <g fill="white" opacity="0.10">
+        <rect x="403" y="84" width="4" height="3"/>
+        <rect x="411" y="84" width="4" height="3"/>
+        <rect x="403" y="90" width="4" height="3"/>
+        <rect x="411" y="90" width="4" height="3"/>
+        <rect x="403" y="96" width="4" height="3"/>
+        <rect x="411" y="96" width="4" height="3"/>
+      </g>
+
+      <text x="407" y="76" textAnchor="middle" fill="white" opacity="0.14"
+        fontSize="9" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1.5">HOSPITAL</text>
+
+      {/* Particles */}
+      <circle cx="200"  cy="100" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
+      <circle cx="550"  cy="106" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1.2s' }} />
+      <circle cx="900"  cy="100" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2.4s' }} />
+      <circle cx="1180" cy="104" r="1.5" fill="white" className="animate-rise-particle" opacity="0.12" style={{ animationDelay: '0.6s' }} />
+      <circle cx="1350" cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.14" style={{ animationDelay: '1.8s' }} />
     </svg>
   )
 }
@@ -261,7 +392,7 @@ function DesktopSVG() {
 function HeroIllustration() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
-      {/* Canvas behind SVG so buildings naturally mask ECG trough */}
+      {/* Canvas below SVG — buildings mask ECG trough, birds fly above in sky */}
       <HeroCanvas />
       <MobileSVG />
       <DesktopSVG />
