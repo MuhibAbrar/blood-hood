@@ -61,9 +61,9 @@ export default function BottomNav() {
             }`}>
               <BloodIcon className="w-7 h-7 stroke-white" />
             </div>
-            <span className={`text-[8px] font-semibold text-center leading-tight whitespace-pre-line ${
+            <span className={`text-[10px] font-semibold whitespace-nowrap ${
               pathname.startsWith('/donors') ? 'text-[#D92B2B]' : 'text-[#555]'
-            }`}>{'ডোনার\nখুঁজুন'}</span>
+            }`}>ডোনার খুঁজুন</span>
           </Link>
 
           {/* Frosted glass pill */}
