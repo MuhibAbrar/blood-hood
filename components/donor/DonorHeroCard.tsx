@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
@@ -9,29 +9,154 @@ import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 
-// Two alternating ECG cycles — loop = 320 units (2 cycles) for seamless repeat
-const mkEcgVaried = (from: number, to: number) => {
-  const cycleA: [number, number][] = [
-    [0,95],[34,95],[40,92],[46,95],[60,96],[65,50],[70,115],[76,95],[90,86],[108,95],[160,95],
-  ]
-  const cycleB: [number, number][] = [
-    [0,95],[34,95],[41,93],[46,95],[60,96],[65,60],[70,108],[76,95],[88,88],[106,95],[160,95],
-  ]
-  let d = '', first = true, ci = 0
-  for (let o = from; o <= to; o += 160) {
-    ;(ci % 2 === 0 ? cycleA : cycleB).forEach(([x, y]) => {
-      d += `${first ? 'M' : 'L'} ${o + x},${y} `
-      first = false
-    })
-    ci++
+// ECG waypoints as dy from baseline (original SVG: baseline=95, height=175)
+const ECG_A: [number, number][] = [
+  [0,0],[34,0],[40,-3],[46,0],[60,1],[65,-45],[70,20],[76,0],[90,-9],[108,0],[160,0],
+]
+const ECG_B: [number, number][] = [
+  [0,0],[34,0],[41,-2],[46,0],[60,1],[65,-35],[70,13],[76,0],[88,-7],[106,0],[160,0],
+]
+const CYCLE = 160
+
+function getEcgDy(x: number): number {
+  const pos = ((x % (CYCLE * 2)) + CYCLE * 2) % (CYCLE * 2)
+  const pts = pos < CYCLE ? ECG_A : ECG_B
+  const lx = pos % CYCLE
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[i + 1]
+    if (lx >= x0 && lx <= x1) {
+      const t = x1 === x0 ? 0 : (lx - x0) / (x1 - x0)
+      return y0 + t * (y1 - y0)
+    }
   }
-  return d.trim()
+  return 0
 }
 
-const ECG_MOBILE  = mkEcgVaried(-480, 900)
-const ECG_DESKTOP = mkEcgVaried(-480, 2080)
+interface Bird {
+  x: number; y: number; spd: number; sz: number
+  phase: number; phaseSpd: number; alpha: number
+}
 
-// ── Mobile illustration (viewBox 400) ──────────────────────────────────────
+// ── Canvas: ECG drawing-tip effect + flying birds ─────────────────────────
+function HeroCanvas() {
+  const cvRef  = useRef<HTMLCanvasElement>(null)
+  const rafRef = useRef<number>(0)
+  const visRef = useRef(true)
+  const stRef  = useRef({ tipX: 0, birds: [] as Bird[], nextBird: 2500, t: 0 })
+
+  useEffect(() => {
+    const cv = cvRef.current
+    if (!cv) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const canvas = cv as HTMLCanvasElement
+
+    const ro = new ResizeObserver(() => {
+      canvas.width  = canvas.offsetWidth
+      canvas.height = canvas.offsetHeight
+    })
+    ro.observe(canvas)
+    canvas.width  = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+
+    const io = new IntersectionObserver(
+      ([e]) => { visRef.current = e.isIntersecting },
+      { threshold: 0 }
+    )
+    io.observe(canvas)
+
+    function spawnBirds() {
+      const h = canvas.height
+      const n = Math.random() < 0.35 ? 2 : 1
+      for (let i = 0; i < n; i++)
+        stRef.current.birds.push({
+          x: -25 - i * 30,
+          y: h * (0.05 + Math.random() * 0.30),
+          spd: 1.2 + Math.random() * 1.0,
+          sz:  6   + Math.random() * 5,
+          phase:    Math.random() * Math.PI * 2,
+          phaseSpd: 0.06 + Math.random() * 0.05,
+          alpha: 0.45 + Math.random() * 0.35,
+        })
+    }
+
+    function drawBird(ctx: CanvasRenderingContext2D, b: Bird) {
+      const flap = Math.sin(b.phase)
+      ctx.save()
+      ctx.globalAlpha = b.alpha
+      ctx.strokeStyle = 'white'
+      ctx.lineWidth   = 1.6
+      ctx.lineCap     = 'round'
+      ctx.beginPath()
+      ctx.moveTo(b.x, b.y)
+      ctx.quadraticCurveTo(b.x - b.sz * 0.6, b.y + flap * b.sz * 0.55, b.x - b.sz, b.y + flap * b.sz * 0.2)
+      ctx.moveTo(b.x, b.y)
+      ctx.quadraticCurveTo(b.x + b.sz * 0.6, b.y + flap * b.sz * 0.55, b.x + b.sz, b.y + flap * b.sz * 0.2)
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    let last = 0
+    function frame(ts: number) {
+      if (!visRef.current) { rafRef.current = requestAnimationFrame(frame); return }
+      const dt = last === 0 ? 16.67 : Math.min(ts - last, 50)
+      last = ts
+      const st = stRef.current
+      const w  = canvas.width, h = canvas.height
+      const ctx = canvas.getContext('2d')!
+      ctx.clearRect(0, 0, w, h)
+
+      // ECG gradient-trail — baseline sits above buildings
+      const spd   = w * dt / 8000            // crosses screen in 8 s
+      st.tipX    += spd
+      if (st.tipX > w + 12) st.tipX = 0
+
+      const base  = h * 0.42
+      const amp   = Math.min(h * 0.21, 38)
+      const trail = Math.min(w * 0.42, 190)
+      const segs  = 85
+      const dx    = trail / segs
+
+      for (let i = 0; i < segs; i++) {
+        const xa = st.tipX - trail + i * dx
+        const xb = xa + dx
+        if (xb < 0 || xa > w) continue
+        const a  = Math.pow((i + 1) / segs, 1.8) * 0.5
+        const ya = base + getEcgDy(xa) * (amp / 45)
+        const yb = base + getEcgDy(xb) * (amp / 45)
+        ctx.beginPath()
+        ctx.moveTo(xa, ya)
+        ctx.lineTo(xb, yb)
+        ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`
+        ctx.lineWidth = 1.6
+        ctx.lineCap  = 'round'
+        ctx.stroke()
+      }
+
+      // Birds
+      st.t += dt
+      if (st.t >= st.nextBird) {
+        spawnBirds()
+        st.nextBird = st.t + 8000 + Math.random() * 7000
+      }
+      st.birds = st.birds.filter(b => b.x < w + 40)
+      for (const b of st.birds) {
+        drawBird(ctx, b)
+        b.x     += b.spd     * (dt / 16.67)
+        b.phase += b.phaseSpd * (dt / 16.67)
+      }
+
+      rafRef.current = requestAnimationFrame(frame)
+    }
+    rafRef.current = requestAnimationFrame(frame)
+
+    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); io.disconnect() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return <canvas ref={cvRef} className="absolute inset-0 w-full h-full" />
+}
+
+// ── Mobile scene SVG (viewBox 400×175) ────────────────────────────────────
 function MobileSVG() {
   return (
     <svg
@@ -40,41 +165,36 @@ function MobileSVG() {
       preserveAspectRatio="xMidYMax slice"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        <linearGradient id="ecg-fade-m" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="400" y2="0">
-          <stop offset="0%"   stopColor="white" stopOpacity="0" />
-          <stop offset="15%"  stopColor="white" stopOpacity="0" />
-          <stop offset="55%"  stopColor="white" stopOpacity="1" />
-          <stop offset="100%" stopColor="white" stopOpacity="1" />
-        </linearGradient>
-        <mask id="ecg-mask-m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="175">
-          <rect x="0" y="0" width="400" height="175" fill="url(#ecg-fade-m)" />
-        </mask>
-      </defs>
+      {/* Sun — 3 concentric halos */}
+      <circle cx="345" cy="28" r="52" fill="white" opacity="0.05" />
+      <circle cx="345" cy="28" r="34" fill="white" opacity="0.10" />
+      <circle cx="345" cy="28" r="20" fill="white" opacity="0.22" />
 
-      <circle cx="340" cy="38" r="65" fill="white" className="animate-bg-glow" />
+      {/* Cloud A — drifts left */}
+      <g className="cloud-a">
+        <ellipse cx="55"  cy="22" rx="24" ry="11" fill="white" opacity="0.11" />
+        <ellipse cx="72"  cy="18" rx="19" ry="10" fill="white" opacity="0.11" />
+        <ellipse cx="88"  cy="23" rx="16" ry="9"  fill="white" opacity="0.11" />
+      </g>
 
-      {/* ECG — 2-cycle loop (320 units) → seamless, varied peaks */}
-      <path className="ecg-line" d={ECG_MOBILE}
-        stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-        fill="none" opacity="0.22" mask="url(#ecg-mask-m)">
-        <animateTransform attributeName="transform" type="translate"
-          from="0 0" to="-320 0" dur="10s" repeatCount="indefinite" />
-      </path>
+      {/* Cloud B — drifts right */}
+      <g className="cloud-b">
+        <ellipse cx="195" cy="17" rx="22" ry="10" fill="white" opacity="0.08" />
+        <ellipse cx="213" cy="13" rx="18" ry="9"  fill="white" opacity="0.08" />
+        <ellipse cx="228" cy="18" rx="15" ry="8"  fill="white" opacity="0.08" />
+      </g>
 
       {/* Background city layer */}
       <path d="M0,175 L0,142 L55,142 L55,122 L105,122 L105,138 L148,138 L148,104 L182,104 L182,120 L238,120 L238,108 L282,108 L282,128 L334,128 L334,114 L384,114 L384,140 L400,140 L400,175 Z"
         fill="#771212" />
 
-      {/* Foreground city skyline — dense dark silhouette */}
+      {/* Foreground city skyline */}
       <path d="M0,175 L0,148 L22,148 L22,128 L38,128 L38,112 L55,112 L55,132 L68,132 L68,106 L84,106 L84,145 L92,145 L92,118 L104,118 L104,96 L116,96 L116,83 L148,83 L148,96 L162,96 L162,115 L178,115 L178,130 L196,130 L196,112 L214,112 L214,128 L230,128 L230,114 L248,114 L248,128 L266,128 L266,106 L284,106 L284,132 L300,132 L300,118 L318,118 L318,110 L338,110 L338,128 L355,128 L355,116 L375,116 L375,138 L400,138 L400,175 Z"
         fill="#550909" />
 
-      {/* Hospital label */}
-      <text x="132" y="76" textAnchor="middle" fill="white" opacity="0.22"
+      <text x="132" y="76" textAnchor="middle" fill="white" opacity="0.18"
         fontSize="7" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="1.5">HOSPITAL</text>
 
-      {/* Particles */}
       <circle cx="70"  cy="102" r="2.5" fill="white" className="animate-rise-particle" opacity="0.22" />
       <circle cx="200" cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '1.2s' }} />
       <circle cx="300" cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.16" style={{ animationDelay: '2.4s' }} />
@@ -83,7 +203,7 @@ function MobileSVG() {
   )
 }
 
-// ── Desktop illustration (viewBox 1440) ────────────────────────────────────
+// ── Desktop scene SVG (viewBox 1440×175) ──────────────────────────────────
 function DesktopSVG() {
   return (
     <svg
@@ -92,41 +212,43 @@ function DesktopSVG() {
       preserveAspectRatio="xMidYMax slice"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        <linearGradient id="ecg-fade-d" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
-          <stop offset="0%"   stopColor="white" stopOpacity="0" />
-          <stop offset="10%"  stopColor="white" stopOpacity="0" />
-          <stop offset="45%"  stopColor="white" stopOpacity="1" />
-          <stop offset="100%" stopColor="white" stopOpacity="1" />
-        </linearGradient>
-        <mask id="ecg-mask-d" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="175">
-          <rect x="0" y="0" width="1440" height="175" fill="url(#ecg-fade-d)" />
-        </mask>
-      </defs>
+      {/* Sun */}
+      <circle cx="1320" cy="30" r="88" fill="white" opacity="0.05" />
+      <circle cx="1320" cy="30" r="57" fill="white" opacity="0.10" />
+      <circle cx="1320" cy="30" r="34" fill="white" opacity="0.22" />
 
-      <circle cx="1300" cy="38" r="80" fill="white" className="animate-bg-glow" />
+      {/* Cloud A */}
+      <g className="cloud-a">
+        <ellipse cx="160" cy="24" rx="60" ry="24" fill="white" opacity="0.09" />
+        <ellipse cx="205" cy="17" rx="48" ry="20" fill="white" opacity="0.09" />
+        <ellipse cx="245" cy="25" rx="40" ry="18" fill="white" opacity="0.09" />
+      </g>
 
-      {/* ECG — 2-cycle loop (320 units) → seamless, varied peaks */}
-      <path className="ecg-line" d={ECG_DESKTOP}
-        stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-        fill="none" opacity="0.22" mask="url(#ecg-mask-d)">
-        <animateTransform attributeName="transform" type="translate"
-          from="0 0" to="-320 0" dur="10s" repeatCount="indefinite" />
-      </path>
+      {/* Cloud B */}
+      <g className="cloud-b">
+        <ellipse cx="620" cy="19" rx="55" ry="22" fill="white" opacity="0.07" />
+        <ellipse cx="662" cy="13" rx="44" ry="18" fill="white" opacity="0.07" />
+        <ellipse cx="700" cy="21" rx="37" ry="16" fill="white" opacity="0.07" />
+      </g>
+
+      {/* Cloud C */}
+      <g className="cloud-c">
+        <ellipse cx="980"  cy="27" rx="50" ry="20" fill="white" opacity="0.06" />
+        <ellipse cx="1022" cy="20" rx="40" ry="17" fill="white" opacity="0.06" />
+        <ellipse cx="1057" cy="28" rx="34" ry="15" fill="white" opacity="0.06" />
+      </g>
 
       {/* Background city layer */}
       <path d="M0,175 L0,140 L180,140 L180,118 L360,118 L360,132 L560,132 L560,108 L660,108 L660,95 L700,95 L700,80 L760,80 L760,95 L860,95 L860,108 L1060,108 L1060,125 L1260,125 L1260,140 L1440,140 L1440,175 Z"
         fill="#771212" />
 
-      {/* Foreground city skyline — dense dark silhouette */}
+      {/* Foreground city skyline */}
       <path d="M0,175 L0,148 L28,148 L28,128 L50,128 L50,110 L72,110 L72,130 L90,130 L90,112 L112,112 L112,128 L130,128 L130,108 L152,108 L152,122 L172,122 L172,110 L194,110 L194,128 L212,128 L212,114 L234,114 L234,126 L254,126 L254,108 L276,108 L276,124 L296,124 L296,112 L318,112 L318,128 L336,128 L336,110 L358,110 L358,124 L378,124 L378,112 L400,112 L400,128 L418,128 L418,110 L440,110 L440,126 L460,126 L460,108 L482,108 L482,124 L502,124 L502,112 L524,112 L524,126 L542,126 L542,108 L564,108 L564,122 L582,122 L582,110 L604,110 L604,122 L622,122 L622,100 L645,100 L645,90 L668,90 L668,80 L692,80 L692,70 L748,70 L748,80 L772,80 L772,90 L795,90 L795,102 L818,102 L818,118 L836,118 L836,108 L858,108 L858,124 L876,124 L876,112 L898,112 L898,126 L916,126 L916,108 L938,108 L938,122 L958,122 L958,110 L980,110 L980,126 L998,126 L998,112 L1020,112 L1020,128 L1038,128 L1038,110 L1060,110 L1060,126 L1078,126 L1078,112 L1100,112 L1100,128 L1118,128 L1118,110 L1140,110 L1140,124 L1160,124 L1160,108 L1182,108 L1182,126 L1200,126 L1200,112 L1222,112 L1222,128 L1240,128 L1240,110 L1262,110 L1262,124 L1282,124 L1282,112 L1304,112 L1304,128 L1322,128 L1322,112 L1344,112 L1344,126 L1362,126 L1362,110 L1384,110 L1384,128 L1402,128 L1402,115 L1424,115 L1424,135 L1440,135 L1440,175 Z"
         fill="#550909" />
 
-      {/* Hospital label */}
-      <text x="720" y="60" textAnchor="middle" fill="white" opacity="0.22"
+      <text x="720" y="60" textAnchor="middle" fill="white" opacity="0.18"
         fontSize="11" fontFamily="Inter, sans-serif" fontWeight="700" letterSpacing="2">HOSPITAL</text>
 
-      {/* Particles */}
       <circle cx="200"  cy="102" r="2.5" fill="white" className="animate-rise-particle" opacity="0.20" />
       <circle cx="500"  cy="108" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '1.2s' }} />
       <circle cx="900"  cy="102" r="2"   fill="white" className="animate-rise-particle" opacity="0.15" style={{ animationDelay: '2.4s' }} />
@@ -139,6 +261,8 @@ function DesktopSVG() {
 function HeroIllustration() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
+      {/* Canvas behind SVG so buildings naturally mask ECG trough */}
+      <HeroCanvas />
       <MobileSVG />
       <DesktopSVG />
     </div>
@@ -243,9 +367,7 @@ export default function DonorHeroCard() {
           </button>
         </div>
 
-        <svg viewBox="0 0 1440 40" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-10 z-10">
-          <path d="M0,40 Q720,0 1440,40 L1440,40 L0,40 Z" fill="#FAFAFA" />
-        </svg>
+        <div className="absolute bottom-0 left-0 right-0 h-9 bg-[#FAFAFA] rounded-t-[32px] z-10" />
       </div>
 
       {modalOpen && (

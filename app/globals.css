@@ -94,6 +94,10 @@
   100% { transform: translateY(-38px); opacity: 0;    }
 }
 
+@keyframes cloud-drift-a { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-14px)} }
+@keyframes cloud-drift-b { 0%,100%{transform:translateX(0)} 50%{transform:translateX(11px)} }
+@keyframes cloud-drift-c { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-8px)} }
+
 .animate-crescent-glow {
   animation: crescent-glow 3s ease-in-out infinite;
 }
@@ -110,12 +114,16 @@
   animation: rise-particle 3s ease-in infinite;
   will-change: transform, opacity;
 }
+.cloud-a { animation: cloud-drift-a 30s ease-in-out infinite; }
+.cloud-b { animation: cloud-drift-b 42s ease-in-out infinite; }
+.cloud-c { animation: cloud-drift-c 24s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-crescent-glow,
   .animate-bg-glow,
   .animate-pulse-ring,
-  .animate-rise-particle { animation: none; }
+  .animate-rise-particle,
+  .cloud-a, .cloud-b, .cloud-c { animation: none; }
   .ecg-line { opacity: 0 !important; }
 }
 
