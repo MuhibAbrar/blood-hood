@@ -215,41 +215,45 @@ function MobileSVG() {
       <g className="cloud-a"><PuffyCloud cx={70}  cy={21} s={0.72} op={0.72}/></g>
       <g className="cloud-b"><PuffyCloud cx={220} cy={15} s={0.48} op={0.50}/></g>
 
-      {/* Far buildings — light, depth layer */}
-      {MOB_FAR.map((b, i) => (
-        <g key={`mf${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#6B1515"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.15}/>
-        </g>
-      ))}
+      {/* Far buildings */}
+      <g opacity="0.18">
+        {MOB_FAR.map((b, i) => (
+          <g key={`mf${i}`}>
+            <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#6B1515"/>
+            <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.15}/>
+          </g>
+        ))}
+      </g>
 
       {/* Mid buildings */}
-      {MOB_MID.map((b, i) => (
-        <g key={`mm${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#421010"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.30}/>
-        </g>
-      ))}
+      <g opacity="0.28">
+        {MOB_MID.map((b, i) => (
+          <g key={`mm${i}`}>
+            <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#421010"/>
+            <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.30}/>
+          </g>
+        ))}
+      </g>
 
-      {/* Hospital — center landmark (mid layer) */}
-      <g>
+      {/* Hospital — center landmark */}
+      <g opacity="0.45">
         <rect x={172} y={67} width={62} height={108} fill="#421010"/>
         <Wins bx={172} by={67} bw={62} cols={3} op={0.35}/>
-        {/* Red cross */}
         <rect x={200} y={46} width={5} height={22} fill="#D92B2B" opacity="0.85"/>
         <rect x={193} y={51} width={19} height={6} fill="#D92B2B" opacity="0.85"/>
-        {/* Sign board */}
         <rect x={178} y={58} width={50} height={11} fill="#140000" rx="1.5" opacity="0.90"/>
         <text x={203} y={67} textAnchor="middle" fontSize="5" fill="white" fontFamily="sans-serif" opacity="0.90" letterSpacing="0.4">HOSPITAL</text>
       </g>
 
-      {/* Near buildings — slightly lighter to reduce harshness */}
-      {MOB_NEAR.map((b, i) => (
-        <g key={`mn${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#250404"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.42}/>
-        </g>
-      ))}
+      {/* Near buildings */}
+      <g opacity="0.22">
+        {MOB_NEAR.map((b, i) => (
+          <g key={`mn${i}`}>
+            <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#250404"/>
+            <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.42}/>
+          </g>
+        ))}
+      </g>
 
       {/* Ground base */}
       <rect x="0" y="148" width="400" height="27" fill="#100202"/>
@@ -273,40 +277,44 @@ function DesktopSVG() {
       <g className="cloud-c"><PuffyCloud cx={1050} cy={24} s={0.90} op={0.45}/></g>
 
       {/* Far buildings */}
-      {DSK_FAR.map((b, i) => (
-        <g key={`df${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#6B1515"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.15} vh={175}/>
-        </g>
-      ))}
+      <g opacity="0.18">
+        {DSK_FAR.map((b, i) => (
+          <g key={`df${i}`}>
+            <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#6B1515"/>
+            <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.15} vh={175}/>
+          </g>
+        ))}
+      </g>
 
       {/* Mid buildings */}
-      {DSK_MID.map((b, i) => (
-        <g key={`dm${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#421010"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.30} vh={175}/>
-        </g>
-      ))}
+      <g opacity="0.28">
+        {DSK_MID.map((b, i) => (
+          <g key={`dm${i}`}>
+            <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#421010"/>
+            <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.30} vh={175}/>
+          </g>
+        ))}
+      </g>
 
-      {/* Hospital — center landmark (mid layer) */}
-      <g>
+      {/* Hospital — center landmark */}
+      <g opacity="0.45">
         <rect x={618} y={52} width={140} height={123} fill="#421010"/>
         <Wins bx={618} by={52} bw={140} cols={5} op={0.35} vh={175}/>
-        {/* Red cross */}
         <rect x={685} y={28} width={10} height={28} fill="#D92B2B" opacity="0.85"/>
         <rect x={676} y={36} width={28} height={9} fill="#D92B2B" opacity="0.85"/>
-        {/* Sign board */}
         <rect x={624} y={43} width={128} height={16} fill="#140000" rx="2" opacity="0.90"/>
         <text x={688} y={55} textAnchor="middle" fontSize="10" fill="white" fontFamily="sans-serif" opacity="0.90" letterSpacing="1">HOSPITAL</text>
       </g>
 
-      {/* Near buildings — slightly lighter */}
-      {DSK_NEAR.map((b, i) => (
-        <g key={`dn${i}`}>
-          <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#250404"/>
-          <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.42} vh={175}/>
-        </g>
-      ))}
+      {/* Near buildings */}
+      <g opacity="0.22">
+        {DSK_NEAR.map((b, i) => (
+          <g key={`dn${i}`}>
+            <rect x={b.x} y={b.y} width={b.w} height={175 - b.y} fill="#250404"/>
+            <Wins bx={b.x} by={b.y} bw={b.w} cols={b.cols} op={0.42} vh={175}/>
+          </g>
+        ))}
+      </g>
 
       {/* Ground base */}
       <rect x="0" y="148" width="1440" height="27" fill="#100202"/>
