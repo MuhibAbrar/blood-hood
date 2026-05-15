@@ -379,22 +379,28 @@ export default function DonorHeroCard() {
             </div>
 
             {/* App logo circle with hamburger badge — opens drawer */}
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="relative shrink-0 w-11 h-11 rounded-full bg-white/20 border border-white/30 flex items-center justify-center active:scale-90 transition-transform"
-              aria-label="Menu"
-            >
-              {/* Blood drop logo */}
-              <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-                <path d="M12 2C7 8 4 12 4 15a8 8 0 0 0 16 0c0-3-3-7-8-13z"/>
-              </svg>
-              {/* Hamburger badge at bottom-right */}
-              <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4 bg-white rounded-full flex flex-col items-center justify-center gap-[2.5px] px-[3px] shadow-sm" style={{ width: 18, height: 16 }}>
-                <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
-                <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
-                <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
-              </span>
-            </button>
+            <div className="relative shrink-0 flex items-center justify-center">
+              {/* Sun glow rings behind button */}
+              <div className="absolute w-[84px] h-[84px] rounded-full bg-white/5  pointer-events-none"/>
+              <div className="absolute w-[64px] h-[64px] rounded-full bg-white/10 pointer-events-none"/>
+              <div className="absolute w-[52px] h-[52px] rounded-full bg-white/15 pointer-events-none"/>
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="relative w-11 h-11 rounded-full bg-[#D92B2B] border border-[#FF6B6B]/40 flex items-center justify-center active:scale-90 transition-transform shadow-lg"
+                aria-label="Menu"
+              >
+                {/* Blood drop logo */}
+                <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                  <path d="M12 2C7 8 4 12 4 15a8 8 0 0 0 16 0c0-3-3-7-8-13z"/>
+                </svg>
+                {/* Hamburger badge at bottom-right */}
+                <span className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full flex flex-col items-center justify-center gap-[2.5px] px-[3px] shadow-sm" style={{ width: 18, height: 16 }}>
+                  <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
+                  <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
+                  <span className="block w-full h-[1.5px] bg-[#D92B2B] rounded-full"/>
+                </span>
+              </button>
+            </div>
           </div>
           <button type="button" onClick={() => setModalOpen(true)} disabled={loading}
             className="w-full bg-white/10 hover:bg-white/15 active:bg-white/20 transition-colors rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
