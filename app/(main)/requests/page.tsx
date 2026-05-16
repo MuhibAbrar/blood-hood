@@ -12,23 +12,25 @@ import TopBar from '@/components/layout/TopBar'
 import type { BloodRequest, BloodGroup } from '@/types'
 
 export default function RequestsPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'open' | 'fulfilled' | 'all'>('open')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
+
   useEffect(() => {
-    getBloodRequests().then((reqs) => {
+    if (authLoading) return
+    setLoading(true)
+    getBloodRequests(undefined, user?.district || undefined).then((reqs) => {
       setRequests(reqs)
       setLoading(false)
     })
-  }, [])
+  }, [authLoading, user?.district])
 
   const isExpired = (r: BloodRequest) =>
     r.status === 'open' && r.expiresAt != null && r.expiresAt.toDate() < new Date()
 
   const filtered = requests.filter((r) => {
-    if (user?.district && r.district !== user.district) return false
     if (filter === 'open') {
       if (r.status !== 'open' || isExpired(r)) return false
     } else if (filter !== 'all' && r.status !== filter) return false
@@ -81,7 +83,7 @@ export default function RequestsPage() {
 
         {/* List */}
         <div className="space-y-3">
-          {loading ? (
+          {(authLoading || loading) ? (
             [...Array(3)].map((_, i) => <RequestCardSkeleton key={i} />)
           ) : filtered.length === 0 ? (
             <EmptyState icon="🏥" title="কোনো অনুরোধ নেই" description="এই মুহূর্তে কোনো রক্তের অনুরোধ নেই" action={
