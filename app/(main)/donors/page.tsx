@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getDonors, getOrganizations } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
@@ -30,6 +31,8 @@ function weightedShuffle(donors: User[]): User[] {
 export default function DonorsPage() {
   const { user } = useAuth()
   const userDistrict = user?.district ?? ''
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [donors, setDonors] = useState<User[]>([])
   const [orgMap, setOrgMap] = useState<Record<string, string>>({})
@@ -39,10 +42,16 @@ export default function DonorsPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [lastDoc, setLastDoc] = useState<import('firebase/firestore').DocumentSnapshot | null>(null)
-  const [search, setSearch] = useState('')
-  const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
-  const [upazilaFilter, setUpazilaFilter] = useState('')
-  const [availableOnly, setAvailableOnly] = useState(false)
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
+  const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>(() => (searchParams.get('blood') ?? '') as BloodGroup | '')
+  const [upazilaFilter, setUpazilaFilter] = useState(() => searchParams.get('upazila') ?? '')
+  const [availableOnly, setAvailableOnly] = useState(() => searchParams.get('available') === '1')
+
+  const updateParams = useCallback((patch: Record<string, string>) => {
+    const p = new URLSearchParams(searchParams.toString())
+    Object.entries(patch).forEach(([k, v]) => v ? p.set(k, v) : p.delete(k))
+    router.replace(`/donors?${p.toString()}`, { scroll: false })
+  }, [router, searchParams])
 
   useEffect(() => {
     Promise.all([getDonors({ pageSize: 500 }), getOrganizations()]).then(([{ donors: d, hasMore: more, lastDoc: last }, orgs]) => {
@@ -104,7 +113,7 @@ export default function DonorsPage() {
           </svg>
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); updateParams({ q: e.target.value }) }}
             placeholder="নাম বা এলাকা দিয়ে খুঁজুন"
             className="input-field pl-10"
           />
@@ -112,7 +121,7 @@ export default function DonorsPage() {
 
         {/* Filters */}
         <div className="flex gap-2">
-          <select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value as BloodGroup | '')} className="input-field flex-1 text-sm">
+          <select value={bloodFilter} onChange={(e) => { setBloodFilter(e.target.value as BloodGroup | ''); updateParams({ blood: e.target.value }) }} className="input-field flex-1 text-sm">
             <option value="">সব গ্রুপ</option>
             {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
@@ -120,7 +129,7 @@ export default function DonorsPage() {
             <div className="flex-1">
               <SelectPicker
                 value={upazilaFilter}
-                onChange={setUpazilaFilter}
+                onChange={(v) => { setUpazilaFilter(v); updateParams({ upazila: v }) }}
                 options={upazilaOptions}
                 placeholder="সব উপজেলা"
                 searchable
@@ -128,7 +137,7 @@ export default function DonorsPage() {
             </div>
           )}
           <button
-            onClick={() => setAvailableOnly(!availableOnly)}
+            onClick={() => { setAvailableOnly(p => { updateParams({ available: p ? '' : '1' }); return !p }) }}
             className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-colors ${
               availableOnly ? 'bg-[#1A9E6B] text-white border-[#1A9E6B]' : 'border-[#E5E5E5] text-[#555555]'
             }`}
