@@ -511,7 +511,7 @@ export default function DonorHeroCard() {
                 </Link>
               )}
               {orgAdmins.map((org) => (
-                <Link key={org.id} href={`/admin/organizations/${org.id}`} onClick={() => setDrawerOpen(false)}
+                <Link key={org.id} href="/admin/organizations" onClick={() => setDrawerOpen(false)}
                   className="flex items-center gap-4 px-5 py-3.5 hover:bg-red-50 transition-colors group">
                   <div className="w-5 h-5 rounded-md bg-purple-600 flex items-center justify-center shrink-0">
                     <svg className="w-3 h-3 stroke-white fill-none" viewBox="0 0 24 24" strokeWidth={2.5}>
