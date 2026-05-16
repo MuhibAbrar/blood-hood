@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getPlatformStats, getBloodRequests } from '@/lib/firestore'
+import { getPlatformStats, getBloodRequests, getSocialLinks, saveSocialLinks, type SocialLinks } from '@/lib/firestore'
 import type { BloodRequest } from '@/types'
 import { UsersIcon, CheckCircleIcon, DropIcon, ClockIcon, ActivityIcon, TentIcon, BuildingIcon, ChartBarIcon, MegaphoneIcon } from '@/components/ui/Icons'
 
@@ -22,14 +22,19 @@ export default function AdminDashboard() {
   const [broadcastBody, setBroadcastBody] = useState('')
   const [broadcasting, setBroadcasting] = useState(false)
   const [broadcastMsg, setBroadcastMsg] = useState('')
+  const [social, setSocial] = useState<SocialLinks>({})
+  const [savingLinks, setSavingLinks] = useState(false)
+  const [linksSaved, setLinksSaved] = useState(false)
 
   useEffect(() => {
     Promise.all([
       getPlatformStats(),
       getBloodRequests('open'),
-    ]).then(([s, r]) => {
+      getSocialLinks(),
+    ]).then(([s, r, links]) => {
       setStats(s)
       setRecentRequests(r.slice(0, 5))
+      setSocial(links)
       setLoading(false)
     })
   }, [])
@@ -41,6 +46,16 @@ export default function AdminDashboard() {
     { label: 'অপেক্ষারত Request', value: stats?.pendingRequests ?? 0, icon: <ClockIcon className="w-4 h-4" />, color: 'bg-yellow-50 text-yellow-700', border: 'border-yellow-100' },
     { label: 'মোট দান', value: stats?.totalDonations ?? 0, icon: <ActivityIcon className="w-4 h-4" />, color: 'bg-purple-50 text-purple-700', border: 'border-purple-100' },
   ]
+
+  const handleSaveLinks = async () => {
+    setSavingLinks(true)
+    setLinksSaved(false)
+    try {
+      await saveSocialLinks(social)
+      setLinksSaved(true)
+      setTimeout(() => setLinksSaved(false), 3000)
+    } finally { setSavingLinks(false) }
+  }
 
   const handleBroadcast = async () => {
     if (!broadcastTitle.trim()) return
@@ -145,6 +160,42 @@ export default function AdminDashboard() {
             className="bg-[#D92B2B] text-white rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
           >
             {broadcasting ? 'পাঠানো হচ্ছে...' : <span className="flex items-center gap-1.5"><MegaphoneIcon className="w-4 h-4 stroke-white" />সবাইকে পাঠাও</span>}
+          </button>
+        </div>
+      </div>
+
+      {/* Social Links */}
+      <div>
+        <h2 className="font-semibold text-[#111111] mb-4">সোশ্যাল মিডিয়া লিংক</h2>
+        <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 space-y-3">
+          <p className="text-xs text-[#888]">এখানে লিংক দিলে &quot;Follow Us&quot; পেজে দেখাবে।</p>
+          {([
+            { key: 'facebook',  label: 'Facebook URL',   placeholder: 'https://facebook.com/bloodhood' },
+            { key: 'instagram', label: 'Instagram URL',  placeholder: 'https://instagram.com/bloodhood' },
+            { key: 'youtube',   label: 'YouTube URL',    placeholder: 'https://youtube.com/@bloodhood' },
+            { key: 'whatsapp',  label: 'WhatsApp নম্বর', placeholder: '01XXXXXXXXX' },
+            { key: 'website',   label: 'Website URL',    placeholder: 'https://bloodhood.pro.bd' },
+            { key: 'email',     label: 'Email',          placeholder: 'support@bloodhood.pro.bd' },
+            { key: 'phone',     label: 'Phone নম্বর',    placeholder: '01XXXXXXXXX' },
+          ] as { key: keyof SocialLinks; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label className="block text-xs font-semibold text-[#555] mb-1">{label}</label>
+              <input
+                type="text"
+                value={social[key] ?? ''}
+                onChange={(e) => setSocial(p => ({ ...p, [key]: e.target.value }))}
+                placeholder={placeholder}
+                className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]"
+              />
+            </div>
+          ))}
+          {linksSaved && <p className="text-sm font-medium text-[#1A9E6B]">✅ সংরক্ষিত হয়েছে!</p>}
+          <button
+            onClick={handleSaveLinks}
+            disabled={savingLinks}
+            className="bg-[#D92B2B] text-white rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
+          >
+            {savingLinks ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
           </button>
         </div>
       </div>

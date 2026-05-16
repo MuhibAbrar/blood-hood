@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getBloodRequests } from '@/lib/firestore'
+import { useAuth } from '@/context/AuthContext'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -11,10 +12,12 @@ import TopBar from '@/components/layout/TopBar'
 import type { BloodRequest, BloodGroup } from '@/types'
 
 export default function RequestsPage() {
+  const { user } = useAuth()
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'open' | 'fulfilled' | 'all'>('open')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
+  const [districtOnly, setDistrictOnly] = useState(true)
 
   useEffect(() => {
     getBloodRequests().then((reqs) => {
@@ -27,6 +30,7 @@ export default function RequestsPage() {
     r.status === 'open' && r.expiresAt != null && r.expiresAt.toDate() < new Date()
 
   const filtered = requests.filter((r) => {
+    if (districtOnly && user?.district && r.district !== user.district) return false
     if (filter === 'open') {
       if (r.status !== 'open' || isExpired(r)) return false
     } else if (filter !== 'all' && r.status !== filter) return false
@@ -45,6 +49,22 @@ export default function RequestsPage() {
         }
       />
       <div className="px-4 py-4 space-y-4">
+        {/* District toggle */}
+        {user?.district && (
+          <button
+            onClick={() => setDistrictOnly(p => !p)}
+            className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors flex items-center justify-center gap-2 ${
+              districtOnly ? 'bg-[#D92B2B] text-white border-[#D92B2B]' : 'border-[#E5E5E5] text-[#555555]'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"/>
+            </svg>
+            {districtOnly ? `${user.district} জেলা` : 'সব জেলা'}
+          </button>
+        )}
+
         {/* Status filter */}
         <div className="flex gap-2">
           {(['open', 'fulfilled', 'all'] as const).map((s) => (

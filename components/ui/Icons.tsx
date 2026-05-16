@@ -81,8 +81,12 @@ export function CrownIcon({ className }: IconProps) {
 export function TentIcon({ className }: IconProps) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 21 12 3l8.5 18H3.5z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3 9.5 9a4 4 0 0 0 5 0L12 3z" />
+      {/* Tent roof */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2 21 12 4l10 17H2z" />
+      {/* Tent door */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 21v-5a2 2 0 0 1 4 0v5" />
+      {/* Red cross */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m-1.5-1.5h3" />
     </svg>
   )
 }

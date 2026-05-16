@@ -865,3 +865,24 @@ export const resolveContactEvents = async (
 
   await batch.commit()
 }
+
+// --- Social Links (settings/social) ---
+
+export interface SocialLinks {
+  facebook?:  string
+  instagram?: string
+  youtube?:   string
+  whatsapp?:  string
+  website?:   string
+  email?:     string
+  phone?:     string
+}
+
+export const getSocialLinks = async (): Promise<SocialLinks> => {
+  const snap = await getDoc(doc(db, 'settings', 'social'))
+  return snap.exists() ? (snap.data() as SocialLinks) : {}
+}
+
+export const saveSocialLinks = async (links: SocialLinks): Promise<void> => {
+  await setDoc(doc(db, 'settings', 'social'), links, { merge: true })
+}
