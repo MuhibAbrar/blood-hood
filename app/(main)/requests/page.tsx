@@ -17,8 +17,6 @@ export default function RequestsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'open' | 'fulfilled' | 'all'>('open')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
-  const [districtOnly, setDistrictOnly] = useState(true)
-
   useEffect(() => {
     getBloodRequests().then((reqs) => {
       setRequests(reqs)
@@ -30,7 +28,7 @@ export default function RequestsPage() {
     r.status === 'open' && r.expiresAt != null && r.expiresAt.toDate() < new Date()
 
   const filtered = requests.filter((r) => {
-    if (districtOnly && user?.district && r.district !== user.district) return false
+    if (user?.district && r.district !== user.district) return false
     if (filter === 'open') {
       if (r.status !== 'open' || isExpired(r)) return false
     } else if (filter !== 'all' && r.status !== filter) return false
@@ -49,20 +47,15 @@ export default function RequestsPage() {
         }
       />
       <div className="px-4 py-4 space-y-4">
-        {/* District toggle */}
+        {/* District badge */}
         {user?.district && (
-          <button
-            onClick={() => setDistrictOnly(p => !p)}
-            className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors flex items-center justify-center gap-2 ${
-              districtOnly ? 'bg-[#D92B2B] text-white border-[#D92B2B]' : 'border-[#E5E5E5] text-[#555555]'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#FFF0F0] rounded-xl border border-[#FFD0D0]">
+            <svg className="w-4 h-4 shrink-0 stroke-[#D92B2B]" fill="none" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"/>
             </svg>
-            {districtOnly ? `${user.district} জেলা` : 'সব জেলা'}
-          </button>
+            <p className="text-xs text-[#D92B2B] font-semibold">{user.district} জেলার অনুরোধ দেখাচ্ছে</p>
+          </div>
         )}
 
         {/* Status filter */}
