@@ -42,10 +42,12 @@ interface Bird { x:number; y:number; spd:number; sz:number; phase:number; phaseS
 
 // ── Canvas: ECG tip + crow birds ───────────────────────────────────────────
 function HeroCanvas() {
-  const cvRef  = useRef<HTMLCanvasElement>(null)
-  const rafRef = useRef<number>(0)
-  const visRef = useRef(true)
-  const stRef  = useRef({ tipX: 0, birds: [] as Bird[], nextBird: 2500, t: 0 })
+  const cvRef    = useRef<HTMLCanvasElement>(null)
+  const rafRef   = useRef<number>(0)
+  const visRef   = useRef(true)
+  const scrollRef = useRef(false)
+  const scrollTimer = useRef<ReturnType<typeof setTimeout>>()
+  const stRef    = useRef({ tipX: 0, birds: [] as Bird[], nextBird: 2500, t: 0 })
 
   useEffect(() => {
     const cv = cvRef.current
@@ -59,6 +61,13 @@ function HeroCanvas() {
 
     const io = new IntersectionObserver(([e]) => { visRef.current = e.isIntersecting }, { threshold: 0 })
     io.observe(canvas)
+
+    const onScroll = () => {
+      scrollRef.current = true
+      clearTimeout(scrollTimer.current)
+      scrollTimer.current = setTimeout(() => { scrollRef.current = false }, 120)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
 
     function spawnBirds() {
       const h = canvas.height, n = Math.random() < 0.35 ? 2 : 1
@@ -89,7 +98,7 @@ function HeroCanvas() {
 
     let last = 0
     function frame(ts: number) {
-      if (!visRef.current) { rafRef.current = requestAnimationFrame(frame); return }
+      if (!visRef.current || scrollRef.current) { rafRef.current = requestAnimationFrame(frame); return }
       const dt = last === 0 ? 16.67 : Math.min(ts - last, 50); last = ts
       const st = stRef.current, w = canvas.width, h = canvas.height
       const ctx = canvas.getContext('2d')!; ctx.clearRect(0, 0, w, h)
@@ -113,7 +122,12 @@ function HeroCanvas() {
       rafRef.current = requestAnimationFrame(frame)
     }
     rafRef.current = requestAnimationFrame(frame)
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); io.disconnect() }
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      ro.disconnect(); io.disconnect()
+      window.removeEventListener('scroll', onScroll)
+      clearTimeout(scrollTimer.current)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

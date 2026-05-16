@@ -67,7 +67,7 @@ export default function BottomNav() {
           </Link>
 
           {/* Frosted glass pill */}
-          <nav className="flex items-center h-16 px-1 rounded-full bg-white/30 backdrop-blur-xl border border-white/50 shadow-xl shadow-black/10">
+          <nav className="flex items-center h-16 px-1 rounded-full bg-white/95 border border-white/60 shadow-xl shadow-black/15">
             <PillItem href="/dashboard" label="হোম" icon={HomeIcon}
               active={pathname === '/dashboard'} />
             <PillItem href="/requests/new" label="রিকোয়েস্ট" icon={RequestIcon}
