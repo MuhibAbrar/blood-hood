@@ -1,9 +1,10 @@
+import Link from 'next/link'
 import TopBar from '@/components/layout/TopBar'
 
 const SECTIONS = [
   {
     title: 'সেবার শর্তাবলী',
-    body: `Blood Hood অ্যাপ ব্যবহার করে আপনি এই শর্তাবলী মেনে নিচ্ছেন। এই প্ল্যাটফর্মটি শুধুমাত্র স্বেচ্ছায় রক্তদানের সুবিধার জন্য তৈরি। আমরা কোনো আর্থিক লেনদেনের মধ্যস্থতা করি না।`,
+    body: `Blood Hood অ্যাপ ব্যবহার করে আপনি এই শর্তাবলী মেনে নিচ্ছেন। এই প্ল্যাটফর্মটি শুধুমাত্র স্বেচ্ছায় রক্তদানের সুবিধার জন্য তৈরি। আমরা কোনো আর্থিক লেনদেনের মধ্যস্থতা করি না।\n\nআমরা শুধুমাত্র রক্তদাতা ও রক্তগ্রহীতার মধ্যে সংযোগ স্থাপন করি। যদি কোনো ব্যক্তি রক্ত দেওয়ার বিনিময়ে অর্থ দাবি করেন বা কোনো প্রকার আর্থিক লেনদেনের চেষ্টা করেন, তবে Blood Hood সেই বিষয়ে কোনোভাবেই দায়ী নয়। রক্তদান সম্পূর্ণ স্বেচ্ছামূলক ও বিনামূল্যে হওয়া উচিত।`,
   },
   {
     title: 'ব্যবহারকারীর দায়িত্ব',
@@ -45,6 +46,26 @@ export default function TermsPage() {
             <p className="text-sm text-[#555] leading-relaxed whitespace-pre-line">{s.body}</p>
           </div>
         ))}
+
+        {/* Complain section */}
+        <div className="card p-4 space-y-3 border-l-4 border-l-[#D92B2B]">
+          <h3 className="font-semibold text-[#111] text-sm">অভিযোগ জানান</h3>
+          <p className="text-sm text-[#555] leading-relaxed">
+            যদি কোনো রক্তদাতা বা ব্যবহারকারী আপনার কাছে অর্থ দাবি করেন, হয়রানি করেন বা অন্য কোনো অনিয়ম করেন — আমাদের জানান। Blood Hood কর্তৃপক্ষ বিষয়টি যাচাই করে উপযুক্ত ব্যবস্থা নেবে।
+          </p>
+          <p className="text-sm text-[#555] leading-relaxed">
+            মনে রাখবেন, রক্তদান সম্পূর্ণ বিনামূল্যে ও স্বেচ্ছামূলক। কোনো লেনদেনে Blood Hood এর কোনো সম্পৃক্ততা নেই এবং এ বিষয়ে আমরা দায়ী নই। তবে আপনার অভিযোগ আমাদের প্ল্যাটফর্মকে নিরাপদ রাখতে সাহায্য করবে।
+          </p>
+          <Link
+            href="/complain"
+            className="flex items-center justify-between w-full bg-[#D92B2B] text-white rounded-xl px-4 py-3 font-semibold text-sm active:opacity-90 transition-opacity"
+          >
+            <span>অভিযোগ করুন</span>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6"/>
+            </svg>
+          </Link>
+        </div>
 
         <div className="text-center py-4">
           <p className="text-xs text-[#AAA]">Blood Hood · রক্তের বন্ধন, বাংলাদেশ</p>
