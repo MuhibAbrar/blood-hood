@@ -382,7 +382,7 @@ function GuestHeroCard() {
 
 // ── Logged-in hero ──────────────────────────────────────────────────────────
 export default function DonorHeroCard() {
-  const { user, refreshUser } = useAuth()
+  const { user, orgAdmins, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [modalOpen,  setModalOpen]  = useState(false)
   const [loading,    setLoading]    = useState(false)
@@ -493,6 +493,42 @@ export default function DonorHeroCard() {
         </div>
         {/* Menu */}
         <nav className="flex-1 overflow-y-auto py-2">
+          {/* Admin / Org admin section */}
+          {(user?.role === 'superadmin' || user?.role === 'admin' || orgAdmins.length > 0) && (
+            <>
+              <div className="px-5 pt-3 pb-1">
+                <p className="text-[10px] font-bold text-[#AAA] uppercase tracking-widest">Admin Access</p>
+              </div>
+              {user?.role === 'superadmin' && (
+                <Link href="/admin" onClick={() => setDrawerOpen(false)}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-red-50 transition-colors group">
+                  <div className="w-5 h-5 rounded-md bg-[#D92B2B] flex items-center justify-center shrink-0">
+                    <svg className="w-3 h-3 stroke-white fill-none" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    </svg>
+                  </div>
+                  <span className="text-[#D92B2B] font-semibold text-sm">Super Admin Panel</span>
+                </Link>
+              )}
+              {orgAdmins.map((org) => (
+                <Link key={org.id} href={`/admin/organizations/${org.id}`} onClick={() => setDrawerOpen(false)}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-red-50 transition-colors group">
+                  <div className="w-5 h-5 rounded-md bg-purple-600 flex items-center justify-center shrink-0">
+                    <svg className="w-3 h-3 stroke-white fill-none" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-purple-700 font-semibold text-sm truncate">{org.name}</p>
+                    <p className="text-[10px] text-[#AAA]">Org Admin</p>
+                  </div>
+                </Link>
+              ))}
+              <div className="mx-5 my-2 border-t border-[#F0F0F0]" />
+            </>
+          )}
+
+          {/* Regular menu */}
           {MENU_ITEMS.map(({ href, label, icon }) => (
             <Link key={href} href={href} onClick={() => setDrawerOpen(false)}
               className="flex items-center gap-4 px-5 py-3.5 hover:bg-red-50 transition-colors group">
