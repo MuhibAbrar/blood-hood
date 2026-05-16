@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getPlatformStats, getBloodRequests, getSocialLinks, saveSocialLinks, type SocialLinks } from '@/lib/firestore'
+import { getPlatformStats, getBloodRequests, getSocialLinks, saveSocialLinks, getHelplines, saveHelplines, type SocialLinks, type HelplineOrg } from '@/lib/firestore'
 import type { BloodRequest } from '@/types'
 import { UsersIcon, CheckCircleIcon, DropIcon, ClockIcon, ActivityIcon, TentIcon, BuildingIcon, ChartBarIcon, MegaphoneIcon } from '@/components/ui/Icons'
 
@@ -25,16 +25,22 @@ export default function AdminDashboard() {
   const [social, setSocial] = useState<SocialLinks>({})
   const [savingLinks, setSavingLinks] = useState(false)
   const [linksSaved, setLinksSaved] = useState(false)
+  const [helplines, setHelplines] = useState<HelplineOrg[]>([])
+  const [savingHelplines, setSavingHelplines] = useState(false)
+  const [helplinesSaved, setHelplinesSaved] = useState(false)
+  const [newOrg, setNewOrg] = useState({ name: '', phone: '' })
 
   useEffect(() => {
     Promise.all([
       getPlatformStats(),
       getBloodRequests('open'),
       getSocialLinks(),
-    ]).then(([s, r, links]) => {
+      getHelplines(),
+    ]).then(([s, r, links, orgs]) => {
       setStats(s)
       setRecentRequests(r.slice(0, 5))
       setSocial(links)
+      setHelplines(orgs)
       setLoading(false)
     })
   }, [])
@@ -55,6 +61,26 @@ export default function AdminDashboard() {
       setLinksSaved(true)
       setTimeout(() => setLinksSaved(false), 3000)
     } finally { setSavingLinks(false) }
+  }
+
+  const handleAddOrg = () => {
+    if (!newOrg.name.trim() || !newOrg.phone.trim()) return
+    setHelplines(prev => [...prev, { id: Date.now().toString(), name: newOrg.name.trim(), phone: newOrg.phone.trim() }])
+    setNewOrg({ name: '', phone: '' })
+  }
+
+  const handleRemoveOrg = (id: string) => {
+    setHelplines(prev => prev.filter(o => o.id !== id))
+  }
+
+  const handleSaveHelplines = async () => {
+    setSavingHelplines(true)
+    setHelplinesSaved(false)
+    try {
+      await saveHelplines(helplines)
+      setHelplinesSaved(true)
+      setTimeout(() => setHelplinesSaved(false), 3000)
+    } finally { setSavingHelplines(false) }
   }
 
   const handleBroadcast = async () => {
@@ -196,6 +222,66 @@ export default function AdminDashboard() {
             className="bg-[#D92B2B] text-white rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
           >
             {savingLinks ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
+          </button>
+        </div>
+      </div>
+
+      {/* Helpline Organizations */}
+      <div>
+        <h2 className="font-semibold text-[#111111] mb-4">সহযোগী সংগঠন হেল্পলাইন</h2>
+        <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 space-y-4">
+          <p className="text-xs text-[#888]">এখানে যোগ করা সংগঠনগুলো Complain পেজে দেখাবে।</p>
+
+          {/* Existing orgs */}
+          {helplines.length > 0 && (
+            <div className="space-y-2">
+              {helplines.map((org) => (
+                <div key={org.id} className="flex items-center justify-between bg-[#F8F8F8] rounded-xl px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#111]">{org.name}</p>
+                    <p className="text-xs text-[#777]">{org.phone}</p>
+                  </div>
+                  <button onClick={() => handleRemoveOrg(org.id)} className="text-xs text-red-500 font-semibold px-2 py-1 rounded-lg hover:bg-red-50">
+                    সরান
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new */}
+          <div className="space-y-2 border-t border-[#F0F0F0] pt-4">
+            <p className="text-xs font-semibold text-[#555]">নতুন সংগঠন যোগ করুন</p>
+            <input
+              type="text"
+              placeholder="সংগঠনের নাম"
+              value={newOrg.name}
+              onChange={e => setNewOrg(p => ({ ...p, name: e.target.value }))}
+              className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]"
+            />
+            <input
+              type="text"
+              placeholder="ফোন নম্বর"
+              value={newOrg.phone}
+              onChange={e => setNewOrg(p => ({ ...p, phone: e.target.value }))}
+              className="w-full border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D92B2B]"
+            />
+            <button
+              onClick={handleAddOrg}
+              disabled={!newOrg.name.trim() || !newOrg.phone.trim()}
+              className="w-full border-2 border-dashed border-[#D92B2B] text-[#D92B2B] rounded-xl py-2.5 text-sm font-semibold disabled:opacity-40"
+            >
+              + যোগ করুন
+            </button>
+          </div>
+
+          {helplinesSaved && <p className="text-sm font-medium text-[#1A9E6B]">✅ সংরক্ষিত হয়েছে!</p>}
+          <button
+            onClick={handleSaveHelplines}
+            disabled={savingHelplines}
+            className="bg-[#D92B2B] text-white rounded-xl px-6 py-2.5 text-sm font-semibold disabled:opacity-50"
+          >
+            {savingHelplines ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
           </button>
         </div>
       </div>

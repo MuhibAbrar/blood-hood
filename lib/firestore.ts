@@ -891,3 +891,20 @@ export const getSocialLinks = async (): Promise<SocialLinks> => {
 export const saveSocialLinks = async (links: SocialLinks): Promise<void> => {
   await setDoc(doc(db, 'settings', 'social'), links, { merge: true })
 }
+
+// --- Helpline Organizations (settings/helplines) ---
+
+export interface HelplineOrg {
+  id:    string
+  name:  string
+  phone: string
+}
+
+export const getHelplines = async (): Promise<HelplineOrg[]> => {
+  const snap = await getDoc(doc(db, 'settings', 'helplines'))
+  return snap.exists() ? (snap.data().orgs as HelplineOrg[]) ?? [] : []
+}
+
+export const saveHelplines = async (orgs: HelplineOrg[]): Promise<void> => {
+  await setDoc(doc(db, 'settings', 'helplines'), { orgs })
+}
