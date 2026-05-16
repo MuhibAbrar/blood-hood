@@ -31,7 +31,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     getPlatformStats(user?.district).then((s) => { setStats(s); setLoadingStats(false) })
-    getBloodRequests('open').then((reqs) => setRequests(reqs.slice(0, 5)))
+    getBloodRequests('open', user?.district?.trim() || undefined).then((reqs) => setRequests(reqs.slice(0, 5)))
   }, [user?.district])
 
   return (
