@@ -112,10 +112,10 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
 }
 
 export const getBloodRequests = async (status?: BloodRequest['status'], district?: string): Promise<BloodRequest[]> => {
-  const constraints = district
-    ? [where('district', '==', district), limit(100)]
-    : [orderBy('createdAt', 'desc'), limit(100)]
-  const q = query(collection(db, 'bloodRequests'), ...constraints)
+  const ref = collection(db, 'bloodRequests')
+  const q = district
+    ? query(ref, where('district', '==', district), limit(100))
+    : query(ref, orderBy('createdAt', 'desc'), limit(100))
   const snap = await getDocs(q)
   const all = snap.docs
     .map((d) => ({ id: d.id, ...d.data() } as BloodRequest))

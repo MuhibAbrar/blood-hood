@@ -20,8 +20,14 @@ export default function RequestsPage() {
 
   useEffect(() => {
     if (authLoading) return
+    const district = user?.district?.trim()
+    if (!district) {
+      setRequests([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
-    getBloodRequests(undefined, user?.district || undefined).then((reqs) => {
+    getBloodRequests(undefined, district).then((reqs) => {
       setRequests(reqs)
       setLoading(false)
     })
@@ -49,8 +55,16 @@ export default function RequestsPage() {
         }
       />
       <div className="px-4 py-4 space-y-4">
-        {/* District badge */}
-        {user?.district && (
+        {/* District badge or no-district warning */}
+        {!authLoading && !user?.district?.trim() ? (
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 rounded-xl border border-amber-200">
+            <svg className="w-4 h-4 shrink-0 stroke-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+            <p className="text-xs text-amber-700 font-semibold flex-1">প্রোফাইলে জেলা সেট করুন — তারপর অনুরোধ দেখা যাবে</p>
+            <Link href="/profile" className="text-xs font-bold text-amber-700 underline shrink-0">যান →</Link>
+          </div>
+        ) : user?.district ? (
           <div className="flex items-center gap-2 px-3 py-2 bg-[#FFF0F0] rounded-xl border border-[#FFD0D0]">
             <svg className="w-4 h-4 shrink-0 stroke-[#D92B2B]" fill="none" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
@@ -58,7 +72,7 @@ export default function RequestsPage() {
             </svg>
             <p className="text-xs text-[#D92B2B] font-semibold">{user.district} জেলার অনুরোধ দেখাচ্ছে</p>
           </div>
-        )}
+        ) : null}
 
         {/* Status filter */}
         <div className="flex gap-2">
