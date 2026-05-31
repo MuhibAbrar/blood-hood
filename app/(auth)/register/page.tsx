@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { RecaptchaVerifier, signInWithPhoneNumber, deleteUser, type ConfirmationResult } from 'firebase/auth'
 import { useAuth } from '@/context/AuthContext'
 import { createUser } from '@/lib/firestore'
 import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
+import { auth } from '@/lib/firebase'
 import { useToast } from '@/components/ui/Toast'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
@@ -17,9 +19,17 @@ export default function RegisterPage() {
   const { firebaseUser, refreshUser } = useAuth()
   const { showToast } = useToast()
 
-  // step 0 = phone+password, steps 1–3 = profile setup
+  // step 0 = phone+OTP+password, steps 1–3 = profile setup
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+
+  // OTP state
+  const [otpSent, setOtpSent] = useState(false)
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [otpTimer, setOtpTimer] = useState(0)
+  const confirmationRef = useRef<ConfirmationResult | null>(null)
+  const recaptchaRef = useRef<RecaptchaVerifier | null>(null)
 
   // auth step fields
   const [phone, setPhone] = useState(searchParams.get('phone') ?? '')
@@ -47,11 +57,61 @@ export default function RegisterPage() {
     }
   }, [firebaseUser])
 
+  // OTP countdown timer
+  useEffect(() => {
+    if (otpTimer <= 0) return
+    const t = setTimeout(() => setOtpTimer(p => p - 1), 1000)
+    return () => clearTimeout(t)
+  }, [otpTimer])
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
+  // ── OTP: send ─────────────────────────────────────────────────────────
+  const handleSendOTP = async () => {
+    const rawPhone = phone.replace(/\D/g, '')
+    if (!validateBDPhone(rawPhone)) {
+      showToast('সঠিক বাংলাদেশি নম্বর দিন (01XXXXXXXXX)', 'error'); return
+    }
+    setLoading(true)
+    try {
+      if (!recaptchaRef.current) {
+        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
+      }
+      const result = await signInWithPhoneNumber(auth, '+88' + rawPhone, recaptchaRef.current)
+      confirmationRef.current = result
+      setOtpSent(true)
+      setOtpTimer(60)
+      showToast('OTP পাঠানো হয়েছে', 'success')
+    } catch {
+      showToast('OTP পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করুন', 'error')
+      recaptchaRef.current = null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── OTP: verify ───────────────────────────────────────────────────────
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 6) { showToast('৬ সংখ্যার OTP দিন', 'error'); return }
+    setLoading(true)
+    try {
+      const result = await confirmationRef.current!.confirm(otp)
+      // Delete phone auth user — we only needed it for verification
+      await deleteUser(result.user)
+      setPhoneVerified(true)
+      showToast('নম্বর যাচাই হয়েছে ✓', 'success')
+    } catch {
+      showToast('OTP ভুল হয়েছে, আবার চেষ্টা করুন', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // ── Step 0: create Firebase account ─────────────────────────────────────
   const handleSignUp = async () => {
+    if (!phoneVerified) { showToast('আগে OTP দিয়ে নম্বর যাচাই করুন', 'error'); return }
+
     const rawPhone = phone.replace(/\D/g, '')
     if (!validateBDPhone(rawPhone)) {
       showToast('সঠিক বাংলাদেশি নম্বর দিন (01XXXXXXXXX)', 'error')
@@ -150,54 +210,117 @@ export default function RegisterPage() {
         )}
       </div>
 
-      {/* ── Step 0: Phone + Password ── */}
+      {/* ── Step 0: Phone + OTP + Password ── */}
       {step === 0 && (
         <div className="space-y-4">
+          {/* invisible reCAPTCHA container */}
+          <div id="recaptcha-container" />
+
           {searchParams.get('phone') && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
-              🎉 আপনার তথ্য আগে থেকেই আছে! পাসওয়ার্ড দিয়ে account খুললেই সব data চলে আসবে।
+              🎉 আপনার তথ্য আগে থেকেই আছে! account খুললেই সব data চলে আসবে।
             </div>
           )}
+
+          {/* Phone number */}
           <div>
             <label className="block text-sm font-medium text-[#111111] mb-1.5">মোবাইল নম্বর</label>
-            <input
-              type="tel"
-              value={formatPhone(phone)}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-              placeholder="01X-XXXX-XXXX"
-              maxLength={13}
-              className="input-field"
-              inputMode="tel"
-            />
+            <div className="flex gap-2">
+              <input
+                type="tel"
+                value={formatPhone(phone)}
+                onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '')); setOtpSent(false); setPhoneVerified(false) }}
+                placeholder="01X-XXXX-XXXX"
+                maxLength={13}
+                className="input-field flex-1"
+                inputMode="tel"
+                disabled={phoneVerified}
+              />
+              {!phoneVerified && (
+                <button
+                  type="button"
+                  onClick={handleSendOTP}
+                  disabled={loading || otpTimer > 0}
+                  className="shrink-0 px-4 py-2.5 rounded-xl bg-[#D92B2B] text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {loading && !otpSent ? '...' : otpTimer > 0 ? `${otpTimer}s` : 'OTP পাঠাও'}
+                </button>
+              )}
+              {phoneVerified && (
+                <div className="shrink-0 px-4 py-2.5 rounded-xl bg-green-100 text-green-700 text-sm font-semibold flex items-center gap-1">
+                  ✓ যাচাই
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-[#111111] mb-1.5">পাসওয়ার্ড</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="কমপক্ষে ৬ অক্ষর"
-              className="input-field"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#111111] mb-1.5">পাসওয়ার্ড নিশ্চিত করুন</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="পাসওয়ার্ড আবার লিখুন"
-              className="input-field"
-            />
-          </div>
-          <button onClick={handleSignUp} disabled={loading} className="btn-primary w-full">
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                তৈরি হচ্ছে...
-              </span>
-            ) : 'পরবর্তী →'}
-          </button>
+
+          {/* OTP input */}
+          {otpSent && !phoneVerified && (
+            <div>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">
+                OTP কোড <span className="text-[#777] font-normal text-xs">(+88{phone} নম্বরে SMS গেছে)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6 সংখ্যার কোড"
+                  className="input-field flex-1 text-center text-xl tracking-widest font-bold"
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyOTP}
+                  disabled={loading || otp.length !== 6}
+                  className="shrink-0 px-4 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {loading ? '...' : 'যাচাই করুন'}
+                </button>
+              </div>
+              {otpTimer === 0 && (
+                <button type="button" onClick={handleSendOTP} className="text-xs text-[#D92B2B] mt-1.5 font-medium">
+                  OTP আসেনি? আবার পাঠাও
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Password — only after phone verified */}
+          {phoneVerified && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">পাসওয়ার্ড</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="কমপক্ষে ৬ অক্ষর"
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">পাসওয়ার্ড নিশ্চিত করুন</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="পাসওয়ার্ড আবার লিখুন"
+                  className="input-field"
+                />
+              </div>
+              <button onClick={handleSignUp} disabled={loading} className="btn-primary w-full">
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    তৈরি হচ্ছে...
+                  </span>
+                ) : 'পরবর্তী →'}
+              </button>
+            </>
+          )}
+
           <p className="text-center text-sm text-[#555555]">
             আগেই অ্যাকাউন্ট আছে?{' '}
             <a href="/login" className="text-[#D92B2B] font-semibold">লগইন করুন</a>
