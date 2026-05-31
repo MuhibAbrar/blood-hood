@@ -89,24 +89,30 @@ export default function ConsentModal() {
         <div className="flex gap-3">
           <Link
             href="/terms"
-            onClick={() => localStorage.setItem(CONSENT_KEY, '1')}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex-1 text-center text-sm font-semibold text-[#D92B2B] border-2 border-[#D92B2B] rounded-xl py-2.5 active:bg-red-50"
           >
-            শর্তাবলী পড়ুন
+            📄 Terms of Use
           </Link>
           <Link
             href="/terms"
-            onClick={() => localStorage.setItem(CONSENT_KEY, '1')}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex-1 text-center text-sm font-semibold text-[#555] border-2 border-[#E5E5E5] rounded-xl py-2.5 active:bg-gray-50"
           >
-            গোপনীয়তা নীতি
+            🔒 Privacy Policy
           </Link>
         </div>
       </div>
 
       {/* Footer — checkbox + agree */}
       <div className="px-5 pb-8 pt-4 border-t border-[#F0F0F0] space-y-4 bg-white">
-        <label className="flex items-start gap-3 cursor-pointer">
+
+        {/* Checkbox highlight box */}
+        <label className={`flex items-start gap-3 cursor-pointer rounded-2xl border-2 p-4 transition-colors ${
+          agreed ? 'border-[#D92B2B] bg-[#FFF0F0]' : 'border-dashed border-[#FFAAAA] bg-[#FFF8F8]'
+        }`}>
           <div className="relative shrink-0 mt-0.5">
             <input
               type="checkbox"
@@ -115,7 +121,7 @@ export default function ConsentModal() {
               className="sr-only"
             />
             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
-              agreed ? 'bg-[#D92B2B] border-[#D92B2B]' : 'border-[#CCC] bg-white'
+              agreed ? 'bg-[#D92B2B] border-[#D92B2B]' : 'border-[#D92B2B] bg-white'
             }`}>
               {agreed && (
                 <svg className="w-3 h-3 stroke-white fill-none" viewBox="0 0 24 24" strokeWidth={3}>
@@ -124,13 +130,16 @@ export default function ConsentModal() {
               )}
             </div>
           </div>
-          <p className="text-sm text-[#444] leading-relaxed">
-            আমি Blood Hood এর{' '}
-            <span className="text-[#D92B2B] font-semibold">শর্তাবলী ও ব্যবহারবিধি</span>{' '}
-            এবং{' '}
-            <span className="text-[#D92B2B] font-semibold">কমিউনিটি নির্দেশিকা</span>{' '}
-            পড়েছি এবং সম্মত আছি।
-          </p>
+          <div>
+            {!agreed && <p className="text-[10px] font-bold text-[#D92B2B] uppercase tracking-wide mb-1">নিচেরটি পড়ে টিক দিন</p>}
+            <p className="text-sm text-[#444] leading-relaxed">
+              আমি Blood Hood এর{' '}
+              <span className="text-[#D92B2B] font-semibold">Terms of Use</span>{' '}
+              এবং{' '}
+              <span className="text-[#D92B2B] font-semibold">Community Guidelines</span>{' '}
+              পড়েছি এবং সম্পূর্ণ সম্মত আছি।
+            </p>
+          </div>
         </label>
 
         <button
@@ -138,7 +147,7 @@ export default function ConsentModal() {
           disabled={!agreed}
           className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[#D92B2B] text-white active:scale-[0.98]"
         >
-          সম্মত আছি — শুরু করুন
+          সম্মত আছি — শুরু করুন →
         </button>
       </div>
     </div>
