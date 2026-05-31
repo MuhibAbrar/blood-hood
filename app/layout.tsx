@@ -4,7 +4,6 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/ui/Toast'
-import ConsentModal from '@/components/ui/ConsentModal'
 
 const BASE_URL = 'https://bloodhood.pro.bd'
 
@@ -116,7 +115,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased bg-[#FAFAFA]">
         <AuthProvider>
           <ToastProvider>
-            <ConsentModal />
             {children}
           </ToastProvider>
         </AuthProvider>

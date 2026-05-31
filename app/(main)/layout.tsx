@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import ConsentModal from '@/components/ui/ConsentModal'
 import BottomNav from '@/components/layout/BottomNav'
 import InAppNotification from '@/components/ui/InAppNotification'
 import InstallBanner from '@/components/ui/InstallBanner'
@@ -33,6 +34,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ConsentModal />
       <InstallBanner />
       <InAppNotification />
       <DonationFollowUpModal />
