@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
+import ConsentModal from '@/components/ui/ConsentModal'
 import type { BloodRequest } from '@/types'
 import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, CheckCircleIcon, GiftIcon } from '@/components/ui/Icons'
 
@@ -36,6 +37,7 @@ export default function DashboardPage() {
 
   return (
     <div className="pb-8">
+      <ConsentModal />
       {/* Full-width hero */}
       <DonorHeroCard />
 
