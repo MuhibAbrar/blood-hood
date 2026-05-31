@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import InAppNotification from '@/components/ui/InAppNotification'
 import InstallBanner from '@/components/ui/InstallBanner'
 import DonationFollowUpModal from '@/components/ui/DonationFollowUpModal'
+import ConsentModal from '@/components/ui/ConsentModal'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { firebaseUser, user, loading } = useAuth()
@@ -33,7 +34,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen flex flex-col">
-<InstallBanner />
+      <ConsentModal />
+      <InstallBanner />
       <InAppNotification />
       <DonationFollowUpModal />
       <main className="flex-1 pb-28 md:pb-6 md:ml-56">{children}</main>
