@@ -2,17 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
 
 const CONSENT_KEY = 'bh_consent_v1'
 
 export default function ConsentModal() {
+  const { user, loading } = useAuth()
   const [visible, setVisible] = useState(false)
   const [agreed, setAgreed] = useState(false)
 
   useEffect(() => {
+    if (loading) return
+    if (!user) return
     if (typeof window === 'undefined') return
     if (!localStorage.getItem(CONSENT_KEY)) setVisible(true)
-  }, [])
+  }, [user, loading])
 
   const handleAgree = () => {
     localStorage.setItem(CONSENT_KEY, '1')
