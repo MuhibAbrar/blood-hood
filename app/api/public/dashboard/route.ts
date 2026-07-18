@@ -71,6 +71,15 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('Public dashboard API error:', error)
-    return NextResponse.json({ error: 'Unable to load dashboard' }, { status: 500 })
+    const diagnostic = error && typeof error === 'object'
+      ? {
+          code: 'code' in error ? String(error.code) : 'unknown',
+          message: 'message' in error ? String(error.message).slice(0, 180) : 'Unknown server error',
+        }
+      : { code: 'unknown', message: 'Unknown server error' }
+    return NextResponse.json({
+      error: 'Unable to load dashboard',
+      ...(process.env.VERCEL_ENV === 'preview' ? { diagnostic } : {}),
+    }, { status: 500 })
   }
 }
