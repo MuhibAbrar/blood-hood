@@ -13,14 +13,16 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    const { phone: input, otp } = await req.json()
+    const { phone: input, otp, purpose: inputPurpose } = await req.json()
     const phone = normalizeBDPhone(String(input ?? ''))
+    const purpose = inputPurpose === 'password-reset' ? 'password-reset' : 'registration'
     if (!/^\d{6}$/.test(String(otp ?? ''))) return NextResponse.json({ error: 'Invalid OTP' }, { status: 400 })
 
     const ref = adminDb().collection('otpChallenges').doc(phoneKey(phone))
     const snap = await ref.get()
     if (!snap.exists) return NextResponse.json({ error: 'OTP expired or not found' }, { status: 400 })
     const data = snap.data()!
+    if (data.purpose !== purpose) return NextResponse.json({ error: 'OTP এই কাজের জন্য বৈধ নয়' }, { status: 400 })
     if ((data.expiresAt?.toMillis?.() ?? 0) < Date.now()) return NextResponse.json({ error: 'OTP expired' }, { status: 400 })
     if ((data.attempts ?? 0) >= OTP_MAX_ATTEMPTS) return NextResponse.json({ error: 'Too many attempts' }, { status: 429 })
 

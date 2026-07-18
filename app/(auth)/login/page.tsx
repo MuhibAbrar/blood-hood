@@ -85,6 +85,11 @@ export default function LoginPage() {
             placeholder="কমপক্ষে ৬ অক্ষর"
             className="input-field"
           />
+          <div className="mt-2 text-right">
+            <Link href="/forgot-password" className="text-sm font-medium text-[#D92B2B] hover:underline">
+              পাসওয়ার্ড ভুলে গেছেন?
+            </Link>
+          </div>
         </div>
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? (

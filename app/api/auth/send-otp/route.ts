@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { adminAuth, adminDb } from '@/lib/firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import {
   generateOtp,
@@ -17,8 +17,19 @@ const IP_MAX_SENDS_PER_HOUR = 20
 
 export async function POST(req: NextRequest) {
   try {
-    const { phone: input } = await req.json()
+    const { phone: input, purpose: inputPurpose } = await req.json()
     const phone = normalizeBDPhone(String(input ?? ''))
+    const purpose = inputPurpose === 'password-reset' ? 'password-reset' : 'registration'
+    if (purpose === 'password-reset') {
+      try {
+        await adminAuth().getUserByEmail(`${phone}@bloodhood.app`)
+      } catch (error) {
+        if ((error as { code?: string }).code === 'auth/user-not-found') {
+          return NextResponse.json({ error: 'এই নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি' }, { status: 404 })
+        }
+        throw error
+      }
+    }
     const key = phoneKey(phone)
     const ref = adminDb().collection('otpChallenges').doc(key)
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -56,7 +67,9 @@ export async function POST(req: NextRequest) {
       api_key: apiKey,
       senderid: senderId,
       number: internationalPhone(phone),
-      message: `Blood Hood OTP: ${otp}. Valid for 5 minutes. Do not share this code.`,
+      message: purpose === 'password-reset'
+        ? `Blood Hood password reset OTP: ${otp}. Valid for 5 minutes. Do not share this code.`
+        : `Blood Hood OTP: ${otp}. Valid for 5 minutes. Do not share this code.`,
     })
     const smsResponse = await fetch(process.env.BULKSMSBD_API_URL || 'https://bulksmsbd.net/api/smsapi', {
       method: 'POST',
@@ -82,6 +95,7 @@ export async function POST(req: NextRequest) {
 
     await ref.set({
       phone,
+      purpose,
       otpHash: hashOtp(phone, otp),
       expiresAt: Timestamp.fromMillis(now + OTP_TTL_MS),
       sentAt: Timestamp.fromMillis(now),

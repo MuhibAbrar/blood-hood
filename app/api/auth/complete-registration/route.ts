@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
     if (!challenge || (challenge.verifiedUntil?.toMillis?.() ?? 0) < Date.now()) {
       return NextResponse.json({ error: 'Phone verification expired' }, { status: 400 })
     }
+    if (challenge.purpose !== 'registration') {
+      return NextResponse.json({ error: 'Invalid verification purpose' }, { status: 403 })
+    }
     if (!hashesMatch(challenge.verifiedTokenHash, safeHash(verificationToken))) {
       return NextResponse.json({ error: 'Invalid verification token' }, { status: 403 })
     }

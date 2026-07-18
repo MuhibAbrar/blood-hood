@@ -78,7 +78,7 @@ export default function RegisterPage() {
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: rawPhone }),
+        body: JSON.stringify({ phone: rawPhone, purpose: 'registration' }),
       })
       const result = await response.json()
       if (!response.ok) {
@@ -107,7 +107,7 @@ export default function RegisterPage() {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.replace(/\D/g, ''), otp }),
+        body: JSON.stringify({ phone: phone.replace(/\D/g, ''), otp, purpose: 'registration' }),
       })
       const result = await response.json()
       if (!response.ok || !result.verificationToken) throw new Error(result.error || 'OTP verification failed')
