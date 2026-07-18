@@ -69,7 +69,15 @@ export async function POST(req: NextRequest) {
     try { smsResult = JSON.parse(smsText) } catch { /* handled below */ }
     if (!smsResponse.ok || Number(smsResult.response_code) !== 202) {
       console.error('SMS provider rejected OTP:', smsResult.response_code, smsResult.error_message)
-      return NextResponse.json({ error: 'SMS could not be sent' }, { status: 502 })
+      return NextResponse.json({
+        error: 'SMS could not be sent',
+        ...(process.env.VERCEL_ENV === 'preview' ? {
+          diagnostic: {
+            code: String(smsResult.response_code ?? smsResponse.status),
+            message: String(smsResult.error_message ?? 'Provider rejected the request').slice(0, 160),
+          },
+        } : {}),
+      }, { status: 502 })
     }
 
     await ref.set({
@@ -95,6 +103,9 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : 'Unable to send OTP'
     const status = message.includes('Invalid Bangladesh') ? 400 : 500
     console.error('Send OTP error:', message)
-    return NextResponse.json({ error: status === 400 ? message : 'Unable to send OTP' }, { status })
+    return NextResponse.json({
+      error: status === 400 ? message : 'Unable to send OTP',
+      ...(process.env.VERCEL_ENV === 'preview' ? { diagnostic: { code: 'server', message: message.slice(0, 160) } } : {}),
+    }, { status })
   }
 }

@@ -81,11 +81,18 @@ export default function RegisterPage() {
         body: JSON.stringify({ phone: rawPhone }),
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'OTP send failed')
+      if (!response.ok) {
+        const detail = result.diagnostic ? ` (${result.diagnostic.code}: ${result.diagnostic.message})` : ''
+        throw new Error(`${result.error || 'OTP send failed'}${detail}`)
+      }
       setOtpSent(true)
       setOtpTimer(60)
       showToast('OTP পাঠানো হয়েছে', 'success')
-    } catch {
+    } catch (error) {
+      if (error instanceof Error) {
+        showToast(error.message, 'error')
+        return
+      }
       showToast('OTP পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করুন', 'error')
     } finally {
       setLoading(false)
