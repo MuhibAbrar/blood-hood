@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { RecaptchaVerifier, signInWithPhoneNumber, deleteUser, type ConfirmationResult } from 'firebase/auth'
+import { signInWithCustomToken } from 'firebase/auth'
 import { useAuth } from '@/context/AuthContext'
 import { createUser } from '@/lib/firestore'
-import { signUp, formatPhone, validateBDPhone } from '@/lib/auth'
+import { formatPhone, validateBDPhone } from '@/lib/auth'
 import { auth } from '@/lib/firebase'
 import { useToast } from '@/components/ui/Toast'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
@@ -29,8 +29,7 @@ export default function RegisterPage() {
   const [phoneVerified, setPhoneVerified] = useState(false)
   const [otp, setOtp] = useState('')
   const [otpTimer, setOtpTimer] = useState(0)
-  const confirmationRef = useRef<ConfirmationResult | null>(null)
-  const recaptchaRef = useRef<RecaptchaVerifier | null>(null)
+  const [verificationToken, setVerificationToken] = useState('')
 
   // auth step fields
   const [phone, setPhone] = useState(searchParams.get('phone') ?? '')
@@ -76,17 +75,18 @@ export default function RegisterPage() {
     }
     setLoading(true)
     try {
-      if (!recaptchaRef.current) {
-        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
-      }
-      const result = await signInWithPhoneNumber(auth, '+88' + rawPhone, recaptchaRef.current)
-      confirmationRef.current = result
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: rawPhone }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'OTP send failed')
       setOtpSent(true)
       setOtpTimer(60)
       showToast('OTP পাঠানো হয়েছে', 'success')
     } catch {
       showToast('OTP পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করুন', 'error')
-      recaptchaRef.current = null
     } finally {
       setLoading(false)
     }
@@ -97,9 +97,15 @@ export default function RegisterPage() {
     if (otp.length !== 6) { showToast('৬ সংখ্যার OTP দিন', 'error'); return }
     setLoading(true)
     try {
-      const result = await confirmationRef.current!.confirm(otp)
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.replace(/\D/g, ''), otp }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.verificationToken) throw new Error(result.error || 'OTP verification failed')
+      setVerificationToken(result.verificationToken)
       // Delete phone auth user — we only needed it for verification
-      await deleteUser(result.user)
       setPhoneVerified(true)
       showToast('নম্বর যাচাই হয়েছে ✓', 'success')
     } catch {
@@ -128,7 +134,18 @@ export default function RegisterPage() {
     }
     setLoading(true)
     try {
-      await signUp(rawPhone, password)
+      const response = await fetch('/api/auth/complete-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: rawPhone, password, verificationToken }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.customToken) {
+        const error = new Error(result.error || 'Account creation failed') as Error & { code?: string }
+        if (response.status === 409) error.code = 'auth/email-already-in-use'
+        throw error
+      }
+      await signInWithCustomToken(auth, result.customToken)
       setAuthPhone(rawPhone)
       setStep(1)
     } catch (err: unknown) {
