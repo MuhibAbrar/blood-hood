@@ -61,7 +61,7 @@ export default function BottomNav() {
             }`}>
               <BloodIcon className="w-7 h-7 stroke-white" />
             </div>
-            <span className={`text-[10px] font-semibold whitespace-nowrap ${
+            <span className={`mt-1.5 text-[10px] font-semibold whitespace-nowrap ${
               pathname.startsWith('/donors') ? 'text-[#D92B2B]' : 'text-[#555]'
             }`}>ডোনার খুঁজুন</span>
           </Link>

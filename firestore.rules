@@ -2,78 +2,107 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isGlobalAdmin() {
+      return signedIn() && role() in ['admin', 'superadmin'];
+    }
+
     match /users/{userId} {
-      allow read: if true; // public — donor list visible to guests
-      allow write: if request.auth.uid == userId;
-      allow update: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-    }
-
-    match /bloodRequests/{requestId} {
-      allow read: if true; // public — requests visible to guests
-      allow create: if request.auth != null;
-      allow update: if request.auth.uid == resource.data.requestedBy
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-      allow delete: if request.auth.uid == resource.data.requestedBy
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-    }
-
-    match /donations/{donationId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-    }
-
-    match /organizations/{orgId} {
-      allow read: if true; // public — org list visible to guests
-      allow write: if request.auth != null
-        && (resource.data.adminIds.hasAny([request.auth.uid])
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin');
-    }
-
-    match /camps/{campId} {
-      allow read: if true; // public — camps visible to guests
-      allow write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-    }
-
-    match /notifications/{notifId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if false; // only server-side (Admin SDK) can create
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'donor';
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.isVerified == resource.data.isVerified
+        && request.resource.data.totalDonations == resource.data.totalDonations
+        && request.resource.data.organizations == resource.data.organizations;
       allow delete: if false;
     }
 
+    match /bloodRequests/{requestId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.requestedBy == request.auth.uid;
+      allow update, delete: if signedIn()
+        && (request.auth.uid == resource.data.requestedBy || isGlobalAdmin());
+    }
+
+    match /donations/{donationId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /organizations/{orgId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && role() == 'superadmin';
+      allow update: if signedIn()
+        && (resource.data.adminIds.hasAny([request.auth.uid]) || role() == 'superadmin');
+      allow delete: if false;
+    }
+
+    match /camps/{campId} {
+      allow read: if true;
+      allow write: if isGlobalAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read, update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+    }
+
     match /announcements/{announcementId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if signedIn();
+      allow create: if signedIn()
         && get(/databases/$(database)/documents/organizations/$(request.resource.data.orgId)).data.adminIds.hasAny([request.auth.uid]);
-      allow update, delete: if request.auth != null
+      allow update, delete: if signedIn()
         && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid]);
     }
 
     match /joinRequests/{reqId} {
-      allow read: if request.auth != null
+      allow read: if signedIn()
         && (resource.data.userId == request.auth.uid
         || get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid]));
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn()
         && get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid]);
-      allow delete: if request.auth != null
+      allow delete: if signedIn()
         && (resource.data.userId == request.auth.uid
         || get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid]));
     }
 
     match /contactEvents/{eventId} {
-      allow read: if request.auth != null && resource.data.seekerId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.seekerId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.seekerId == request.auth.uid;
+      allow read: if signedIn() && resource.data.seekerId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.seekerId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.seekerId == request.auth.uid
+        && request.resource.data.seekerId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /contactLimits/{limitId} {
+      allow read: if signedIn() && resource.data.seekerId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.seekerId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.seekerId == request.auth.uid
+        && request.resource.data.seekerId == request.auth.uid;
+      allow delete: if false;
     }
 
     match /settings/{docId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow write: if signedIn() && role() == 'superadmin';
     }
   }
 }

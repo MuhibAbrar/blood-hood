@@ -12,6 +12,7 @@ interface AuthContextType {
   user: User | null
   orgAdmins: Organization[]
   loading: boolean
+  profileLoadError: boolean
   refreshUser: () => Promise<void>
 }
 
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   orgAdmins: [],
   loading: true,
+  profileLoadError: false,
   refreshUser: async () => {},
 })
 
@@ -28,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [orgAdmins, setOrgAdmins] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
+  const [profileLoadError, setProfileLoadError] = useState(false)
 
   const refreshUser = async () => {
     if (!firebaseUser) return
@@ -46,24 +49,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (fbUser.uid === currentUid) return
         currentUid = fbUser.uid
 
+        try {
+        setProfileLoadError(false)
         const [u, orgs] = await Promise.all([
           getUser(fbUser.uid),
           getOrgsByAdmin(fbUser.uid),
         ])
         setUser(u)
         setOrgAdmins(orgs)
-        setLoading(false)
 
         // FCM token update in background — don't block
         requestNotificationPermission().then((token) => {
           if (token && u && u.fcmToken !== token) {
-            updateUser(fbUser.uid, { fcmToken: token })
+            updateUser(fbUser.uid, { fcmToken: token }).catch(() => {})
           }
-        })
+        }).catch(() => {})
+        } catch (error) {
+          console.error('Unable to load authenticated profile:', error)
+          setProfileLoadError(true)
+          setUser(null)
+          setOrgAdmins([])
+        } finally {
+          setLoading(false)
+        }
       } else {
         currentUid = null
         setUser(null)
         setOrgAdmins([])
+        setProfileLoadError(false)
         setLoading(false)
       }
     })
@@ -71,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ firebaseUser, user, orgAdmins, loading, refreshUser }}>
+    <AuthContext.Provider value={{ firebaseUser, user, orgAdmins, loading, profileLoadError, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

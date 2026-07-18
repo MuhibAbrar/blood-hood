@@ -9,13 +9,13 @@ import InstallBanner from '@/components/ui/InstallBanner'
 import DonationFollowUpModal from '@/components/ui/DonationFollowUpModal'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, user, loading } = useAuth()
+  const { firebaseUser, user, loading, profileLoadError } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     // Logged in but profile incomplete → go to register
-    if (!loading && firebaseUser && !user) router.replace('/register')
-  }, [loading, firebaseUser, user, router])
+    if (!loading && firebaseUser && !user && !profileLoadError) router.replace('/register')
+  }, [loading, firebaseUser, user, profileLoadError, router])
 
   if (loading) {
     return (
@@ -29,7 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   // Logged in but profile not loaded yet — wait
-  if (firebaseUser && !user) return null
+  if (firebaseUser && !user && !profileLoadError) return null
 
   return (
     <div className="min-h-screen flex flex-col">
