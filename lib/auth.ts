@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth'
-import { auth } from './firebase'
+import { auth, authPersistenceReady } from './firebase'
 
 // Phone number থেকে Firebase email বানাই
 const phoneToEmail = (phone: string): string => {
@@ -12,12 +12,14 @@ const phoneToEmail = (phone: string): string => {
 }
 
 export const signUp = async (phone: string, password: string) => {
+  await authPersistenceReady
   const email = phoneToEmail(phone)
   const result = await createUserWithEmailAndPassword(auth, email, password)
   return result.user
 }
 
 export const signIn = async (phone: string, password: string) => {
+  await authPersistenceReady
   const email = phoneToEmail(phone)
   const result = await signInWithEmailAndPassword(auth, email, password)
   return result.user

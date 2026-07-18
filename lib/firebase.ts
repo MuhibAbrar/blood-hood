@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getMessaging, isSupported } from 'firebase/messaging'
 
@@ -15,6 +15,11 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
+export const authPersistenceReady = typeof window === 'undefined'
+  ? Promise.resolve()
+  : setPersistence(auth, browserLocalPersistence).catch((error) => {
+      console.warn('Local auth persistence is unavailable:', error)
+    })
 export const db = getFirestore(app)
 
 export const getMessagingInstance = async () => {

@@ -16,13 +16,18 @@ interface TopBarProps {
 export default function TopBar({ title, back, action, variant = 'default' }: TopBarProps) {
   const router = useRouter()
   const isRed = variant === 'red'
+  const handleBack = () => {
+    const hasInAppHistory = window.history.length > 1 && document.referrer.startsWith(window.location.origin)
+    if (hasInAppHistory) router.back()
+    else router.replace('/dashboard')
+  }
 
   return (
     <header className={`sticky top-0 z-40 safe-top ${isRed ? 'bg-[#D92B2B]' : 'bg-white border-b border-[#E5E5E5]'}`}>
       <div className="flex items-center h-14 px-4 gap-3">
         {back && (
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${isRed ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
             aria-label="পিছনে যান"
           >

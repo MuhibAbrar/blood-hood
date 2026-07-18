@@ -1,4 +1,14 @@
+'use client'
+
+import { useEffect } from 'react'
+
 export default function OfflinePage() {
+  useEffect(() => {
+    const retry = () => window.location.replace('/dashboard')
+    window.addEventListener('online', retry)
+    return () => window.removeEventListener('online', retry)
+  }, [])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-white">
       <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
@@ -12,7 +22,7 @@ export default function OfflinePage() {
         সংযোগ ঠিক হলে আবার চেষ্টা করুন।
       </p>
       <button
-        onClick={() => window.location.reload()}
+        onClick={() => window.location.replace('/dashboard')}
         className="bg-[#D92B2B] text-white font-semibold px-8 py-3 rounded-xl text-sm"
       >
         আবার চেষ্টা করুন
