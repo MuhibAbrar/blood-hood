@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getPlatformStats, getBloodRequests } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
+import { Timestamp } from 'firebase/firestore'
 import DonorHeroCard from '@/components/donor/DonorHeroCard'
 import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -25,15 +25,46 @@ interface Stats {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, firebaseUser } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
 
   useEffect(() => {
-    getPlatformStats(user?.district).then((s) => { setStats(s); setLoadingStats(false) })
-    getBloodRequests('open', user?.district?.trim() || undefined).then((reqs) => setRequests(reqs.slice(0, 5)))
-  }, [user?.district])
+    let cancelled = false
+    const load = async () => {
+      try {
+        const headers = new Headers()
+        if (firebaseUser) headers.set('Authorization', `Bearer ${await firebaseUser.getIdToken()}`)
+        const district = user?.district?.trim()
+        const query = district ? `?district=${encodeURIComponent(district)}` : ''
+        const response = await fetch(`/api/public/dashboard${query}`, { headers })
+        if (!response.ok) throw new Error('Dashboard request failed')
+        const data = await response.json()
+        if (cancelled) return
+        setStats(data.stats)
+        setRequests(data.recentRequests.map((request: Record<string, unknown>) => ({
+          ...request,
+          createdAt: Timestamp.fromMillis(request.createdAtMs as number),
+          expiresAt: request.expiresAtMs ? Timestamp.fromMillis(request.expiresAtMs as number) : null,
+          fulfilledAt: null,
+          fulfilledBy: null,
+          fulfilledByName: null,
+          fulfilledByPhone: null,
+          orgId: null,
+        })) as BloodRequest[])
+      } catch {
+        if (!cancelled) {
+          setStats({ totalMembers: 0, availableNow: 0, thisMonthDonations: 0, pendingRequests: 0, totalDonations: 0 })
+          setRequests([])
+        }
+      } finally {
+        if (!cancelled) setLoadingStats(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [firebaseUser, user?.district])
 
   return (
     <div className="pb-8">
