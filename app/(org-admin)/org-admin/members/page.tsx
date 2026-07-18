@@ -9,6 +9,7 @@ import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import SelectPicker from '@/components/ui/SelectPicker'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import type { Organization, User, JoinRequest, BloodGroup, Gender } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 export default function OrgMembersPage() {
   const { org: orgAdmin } = useOrgAdmin()
@@ -119,7 +120,7 @@ export default function OrgMembersPage() {
     }
     setManualLoading(true)
     try {
-      const res = await fetch('/api/admin/add-donor', {
+      const res = await authenticatedFetch('/api/admin/add-donor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

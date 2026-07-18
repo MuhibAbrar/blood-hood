@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import SelectPicker from '@/components/ui/SelectPicker'
 import type { Organization, OrgType, User } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 const emptyForm = { name: '', type: 'community' as OrgType, district: '', area: '', isVerified: false, adminIds: [] as string[], logo: null as null }
 
@@ -76,7 +77,7 @@ export default function AdminOrgsPage() {
   const handleDelete = async () => {
     if (!confirmDelete) return
     try {
-      const res = await fetch('/api/admin/delete-org', {
+      const res = await authenticatedFetch('/api/admin/delete-org', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orgId: confirmDelete.id }),

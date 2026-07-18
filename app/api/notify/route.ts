@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminMessaging, adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { ApiAuthError, authErrorResponse, requireOrgAdmin, requireRole, requireUser } from '@/lib/api-auth'
 
 // Firestore-এ notification document save করি
 async function saveNotification(
@@ -27,11 +28,41 @@ async function saveNotification(
 
 export async function POST(req: NextRequest) {
   try {
+    const actor = await requireUser(req)
     const body = await req.json()
     const { type, data } = body
 
+    if (!type || !data || typeof data !== 'object') {
+      return NextResponse.json({ error: 'type and data required' }, { status: 400 })
+    }
+
     const db = adminDb()
     const messaging = adminMessaging()
+
+    const globalAdminTypes = new Set([
+      'camp_reminder',
+      'broadcast',
+      'all_blood_request',
+      'org_admins_blast',
+      'single_user',
+    ])
+    if (globalAdminTypes.has(type)) {
+      await requireRole(req, ['admin', 'superadmin'])
+    } else if (type === 'org_announcement') {
+      if (!data.orgId) return NextResponse.json({ error: 'orgId required' }, { status: 400 })
+      await requireOrgAdmin(req, data.orgId)
+    } else if (type === 'blood_request') {
+      if (!data.requestId) return NextResponse.json({ error: 'requestId required' }, { status: 400 })
+      const requestSnap = await db.collection('bloodRequests').doc(data.requestId).get()
+      if (!requestSnap.exists) return NextResponse.json({ error: 'request not found' }, { status: 404 })
+      if (requestSnap.data()?.requestedBy !== actor.uid) await requireRole(req, ['admin', 'superadmin'])
+    } else if (type === 'request_responded') {
+      if (!data.requestId) return NextResponse.json({ error: 'requestId required' }, { status: 400 })
+      const requestSnap = await db.collection('bloodRequests').doc(data.requestId).get()
+      if (!requestSnap.exists || !requestSnap.data()?.respondedBy?.includes(actor.uid)) {
+        throw new ApiAuthError(403, 'Forbidden')
+      }
+    }
 
     // ── Blood Request notification ────────────────────────────────────────
     if (type === 'blood_request') {
@@ -403,6 +434,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
 
   } catch (err) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     console.error('Notify API error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

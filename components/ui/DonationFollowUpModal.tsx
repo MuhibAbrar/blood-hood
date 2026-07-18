@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { getPendingContactEvents } from '@/lib/firestore'
 import type { ContactEvent } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 type Step = 'yesno' | 'select' | 'confirm'
 
@@ -42,7 +43,7 @@ export default function DonationFollowUpModal() {
 
   const handleNo = async () => {
     setSubmitting(true)
-    const res = await fetch('/api/resolve-contact-events', {
+    const res = await authenticatedFetch('/api/resolve-contact-events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -59,7 +60,7 @@ export default function DonationFollowUpModal() {
   const handleConfirm = async () => {
     if (!selectedEvent) return
     setSubmitting(true)
-    const res = await fetch('/api/resolve-contact-events', {
+    const res = await authenticatedFetch('/api/resolve-contact-events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

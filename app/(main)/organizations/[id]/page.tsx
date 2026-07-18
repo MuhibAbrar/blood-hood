@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import TopBar from '@/components/layout/TopBar'
 import type { Organization, JoinRequest } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 export default function OrgDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -40,7 +41,7 @@ export default function OrgDetailPage() {
     if (!user || !org) return
     setLeaving(true)
     try {
-      const res = await fetch('/api/leave-org', {
+      const res = await authenticatedFetch('/api/leave-org', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orgId: org.id, uid: user.uid }),

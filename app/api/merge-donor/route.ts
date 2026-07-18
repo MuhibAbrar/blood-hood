@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, ApiAuthError, requireUser } from '@/lib/api-auth'
 
 // POST /api/merge-donor
 // Body: { newUid, phone }
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   try {
     const { newUid, phone } = await req.json()
     if (!newUid || !phone) return NextResponse.json({ error: 'missing fields' }, { status: 400 })
+
+    const decoded = await requireUser(req)
+    if (decoded.uid !== newUid) throw new ApiAuthError(403, 'Forbidden')
 
     const db = adminDb()
     let merged = false
@@ -108,6 +112,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, merged })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

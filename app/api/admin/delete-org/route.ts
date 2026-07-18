@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, requireRole } from '@/lib/api-auth'
 
 // DELETE /api/admin/delete-org
 // Body: { orgId }
 // Deletes org and removes orgId from all members' and admins' organizations[]
 export async function DELETE(req: NextRequest) {
   try {
+    await requireRole(req, ['superadmin'])
     const { orgId } = await req.json()
     if (!orgId) return NextResponse.json({ error: 'missing orgId' }, { status: 400 })
 
@@ -30,6 +32,8 @@ export async function DELETE(req: NextRequest) {
     await batch.commit()
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

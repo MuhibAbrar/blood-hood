@@ -5,6 +5,7 @@ import { getBloodRequests, fulfillRequest, cancelRequest, getUsersByUids } from 
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
 import type { BloodRequest, RequestStatus, User } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 type FulfillSelection = string | 'external' | 'none' | null
 
@@ -114,21 +115,21 @@ export default function AdminRequestsPage() {
       }
 
       if (type === 'compatible') {
-        await fetch('/api/notify', {
+        await authenticatedFetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'blood_request', data: baseData }),
         })
         showToast('Compatible donors দের notification পাঠানো হয়েছে', 'success')
       } else if (type === 'all') {
-        await fetch('/api/notify', {
+        await authenticatedFetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'all_blood_request', data: baseData }),
         })
         showToast('সব user দের notification পাঠানো হয়েছে', 'success')
       } else if (type === 'org_admins') {
-        await fetch('/api/notify', {
+        await authenticatedFetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'org_admins_blast', data: baseData }),

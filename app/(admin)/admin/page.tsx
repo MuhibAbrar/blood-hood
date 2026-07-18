@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { getPlatformStats, getBloodRequests, getSocialLinks, saveSocialLinks, getHelplines, saveHelplines, type SocialLinks, type HelplineOrg } from '@/lib/firestore'
 import type { BloodRequest } from '@/types'
 import { UsersIcon, CheckCircleIcon, DropIcon, ClockIcon, ActivityIcon, TentIcon, BuildingIcon, ChartBarIcon, MegaphoneIcon } from '@/components/ui/Icons'
+import { authenticatedFetch } from '@/lib/api-client'
 
 interface Stats {
   totalMembers: number
@@ -88,7 +89,7 @@ export default function AdminDashboard() {
     setBroadcasting(true)
     setBroadcastMsg('')
     try {
-      const res = await fetch('/api/notify', {
+      const res = await authenticatedFetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'broadcast', data: { title: broadcastTitle, body: broadcastBody } }),

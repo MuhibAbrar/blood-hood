@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, requireRole } from '@/lib/api-auth'
 
 // DELETE /api/delete-donation
 // Body: { donationId }
 // Deletes the donation doc and decrements donor's totalDonations counter
 export async function DELETE(req: NextRequest) {
   try {
+    await requireRole(req, ['admin', 'superadmin'])
     const { donationId } = await req.json()
     if (!donationId) return NextResponse.json({ error: 'missing donationId' }, { status: 400 })
 
@@ -31,6 +33,8 @@ export async function DELETE(req: NextRequest) {
     await batch.commit()
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, requireRole } from '@/lib/api-auth'
 
 // GET /api/test-notif?uid=YOUR_UID
 // Saves a test notification directly to Firestore for debugging
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   if (!uid) return NextResponse.json({ error: 'uid required' }, { status: 400 })
 
   try {
+    await requireRole(req, ['superadmin'])
     const db = adminDb()
     const ref = await db.collection('notifications').add({
       userId: uid,
@@ -21,6 +23,8 @@ export async function GET(req: NextRequest) {
     })
     return NextResponse.json({ success: true, id: ref.id })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

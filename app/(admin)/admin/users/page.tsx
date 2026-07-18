@@ -8,6 +8,7 @@ import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import SelectPicker from '@/components/ui/SelectPicker'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import type { User, UserRole, BloodGroup, Gender } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 // BloodGroup and Gender used in addForm state typing only
 
 const roles: { value: UserRole; label: string; icon: string; badge: string }[] = [
@@ -46,7 +47,7 @@ export default function AdminUsersPage() {
   )
 
   const adminUpdate = async (uid: string, data: object) => {
-    const res = await fetch('/api/admin/update-user', {
+    const res = await authenticatedFetch('/api/admin/update-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uid, data }),
@@ -86,7 +87,7 @@ export default function AdminUsersPage() {
     if (!confirmDelete) return
     setActionLoading(confirmDelete.uid + '_delete')
     try {
-      const res = await fetch('/api/admin/delete-user', {
+      const res = await authenticatedFetch('/api/admin/delete-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: confirmDelete.uid }),
@@ -132,7 +133,7 @@ export default function AdminUsersPage() {
     }
     setAddLoading(true)
     try {
-      const res = await fetch('/api/admin/add-donor', {
+      const res = await authenticatedFetch('/api/admin/add-donor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

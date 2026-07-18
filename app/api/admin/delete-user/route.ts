@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, requireRole } from '@/lib/api-auth'
 
 // POST /api/admin/delete-user
 // Body: { uid }
 // Uses Admin SDK — bypasses Firestore security rules
 export async function POST(req: NextRequest) {
   try {
+    await requireRole(req, ['admin', 'superadmin'])
     const { uid } = await req.json()
     if (!uid) return NextResponse.json({ error: 'uid required' }, { status: 400 })
 
@@ -29,6 +31,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

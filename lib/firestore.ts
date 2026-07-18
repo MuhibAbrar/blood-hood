@@ -23,6 +23,7 @@ import {
   startAfter,
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { authenticatedFetch } from './api-client'
 import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent } from '@/types'
 
 // --- Users ---
@@ -92,7 +93,7 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
   })
 
   // Notify compatible donors (fire-and-forget)
-  fetch('/api/notify', {
+  authenticatedFetch('/api/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -152,7 +153,7 @@ export const respondToRequest = async (requestId: string, donorUid: string) => {
     const requestData = requestSnap.exists() ? requestSnap.data() : null
     const donorName = donorSnap.exists() ? donorSnap.data().name : 'কেউ'
     if (requestData?.requestedBy && requestData.requestedBy !== donorUid) {
-      fetch('/api/notify', {
+      authenticatedFetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

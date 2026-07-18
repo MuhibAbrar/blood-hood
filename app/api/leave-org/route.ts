@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, ApiAuthError, requireUser } from '@/lib/api-auth'
 
 // POST /api/leave-org
 // Body: { orgId, uid }
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
   try {
     const { orgId, uid } = await req.json()
     if (!orgId || !uid) return NextResponse.json({ error: 'missing fields' }, { status: 400 })
+
+    const decoded = await requireUser(req)
+    if (decoded.uid !== uid) throw new ApiAuthError(403, 'Forbidden')
 
     const db = adminDb()
 
@@ -34,6 +38,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }

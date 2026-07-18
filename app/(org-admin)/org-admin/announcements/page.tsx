@@ -7,6 +7,7 @@ import { getAnnouncements, createAnnouncement, deleteAnnouncement } from '@/lib/
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
 import type { Announcement } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 export default function OrgAnnouncementsPage() {
   const { user } = useAuth()
@@ -41,7 +42,7 @@ export default function OrgAnnouncementsPage() {
       // Notify members
       if (org.memberIds.length > 0) {
         setNotifying(true)
-        await fetch('/api/notify', {
+        await authenticatedFetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

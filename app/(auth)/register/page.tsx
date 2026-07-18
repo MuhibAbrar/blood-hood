@@ -12,6 +12,7 @@ import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
 import SelectPicker from '@/components/ui/SelectPicker'
 import type { BloodGroup, Gender } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -172,7 +173,7 @@ export default function RegisterPage() {
       await createUser(firebaseUser.uid, profileData)
 
       // Then check if a manual entry exists for this phone and merge via API
-      const mergeRes = await fetch('/api/merge-donor', {
+      const mergeRes = await authenticatedFetch('/api/merge-donor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newUid: firebaseUser.uid, phone: authPhone }),

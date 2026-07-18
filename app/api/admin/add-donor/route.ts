@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { authErrorResponse, requireOrgAdmin, requireRole } from '@/lib/api-auth'
 
 // POST /api/admin/add-donor
 // Body: { name, phone, bloodGroup, upazila, area, gender, age? }
@@ -8,6 +9,9 @@ import { FieldValue } from 'firebase-admin/firestore'
 export async function POST(req: NextRequest) {
   try {
     const { name, phone, bloodGroup, district, upazila, area, gender, age, orgId } = await req.json()
+
+    if (orgId) await requireOrgAdmin(req, orgId)
+    else await requireRole(req, ['admin', 'superadmin'])
 
     if (!name || !phone || !bloodGroup || !upazila || !gender) {
       return NextResponse.json({ error: 'missing-fields' }, { status: 400 })
@@ -56,6 +60,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
+    const authError = authErrorResponse(err)
+    if (authError) return authError
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }
