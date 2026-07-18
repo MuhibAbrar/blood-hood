@@ -109,12 +109,15 @@ export default function ProfilePage() {
       } />
 
       {/* ── Hero ── */}
-      <div className="bg-gradient-to-b from-[#D92B2B] to-[#9B1B1B] pt-6 pb-16 px-4 text-center" style={{ borderRadius: '0 0 50% 50% / 0 0 60px 60px' }}>
+      <div className="mx-4 mt-4 relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#D92B2B] via-[#C3222B] to-[#801616] pt-6 pb-7 px-4 text-center shadow-lg shadow-red-900/15">
+        <div className="absolute -right-10 -top-12 w-40 h-40 rounded-full bg-white/10" />
+        <div className="absolute -left-12 -bottom-20 w-44 h-44 rounded-full bg-black/10" />
+        <div className="relative">
         <div className="inline-block ring-4 ring-white/30 rounded-full shadow-xl">
           {user.profilePhoto ? (
             <img src={user.profilePhoto} alt="প্রোফাইল" className="w-24 h-24 rounded-full object-cover" />
           ) : (
-            <DefaultAvatar gender={user.gender} size={96} />
+            <DefaultAvatar gender={user.gender} size={80} />
           )}
         </div>
         <div className="mt-3 flex justify-center">
@@ -130,10 +133,11 @@ export default function ProfilePage() {
             ✓ যাচাইকৃত
           </span>
         )}
+        </div>
       </div>
 
       {/* ── Stat chips (overlap hero) ── */}
-      <div className="flex gap-3 px-4 -mt-8">
+      <div className="grid grid-cols-3 gap-2.5 px-4 mt-3">
         <StatChip
           value={String(user.totalDonations)}
           label="মোট দান"
@@ -153,7 +157,17 @@ export default function ProfilePage() {
       </div>
 
       {/* ── Body ── */}
-      <div className="px-4 mt-4 space-y-3">
+      <div className="px-4 mt-5 space-y-4">
+
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#AAA]">Donation readiness</p>
+            <h3 className="font-bold text-[#111111] mt-0.5">রক্তদানের অবস্থা</h3>
+          </div>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${canDonate ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+            {canDonate ? 'Ready' : `${remaining} দিন বাকি`}
+          </span>
+        </div>
 
         {/* Donation countdown */}
         <div className={`rounded-2xl border-l-4 bg-white border border-[#E5E5E5] p-4 flex items-center gap-3 ${canDonate ? 'border-l-[#1A9E6B]' : 'border-l-amber-400'}`}>
@@ -216,6 +230,18 @@ export default function ProfilePage() {
         </Modal>
 
         {/* Edit form / Info */}
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#AAA]">Personal details</p>
+            <h3 className="font-bold text-[#111111] mt-0.5">ব্যক্তিগত তথ্য</h3>
+          </div>
+          {!editing && (
+            <button onClick={() => setEditing(true)} className="text-xs font-semibold text-[#D92B2B] bg-red-50 px-3 py-1.5 rounded-full">
+              সম্পাদনা
+            </button>
+          )}
+        </div>
+
         {editing ? (
           <div className="card p-4 space-y-4">
             <div>
@@ -266,6 +292,10 @@ export default function ProfilePage() {
         )}
 
         {/* Links */}
+        <div className="pt-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#AAA]">Activity</p>
+          <h3 className="font-bold text-[#111111] mt-0.5">আমার কার্যক্রম</h3>
+        </div>
         <div className="card divide-y divide-[#F0F0F0]">
           <a href="/history" className="flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
             <div className="flex items-center gap-3">

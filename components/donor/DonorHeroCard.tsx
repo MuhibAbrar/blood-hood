@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { updateUser } from '@/lib/firestore'
 import { triggerInstall, isStandalonePWA } from '@/lib/installPrompt'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
+import { logout } from '@/lib/auth'
 
 // ── Drawer menu items ──────────────────────────────────────────────────────
 const MENU_ITEMS = [
@@ -382,11 +384,13 @@ function GuestHeroCard() {
 
 // ── Logged-in hero ──────────────────────────────────────────────────────────
 export default function DonorHeroCard() {
+  const router = useRouter()
   const { user, orgAdmins, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [modalOpen,  setModalOpen]  = useState(false)
   const [loading,    setLoading]    = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   if (!user) return <GuestHeroCard />
 
@@ -399,6 +403,19 @@ export default function DonorHeroCard() {
         user.isAvailable ? 'info' : 'success')
     } catch { showToast('কিছু একটা সমস্যা হয়েছে', 'error') }
     finally { setLoading(false); setModalOpen(false) }
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      await logout()
+      setDrawerOpen(false)
+      router.replace('/login')
+      router.refresh()
+    } catch {
+      showToast('Logout করা যায়নি, আবার চেষ্টা করুন', 'error')
+      setLoggingOut(false)
+    }
   }
 
   return (
@@ -538,6 +555,19 @@ export default function DonorHeroCard() {
               <span className="text-[#222] group-hover:text-[#D92B2B] font-medium text-sm transition-colors">{label}</span>
             </Link>
           ))}
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-4 px-5 py-3.5 text-left hover:bg-red-50 transition-colors group disabled:opacity-60"
+          >
+            <svg className="w-5 h-5 stroke-[#D92B2B] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" />
+            </svg>
+            <span className="text-[#D92B2B] font-semibold text-sm">
+              {loggingOut ? 'Logout হচ্ছে...' : 'Logout'}
+            </span>
+          </button>
         </nav>
         {/* Footer */}
         <div className="px-5 py-4 border-t border-[#F0F0F0]">
