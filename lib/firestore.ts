@@ -177,73 +177,13 @@ export const fulfillRequest = async (
   externalDonor?: { name: string; phone: string },
   externalOrgId?: string
 ) => {
-  const now = Timestamp.now()
-
-  let orgId: string | null = null
-  let donorName = 'Anonymous'
-  let fulfilledByName: string | null = null
-  let fulfilledByPhone: string | null = null
-  let externalDonorPhone: string | null = null
-
-  if (donorUid) {
-    const donorSnap = await getDoc(doc(db, 'users', donorUid))
-    const donor = donorSnap.exists() ? (donorSnap.data() as User) : null
-    donorName = donor?.name ?? 'Unknown'
-    fulfilledByName = donorName
-    orgId = donor?.organizations?.[0] ?? null
-
-    // Fallback: if donor has no organizations[], check if they're an org admin
-    if (!orgId) {
-      const adminOrg = await getOrgByAdmin(donorUid)
-      if (adminOrg) orgId = adminOrg.id
-    }
-
-    await updateDoc(doc(db, 'users', donorUid), {
-      totalDonations: increment(1),
-      lastDonatedAt: now,
-      isAvailable: false,
-    })
-
-    if (orgId) {
-      await updateDoc(doc(db, 'organizations', orgId), {
-        totalDonations: increment(1),
-      })
-    }
-  } else if (externalDonor) {
-    donorName = externalDonor.name
-    fulfilledByName = externalDonor.name
-    fulfilledByPhone = externalDonor.phone || null
-    externalDonorPhone = externalDonor.phone || null
-
-    if (externalOrgId) {
-      orgId = externalOrgId
-      await updateDoc(doc(db, 'organizations', externalOrgId), {
-        totalDonations: increment(1),
-      })
-    }
-  }
-
-  await updateDoc(doc(db, 'bloodRequests', requestId), {
-    status: 'fulfilled',
-    fulfilledBy: donorUid,
-    fulfilledAt: now,
-    fulfilledByName,
-    fulfilledByPhone,
+  const response = await authenticatedFetch('/api/requests/fulfill', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId, donorUid, externalDonor, externalOrgId }),
   })
-
-  await addDoc(collection(db, 'donations'), {
-    donorId: donorUid ?? (externalDonor ? 'external' : 'anonymous'),
-    donorName,
-    requestId,
-    recipientName: '',
-    hospital: requestData?.hospital ?? '',
-    bloodGroup: requestData?.bloodGroup ?? '',
-    donatedAt: now,
-    verifiedBy: null,
-    campId: null,
-    orgId,
-    externalDonorPhone,
-  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to fulfill request')
 }
 
 export const getDonationsByOrg = async (orgId: string): Promise<Donation[]> => {
@@ -354,53 +294,19 @@ export const subscribeToRequests = (cb: (requests: BloodRequest[]) => void) => {
 
 // --- Donations ---
 
-export const createDonation = async (data: Omit<Donation, 'id'>): Promise<string> => {
-  const ref = await addDoc(collection(db, 'donations'), data)
-  const nextAvailableAt = Timestamp.fromDate(
-    new Date(data.donatedAt.toDate().getTime() + 90 * 24 * 60 * 60 * 1000)
-  )
-  await updateUser(data.donorId, {
-    lastDonatedAt: data.donatedAt,
-    nextAvailableAt,
-    isAvailable: false,
-  })
-  await updateDoc(doc(db, 'users', data.donorId), {
-    totalDonations: increment(1),
-  })
-  if (data.orgId) {
-    await updateDoc(doc(db, 'organizations', data.orgId), {
-      totalDonations: increment(1),
-    })
-  }
-  return ref.id
-}
-
 export const recordSelfDonation = async (
   donorId: string,
   donorName: string,
   bloodGroup: BloodGroup,
   donatedAt: Timestamp
 ) => {
-  const donorSnap = await getDoc(doc(db, 'users', donorId))
-  let orgId: string | null = (donorSnap.data() as User)?.organizations?.[0] ?? null
-  if (!orgId) {
-    const adminOrg = await getOrgByAdmin(donorId)
-    if (adminOrg) orgId = adminOrg.id
-  }
-
-  await createDonation({
-    donorId,
-    donorName,
-    requestId: null,
-    recipientName: 'নিজে রিপোর্ট',
-    hospital: 'অজানা',
-    bloodGroup,
-    donatedAt,
-    verifiedBy: null,
-    campId: null,
-    orgId,
-    externalDonorPhone: null,
+  const response = await authenticatedFetch('/api/donations/self-report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ donatedAt: donatedAt.toDate().toISOString() }),
   })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to record donation')
 }
 
 export const getDonationsByUser = async (uid: string): Promise<Donation[]> => {
@@ -540,15 +446,9 @@ export const getOrgMembers = async (memberIds: string[]): Promise<User[]> => {
 }
 
 export const removeMember = async (orgId: string, uid: string) => {
-  await updateDoc(doc(db, 'organizations', orgId), {
-    memberIds: arrayRemove(uid),
-  })
-  try {
-    await updateDoc(doc(db, 'users', uid), {
-      organizations: arrayRemove(orgId),
-      updatedAt: Timestamp.now(),
-    })
-  } catch { /* user doc may not exist */ }
+  const response = await authenticatedFetch('/api/organizations/membership', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'remove', orgId, uid }) })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to remove member')
 }
 
 export const leaveOrganization = async (orgId: string, uid: string) => {
@@ -643,12 +543,16 @@ export const getJoinRequests = async (orgId: string): Promise<JoinRequest[]> => 
 }
 
 export const acceptJoinRequest = async (request: JoinRequest): Promise<void> => {
-  await joinOrganization(request.orgId, request.userId)
-  await updateDoc(doc(db, 'joinRequests', request.id), { status: 'accepted' })
+  const response = await authenticatedFetch('/api/organizations/membership', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'accept', orgId: request.orgId, uid: request.userId, requestId: request.id }) })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to accept member')
 }
 
-export const rejectJoinRequest = async (requestId: string): Promise<void> => {
-  await updateDoc(doc(db, 'joinRequests', requestId), { status: 'rejected' })
+export const rejectJoinRequest = async (requestId: string, orgId?: string): Promise<void> => {
+  if (!orgId) throw new Error('Organization required')
+  const response = await authenticatedFetch('/api/organizations/membership', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', orgId, requestId }) })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to reject member')
 }
 
 export const getUserJoinRequest = async (orgId: string, userId: string): Promise<JoinRequest | null> => {

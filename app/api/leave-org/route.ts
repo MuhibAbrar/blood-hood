@@ -25,15 +25,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'admin-cannot-leave' }, { status: 403 })
     }
 
-    // Remove user from org's memberIds
-    await db.collection('organizations').doc(orgId).update({
-      memberIds: FieldValue.arrayRemove(uid),
-    })
-
-    // Remove org from user's organizations
-    await db.collection('users').doc(uid).update({
-      organizations: FieldValue.arrayRemove(orgId),
-      updatedAt: FieldValue.serverTimestamp(),
+    await db.runTransaction(async tx => {
+      tx.update(db.collection('organizations').doc(orgId), { memberIds: FieldValue.arrayRemove(uid), updatedAt: FieldValue.serverTimestamp() })
+      tx.update(db.collection('users').doc(uid), { organizations: FieldValue.arrayRemove(orgId), updatedAt: FieldValue.serverTimestamp() })
     })
 
     return NextResponse.json({ success: true })

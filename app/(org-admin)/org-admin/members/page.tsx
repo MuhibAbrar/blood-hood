@@ -170,7 +170,7 @@ export default function OrgMembersPage() {
     if (!org) return
     setProcessingReq(req.id)
     try {
-      await rejectJoinRequest(req.id)
+      await rejectJoinRequest(req.id, req.orgId)
       await load(org)
       showToast('অনুরোধ বাতিল করা হয়েছে', 'success')
     } catch {

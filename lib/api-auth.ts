@@ -3,7 +3,7 @@ import type { DecodedIdToken } from 'firebase-admin/auth'
 import { adminAuth, adminDb } from '@/lib/firebase-admin'
 
 export class ApiAuthError extends Error {
-  constructor(public status: 401 | 403, message: string) {
+  constructor(public status: number, message: string) {
     super(message)
   }
 }
