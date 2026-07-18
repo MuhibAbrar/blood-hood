@@ -1,9 +1,10 @@
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto'
 
 export const OTP_TTL_MS = 5 * 60 * 1000
-export const OTP_RESEND_MS = 60 * 1000
+export const OTP_RESEND_MS = 2 * 60 * 1000
 export const OTP_MAX_ATTEMPTS = 5
-export const OTP_MAX_SENDS_PER_HOUR = 5
+export const OTP_MAX_SENDS_PER_HOUR = 3
+export const OTP_MAX_SENDS_PER_DAY = 5
 
 function secret() {
   const value = process.env.OTP_SECRET || process.env.FIREBASE_ADMIN_PRIVATE_KEY

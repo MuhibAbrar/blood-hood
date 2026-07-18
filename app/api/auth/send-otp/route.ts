@@ -2,60 +2,96 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth, adminDb } from '@/lib/firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import {
+  createVerificationToken,
   generateOtp,
   hashOtp,
   internationalPhone,
   normalizeBDPhone,
   OTP_MAX_SENDS_PER_HOUR,
+  OTP_MAX_SENDS_PER_DAY,
   OTP_RESEND_MS,
   OTP_TTL_MS,
   phoneKey,
   safeHash,
 } from '@/lib/otp'
 
-const IP_MAX_SENDS_PER_HOUR = 20
+const IP_MAX_SENDS_PER_DAY = 15
+const DEVICE_MAX_SENDS_PER_DAY = 8
+const DAY_MS = 24 * 60 * 60 * 1000
+const DEVICE_COOKIE = 'bh_otp_device'
 
 export async function POST(req: NextRequest) {
   try {
     const { phone: input, purpose: inputPurpose } = await req.json()
     const phone = normalizeBDPhone(String(input ?? ''))
     const purpose = inputPurpose === 'password-reset' ? 'password-reset' : 'registration'
-    if (purpose === 'password-reset') {
-      try {
-        await adminAuth().getUserByEmail(`${phone}@bloodhood.app`)
-      } catch (error) {
-        if ((error as { code?: string }).code === 'auth/user-not-found') {
-          return NextResponse.json({ error: 'এই নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি' }, { status: 404 })
-        }
-        throw error
-      }
+    let accountExists = true
+    try {
+      await adminAuth().getUserByEmail(`${phone}@bloodhood.app`)
+    } catch (error) {
+      if ((error as { code?: string }).code === 'auth/user-not-found') accountExists = false
+      else throw error
+    }
+    if (purpose === 'password-reset' && !accountExists) {
+      return NextResponse.json({ error: 'এই নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি' }, { status: 404 })
+    }
+    if (purpose === 'registration' && accountExists) {
+      return NextResponse.json({ error: 'এই নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে—লগইন অথবা পাসওয়ার্ড রিসেট করুন' }, { status: 409 })
     }
     const key = phoneKey(phone)
     const ref = adminDb().collection('otpChallenges').doc(key)
+    const phoneLimitRef = adminDb().collection('otpPhoneRateLimits').doc(key)
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const ipRef = adminDb().collection('otpRateLimits').doc(safeHash(ip))
+    const existingDeviceId = req.cookies.get(DEVICE_COOKIE)?.value
+    const deviceId = existingDeviceId && /^[a-f0-9]{64}$/.test(existingDeviceId) ? existingDeviceId : createVerificationToken()
+    const shouldSetDeviceCookie = deviceId !== existingDeviceId
+    const deviceRef = adminDb().collection('otpDeviceRateLimits').doc(safeHash(deviceId))
     const now = Date.now()
-    const [existing, ipLimitSnap] = await Promise.all([ref.get(), ipRef.get()])
+    const [existing, phoneLimitSnap, ipLimitSnap, deviceLimitSnap] = await Promise.all([ref.get(), phoneLimitRef.get(), ipRef.get(), deviceRef.get()])
     const data = existing.data()
-    const lastSent = data?.sentAt?.toMillis?.() ?? 0
-    const windowStarted = data?.windowStartedAt?.toMillis?.() ?? 0
+    const phoneLimit = phoneLimitSnap.data()
+    const lastSent = phoneLimit?.sentAt?.toMillis?.() ?? 0
+    const windowStarted = phoneLimit?.windowStartedAt?.toMillis?.() ?? 0
+
+    const activeOtpExpires = data?.expiresAt?.toMillis?.() ?? 0
+    if (data?.purpose === purpose && data?.otpHash && activeOtpExpires > now) {
+      const response = NextResponse.json({ success: true, reused: true, expiresIn: Math.ceil((activeOtpExpires - now) / 1000) })
+      if (shouldSetDeviceCookie) response.cookies.set(DEVICE_COOKIE, deviceId, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 365 * 24 * 60 * 60, path: '/' })
+      return response
+    }
 
     if (now - lastSent < OTP_RESEND_MS) {
       return NextResponse.json({ error: 'Please wait before requesting another OTP', retryAfter: Math.ceil((OTP_RESEND_MS - (now - lastSent)) / 1000) }, { status: 429 })
     }
 
     const sameWindow = now - windowStarted < 60 * 60 * 1000
-    const sends = sameWindow ? (data?.sendCount ?? 0) : 0
+    const sends = sameWindow ? (phoneLimit?.sendCount ?? 0) : 0
     if (sends >= OTP_MAX_SENDS_PER_HOUR) {
       return NextResponse.json({ error: 'OTP request limit reached. Try again later.' }, { status: 429 })
     }
 
+    const dayStarted = phoneLimit?.dayStartedAt?.toMillis?.() ?? 0
+    const sameDay = now - dayStarted < DAY_MS
+    const dailySends = sameDay ? (phoneLimit?.dailySendCount ?? 0) : 0
+    if (dailySends >= OTP_MAX_SENDS_PER_DAY) {
+      return NextResponse.json({ error: 'এই নম্বরের আজকের OTP limit শেষ হয়েছে' }, { status: 429 })
+    }
+
     const ipLimit = ipLimitSnap.data()
-    const ipWindowStarted = ipLimit?.windowStartedAt?.toMillis?.() ?? 0
-    const sameIpWindow = now - ipWindowStarted < 60 * 60 * 1000
-    const ipSends = sameIpWindow ? (ipLimit?.sendCount ?? 0) : 0
-    if (ipSends >= IP_MAX_SENDS_PER_HOUR) {
+    const ipWindowStarted = ipLimit?.dayStartedAt?.toMillis?.() ?? 0
+    const sameIpWindow = now - ipWindowStarted < DAY_MS
+    const ipSends = sameIpWindow ? (ipLimit?.dailySendCount ?? 0) : 0
+    if (ipSends >= IP_MAX_SENDS_PER_DAY) {
       return NextResponse.json({ error: 'Too many OTP requests from this connection.' }, { status: 429 })
+    }
+
+    const deviceLimit = deviceLimitSnap.data()
+    const deviceDayStarted = deviceLimit?.dayStartedAt?.toMillis?.() ?? 0
+    const sameDeviceDay = now - deviceDayStarted < DAY_MS
+    const deviceSends = sameDeviceDay ? (deviceLimit?.dailySendCount ?? 0) : 0
+    if (deviceSends >= DEVICE_MAX_SENDS_PER_DAY) {
+      return NextResponse.json({ error: 'এই ডিভাইসের আজকের OTP limit শেষ হয়েছে' }, { status: 429 })
     }
 
     const otp = generateOtp()
@@ -98,21 +134,33 @@ export async function POST(req: NextRequest) {
       purpose,
       otpHash: hashOtp(phone, otp),
       expiresAt: Timestamp.fromMillis(now + OTP_TTL_MS),
-      sentAt: Timestamp.fromMillis(now),
       attempts: 0,
-      sendCount: sends + 1,
-      windowStartedAt: Timestamp.fromMillis(sameWindow ? windowStarted : now),
       verifiedTokenHash: FieldValue.delete(),
       verifiedUntil: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true })
+    await phoneLimitRef.set({
+      sentAt: Timestamp.fromMillis(now),
+      sendCount: sends + 1,
+      windowStartedAt: Timestamp.fromMillis(sameWindow ? windowStarted : now),
+      dailySendCount: dailySends + 1,
+      dayStartedAt: Timestamp.fromMillis(sameDay ? dayStarted : now),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
     await ipRef.set({
-      sendCount: ipSends + 1,
-      windowStartedAt: Timestamp.fromMillis(sameIpWindow ? ipWindowStarted : now),
+      dailySendCount: ipSends + 1,
+      dayStartedAt: Timestamp.fromMillis(sameIpWindow ? ipWindowStarted : now),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    await deviceRef.set({
+      dailySendCount: deviceSends + 1,
+      dayStartedAt: Timestamp.fromMillis(sameDeviceDay ? deviceDayStarted : now),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true })
 
-    return NextResponse.json({ success: true, expiresIn: OTP_TTL_MS / 1000 })
+    const response = NextResponse.json({ success: true, expiresIn: OTP_TTL_MS / 1000 })
+    if (shouldSetDeviceCookie) response.cookies.set(DEVICE_COOKIE, deviceId, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 365 * 24 * 60 * 60, path: '/' })
+    return response
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to send OTP'
     const status = message.includes('Invalid Bangladesh') ? 400 : 500

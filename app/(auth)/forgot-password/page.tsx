@@ -35,12 +35,12 @@ export default function ForgotPasswordPage() {
     if (!validateBDPhone(rawPhone)) return showToast('সঠিক বাংলাদেশি নম্বর দিন (01XXXXXXXXX)', 'error')
     setLoading(true)
     try {
-      await readResult(await fetch('/api/auth/send-otp', {
+      const result = await readResult(await fetch('/api/auth/send-otp', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: rawPhone, purpose: 'password-reset' }),
       }))
       setStep('otp')
-      showToast('আপনার ফোনে OTP পাঠানো হয়েছে', 'success')
+      showToast(result.reused ? 'আগের OTP এখনও কার্যকর—নতুন SMS পাঠানো হয়নি' : 'আপনার ফোনে OTP পাঠানো হয়েছে', 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'OTP পাঠানো যায়নি', 'error')
     } finally { setLoading(false) }

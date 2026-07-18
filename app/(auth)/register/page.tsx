@@ -86,8 +86,8 @@ export default function RegisterPage() {
         throw new Error(`${result.error || 'OTP send failed'}${detail}`)
       }
       setOtpSent(true)
-      setOtpTimer(60)
-      showToast('OTP পাঠানো হয়েছে', 'success')
+      setOtpTimer(result.reused ? Math.min(result.expiresIn ?? 120, 300) : 120)
+      showToast(result.reused ? 'আগের OTP এখনও কার্যকর—নতুন SMS পাঠানো হয়নি' : 'OTP পাঠানো হয়েছে', 'success')
     } catch (error) {
       if (error instanceof Error) {
         showToast(error.message, 'error')
