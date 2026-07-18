@@ -3,6 +3,7 @@ import { DISTRICTS_DATA } from './constants'
 type LocationRecord = {
   district?: string | null
   upazila?: string | null
+  area?: string | null
 }
 
 /**
@@ -13,7 +14,8 @@ export function resolveDistrict(record: LocationRecord): string {
   const district = record.district?.trim()
   if (district) return district
 
-  const upazila = record.upazila?.trim()
+  // Legacy blood requests used `area` for the same upazila value.
+  const upazila = record.upazila?.trim() || record.area?.trim()
   if (!upazila) return ''
 
   return Object.entries(DISTRICTS_DATA).find(([, upazilas]) => upazilas.includes(upazila))?.[0] ?? ''
