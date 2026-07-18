@@ -38,7 +38,7 @@ export default function DashboardPage() {
         if (firebaseUser) headers.set('Authorization', `Bearer ${await firebaseUser.getIdToken()}`)
         const district = user?.district?.trim()
         const query = district ? `?district=${encodeURIComponent(district)}` : ''
-        const response = await fetch(`/api/public/dashboard${query}`, { headers })
+        const response = await fetch(`/api/public/dashboard${query}`, { headers, cache: 'no-store' })
         if (!response.ok) throw new Error('Dashboard request failed')
         const data = await response.json()
         if (cancelled) return

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth, adminDb } from '@/lib/firebase-admin'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
+
 async function isAuthenticated(req: NextRequest) {
   const header = req.headers.get('authorization')
   if (!header?.startsWith('Bearer ')) return false
@@ -68,7 +77,7 @@ export async function GET(req: NextRequest) {
         totalDonations: totalDonations.data().count,
       },
       recentRequests: recent,
-    })
+    }, { headers: NO_STORE_HEADERS })
   } catch (error) {
     console.error('Public dashboard API error:', error)
     const diagnostic = error && typeof error === 'object'
@@ -80,6 +89,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       error: 'Unable to load dashboard',
       ...(process.env.VERCEL_ENV === 'preview' ? { diagnostic } : {}),
-    }, { status: 500 })
+    }, { status: 500, headers: NO_STORE_HEADERS })
   }
 }
