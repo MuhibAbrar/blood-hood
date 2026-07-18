@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth, adminDb } from '@/lib/firebase-admin'
+import { belongsToDistrict, resolveDistrict } from '@/lib/location'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -28,23 +29,19 @@ export async function GET(req: NextRequest) {
     const authenticated = await isAuthenticated(req)
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 
-    const usersQuery = district
-      ? db.collection('users').where('district', '==', district)
-      : db.collection('users')
-    const requestsQuery = district
-      ? db.collection('bloodRequests').where('district', '==', district)
-      : db.collection('bloodRequests')
-
     const [usersSnap, requestsSnap, monthDonations, totalDonations, recentSnap] = await Promise.all([
-      usersQuery.get(),
-      requestsQuery.get(),
+      db.collection('users').get(),
+      db.collection('bloodRequests').get(),
       db.collection('donations').where('donatedAt', '>=', startOfMonth).count().get(),
       db.collection('donations').count().get(),
       db.collection('bloodRequests').where('status', '==', 'open').limit(50).get(),
     ])
 
+    const districtUsers = usersSnap.docs.filter((doc) => belongsToDistrict(doc.data(), district))
+    const districtRequests = requestsSnap.docs.filter((doc) => belongsToDistrict(doc.data(), district))
+
     const recent = recentSnap.docs
-      .filter((doc) => !district || doc.data().district === district)
+      .filter((doc) => belongsToDistrict(doc.data(), district))
       .sort((a, b) => (b.data().createdAt?.toMillis?.() ?? 0) - (a.data().createdAt?.toMillis?.() ?? 0))
       .slice(0, 5)
       .map((doc) => {
@@ -54,7 +51,7 @@ export async function GET(req: NextRequest) {
           patientName: data.patientName ?? '',
           bloodGroup: data.bloodGroup,
           hospital: data.hospital ?? '',
-          district: data.district ?? '',
+          district: resolveDistrict(data),
           area: data.area ?? '',
           contactPhone: authenticated ? (data.contactPhone ?? '') : '',
           requestedBy: authenticated ? (data.requestedBy ?? '') : '',
@@ -70,9 +67,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       stats: {
-        totalMembers: usersSnap.size,
-        availableNow: usersSnap.docs.filter((doc) => doc.data().isAvailable === true).length,
-        pendingRequests: requestsSnap.docs.filter((doc) => doc.data().status === 'open').length,
+        totalMembers: districtUsers.length,
+        availableNow: districtUsers.filter((doc) => doc.data().isAvailable === true).length,
+        pendingRequests: districtRequests.filter((doc) => doc.data().status === 'open').length,
         thisMonthDonations: monthDonations.data().count,
         totalDonations: totalDonations.data().count,
       },

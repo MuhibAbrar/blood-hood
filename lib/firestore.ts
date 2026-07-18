@@ -25,6 +25,7 @@ import {
 import { db } from './firebase'
 import { authenticatedFetch } from './api-client'
 import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent } from '@/types'
+import { belongsToDistrict } from './location'
 
 // --- Users ---
 
@@ -114,14 +115,14 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
 
 export const getBloodRequests = async (status?: BloodRequest['status'], district?: string): Promise<BloodRequest[]> => {
   const ref = collection(db, 'bloodRequests')
-  const q = district
-    ? query(ref, where('district', '==', district), limit(100))
-    : query(ref, orderBy('createdAt', 'desc'), limit(100))
+  // Fetch before filtering so legacy records without a district remain visible.
+  const q = query(ref, orderBy('createdAt', 'desc'), limit(100))
   const snap = await getDocs(q)
   const all = snap.docs
     .map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
-  return status ? all.filter(r => r.status === status) : all
+  const inDistrict = all.filter((request) => belongsToDistrict(request, district))
+  return status ? inDistrict.filter(r => r.status === status) : inDistrict
 }
 
 export const getBloodRequestsByOrg = async (orgId: string): Promise<BloodRequest[]> => {

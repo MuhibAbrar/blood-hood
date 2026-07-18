@@ -6,6 +6,7 @@ import { getDonors, getOrganizations } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import { DISTRICTS_DATA } from '@/lib/constants'
+import { belongsToDistrict } from '@/lib/location'
 import SelectPicker from '@/components/ui/SelectPicker'
 import DonorCard from '@/components/donor/DonorCard'
 import { DonorCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -83,7 +84,7 @@ export default function DonorsPage() {
 
   useEffect(() => {
     let result = [...donors]
-    if (userDistrict) result = result.filter((d) => d.district === userDistrict)
+    if (userDistrict) result = result.filter((d) => belongsToDistrict(d, userDistrict))
     if (bloodFilter) result = result.filter((d) => d.bloodGroup === bloodFilter)
     if (upazilaFilter) result = result.filter((d) => d.upazila === upazilaFilter)
     if (availableOnly) result = result.filter((d) => d.isAvailable)
