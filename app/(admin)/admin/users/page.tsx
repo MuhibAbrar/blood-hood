@@ -92,12 +92,15 @@ export default function AdminUsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: confirmDelete.uid }),
       })
-      if (!res.ok) throw new Error('Delete failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Delete failed')
+      }
       setConfirmDelete(null)
       await load()
       showToast('User মুছে ফেলা হয়েছে', 'success')
-    } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
       setActionLoading(null)
     }
@@ -439,8 +442,7 @@ export default function AdminUsersPage() {
               <span className="text-4xl block mb-3">⚠️</span>
               <h3 className="font-bold text-[#111111] text-lg">User মুছে ফেলবেন?</h3>
               <p className="text-[#555555] text-sm mt-2">
-                <span className="font-semibold">{confirmDelete.name}</span>-এর Firestore data মুছে যাবে।
-                Firebase Auth থেকে আলাদা করে delete করতে হবে।
+                <span className="font-semibold">{confirmDelete.name}</span>-এর account, login access এবং app-এর ব্যক্তিগত data স্থায়ীভাবে মুছে যাবে।
               </p>
             </div>
             <div className="flex gap-3">

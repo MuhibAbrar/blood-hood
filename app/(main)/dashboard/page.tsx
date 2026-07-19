@@ -29,11 +29,15 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
+  const [statsError, setStatsError] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       try {
+        setLoadingStats(true)
+        setStatsError(false)
         const headers = new Headers()
         if (firebaseUser) headers.set('Authorization', `Bearer ${await firebaseUser.getIdToken()}`)
         const district = user?.district?.trim()
@@ -55,8 +59,7 @@ export default function DashboardPage() {
         })) as BloodRequest[])
       } catch {
         if (!cancelled) {
-          setStats({ totalMembers: 0, availableNow: 0, thisMonthDonations: 0, pendingRequests: 0, totalDonations: 0 })
-          setRequests([])
+          setStatsError(true)
         }
       } finally {
         if (!cancelled) setLoadingStats(false)
@@ -64,7 +67,7 @@ export default function DashboardPage() {
     }
     load()
     return () => { cancelled = true }
-  }, [firebaseUser, user?.district])
+  }, [firebaseUser, user?.district, retryKey])
 
   return (
     <div className="pb-8">
@@ -78,28 +81,40 @@ export default function DashboardPage() {
           <h3 className="font-semibold text-[#111111] mb-3">
             {user?.district ? `${districtGenitive(user.district)} পরিসংখ্যান` : 'প্ল্যাটফর্ম পরিসংখ্যান'}
           </h3>
+          {statsError && (
+            <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5">
+              <p className="text-xs font-medium text-[#B82424]">পরিসংখ্যান লোড করা যায়নি। আপনার data মুছে যায়নি।</p>
+              <button
+                type="button"
+                onClick={() => setRetryKey((key) => key + 1)}
+                className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#D92B2B] shadow-sm"
+              >
+                আবার চেষ্টা করুন
+              </button>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="মোট সদস্য"
-              value={loadingStats ? null : (stats?.totalMembers ?? 0)}
+              value={loadingStats || statsError ? null : (stats?.totalMembers ?? 0)}
               icon={<UsersIcon className="w-5 h-5" />}
               iconColor="text-purple-400" valueColor="text-[#111111]"
             />
             <StatCard
               label="এখন Available"
-              value={loadingStats ? null : (stats?.availableNow ?? 0)}
+              value={loadingStats || statsError ? null : (stats?.availableNow ?? 0)}
               icon={<CheckCircleIcon className="w-5 h-5" />}
               iconColor="text-[#1A9E6B]" valueColor="text-[#1A9E6B]"
             />
             <StatCard
               label="এই মাসে দান (সব)"
-              value={loadingStats ? null : (stats?.thisMonthDonations ?? 0)}
+              value={loadingStats || statsError ? null : (stats?.thisMonthDonations ?? 0)}
               icon={<DropIcon className="w-5 h-5" />}
               iconColor="text-[#D92B2B]" valueColor="text-[#D92B2B]"
             />
             <StatCard
               label="অপেক্ষারত Request"
-              value={loadingStats ? null : (stats?.pendingRequests ?? 0)}
+              value={loadingStats || statsError ? null : (stats?.pendingRequests ?? 0)}
               icon={<ClockIcon className="w-5 h-5" />}
               iconColor="text-orange-400" valueColor="text-orange-600"
             />
