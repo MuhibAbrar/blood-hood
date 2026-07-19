@@ -36,7 +36,7 @@ export default function NewRequestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.patientName || !form.bloodGroup || !form.hospital || !form.contactPhone) {
+    if (!form.patientName || !form.bloodGroup || !form.hospital || !form.district || !form.contactPhone) {
       showToast('সব তারকা (*) চিহ্নিত ঘর পূরণ করুন', 'error')
       return
     }
@@ -139,7 +139,7 @@ export default function NewRequestPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+          <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা *</label>
           <SelectPicker
             value={form.district}
             onChange={(val) => setForm((f) => ({ ...f, district: val, area: '' }))}

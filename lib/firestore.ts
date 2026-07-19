@@ -141,9 +141,15 @@ export const getBloodRequest = async (id: string): Promise<BloodRequest | null> 
 }
 
 export const respondToRequest = async (requestId: string, donorUid: string) => {
-  await updateDoc(doc(db, 'bloodRequests', requestId), {
-    respondedBy: arrayUnion(donorUid),
+  const response = await authenticatedFetch('/api/requests/respond', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId }),
   })
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    throw new Error(body.error || 'Unable to respond to request')
+  }
 
   // Notify the requester that someone responded (fire-and-forget)
   try {

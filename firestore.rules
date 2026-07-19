@@ -49,13 +49,7 @@ service cloud.firestore {
             'patientName', 'bloodGroup', 'hospital', 'area', 'district', 'upazila',
             'contactPhone', 'units', 'urgency', 'neededBy', 'details', 'status', 'updatedAt'
           ])
-          && request.resource.data.status in [resource.data.status, 'cancelled'])
-        || (signedIn()
-          && resource.data.status == 'open'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['respondedBy'])
-          && request.resource.data.respondedBy.hasAll(resource.data.respondedBy)
-          && request.resource.data.respondedBy.hasAny([request.auth.uid])
-          && request.resource.data.respondedBy.size() == resource.data.respondedBy.size() + 1);
+          && request.resource.data.status in [resource.data.status, 'cancelled']);
       allow delete: if isGlobalAdmin();
     }
 

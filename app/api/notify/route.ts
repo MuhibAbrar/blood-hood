@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminMessaging, adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { ApiAuthError, authErrorResponse, requireOrgAdmin, requireRole, requireUser } from '@/lib/api-auth'
+import { belongsToDistrict, resolveDistrict } from '@/lib/location'
 
 // Firestore-এ notification document save করি
 async function saveNotification(
@@ -66,7 +67,15 @@ export async function POST(req: NextRequest) {
 
     // ── Blood Request notification ────────────────────────────────────────
     if (type === 'blood_request') {
-      const { bloodGroup, hospital, area, patientName, urgency, requestId } = data
+      const { requestId } = data
+      const requestSnap = await db.collection('bloodRequests').doc(requestId).get()
+      if (!requestSnap.exists) return NextResponse.json({ error: 'request not found' }, { status: 404 })
+      const requestData = requestSnap.data()!
+      const { bloodGroup, hospital, area, patientName, urgency } = requestData
+      const requestDistrict = resolveDistrict(requestData)
+      if (!requestDistrict) {
+        return NextResponse.json({ success: true, sent: 0, reason: 'request district missing' })
+      }
 
       const compatibleGroups: Record<string, string[]> = {
         'A+':  ['A+', 'A-', 'O+', 'O-'],
@@ -94,10 +103,12 @@ export async function POST(req: NextRequest) {
         .where('bloodGroup', 'in', donors.slice(0, 10))
         .get()
       usersSnap.docs.forEach(d => {
-        const uid = d.data().uid
+        const userData = d.data()
+        if (!belongsToDistrict(userData, requestDistrict)) return
+        const uid = userData.uid
         if (!uid) return
         allUserIds.push(uid)
-        const token = d.data().fcmToken
+        const token = userData.fcmToken
         if (token) allTokens.push(token)
       })
 

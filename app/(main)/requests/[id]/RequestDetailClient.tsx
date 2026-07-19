@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import DonorCard from '@/components/donor/DonorCard'
+import { canDonate } from '@/lib/bloodCompatibility'
+import { belongsToDistrict, resolveDistrict } from '@/lib/location'
 import TopBar from '@/components/layout/TopBar'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -51,7 +53,14 @@ export default function RequestDetailClient() {
       setLoading(false)
       if (r) {
         const { donors } = await getDonors({ isAvailable: true })
-        setCompatibleDonors(donors.filter((d) => d.bloodGroup === r.bloodGroup).slice(0, 10))
+        const requestDistrict = resolveDistrict(r)
+        setCompatibleDonors(
+          requestDistrict
+            ? donors
+                .filter((donor) => belongsToDistrict(donor, requestDistrict) && canDonate(donor.bloodGroup, r.bloodGroup))
+                .slice(0, 10)
+            : []
+        )
       }
     })
   }, [id])
@@ -217,6 +226,12 @@ export default function RequestDetailClient() {
   const alreadyResponded = user ? request.respondedBy.includes(user.uid) : false
   const daysAgo = daysSince(request.createdAt.toDate())
   const isExpired = request.status === 'open' && request.expiresAt != null && request.expiresAt.toDate() < new Date()
+  const requestDistrict = resolveDistrict(request)
+  const canCurrentUserRespond = !!user
+    && !!requestDistrict
+    && belongsToDistrict(user, requestDistrict)
+    && user.isAvailable
+    && canDonate(user.bloodGroup, request.bloodGroup)
 
   return (
     <div>
@@ -342,7 +357,7 @@ export default function RequestDetailClient() {
         )}
 
         {/* Donor actions */}
-        {request.status === 'open' && !isExpired && user && !isOwner && (
+        {request.status === 'open' && !isExpired && user && !isOwner && canCurrentUserRespond && (
           <div className="space-y-3">
             {!alreadyResponded && !showPhone ? (
               <button onClick={handleRespond} disabled={actionLoading} className="btn-primary w-full">
