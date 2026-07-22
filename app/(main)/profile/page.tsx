@@ -18,6 +18,7 @@ import { recordSelfDonation, getBloodRequestCountByUser } from '@/lib/firestore'
 import { CheckCircleIcon, ClockIcon, DropIcon, BuildingIcon } from '@/components/ui/Icons'
 import { Timestamp } from 'firebase/firestore'
 import Modal from '@/components/ui/Modal'
+import { authenticatedFetch } from '@/lib/api-client'
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
@@ -30,6 +31,9 @@ export default function ProfilePage() {
   const [donationDate, setDonationDate] = useState('')
   const [donationLoading, setDonationLoading] = useState(false)
   const [requestCount, setRequestCount] = useState<number | null>(null)
+  const [deleteModal, setDeleteModal] = useState(false)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     if (user?.uid) getBloodRequestCountByUser(user.uid).then(setRequestCount)
@@ -73,6 +77,24 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout()
     router.replace('/')
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== 'DELETE') return
+    setDeleteLoading(true)
+    try {
+      const response = await authenticatedFetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: deleteConfirmation }),
+      })
+      if (!response.ok) throw new Error('Account deletion failed')
+      await logout().catch(() => {})
+      router.replace('/login?accountDeleted=1')
+    } catch {
+      showToast('অ্যাকাউন্ট মুছে ফেলা যায়নি। আবার চেষ্টা করুন।', 'error')
+      setDeleteLoading(false)
+    }
   }
 
   const handleSelfDonation = async () => {
@@ -319,6 +341,46 @@ export default function ProfilePage() {
         >
           লগ আউট করুন
         </button>
+
+        <button
+          onClick={() => { setDeleteConfirmation(''); setDeleteModal(true) }}
+          className="w-full py-3 text-red-700 font-semibold text-sm"
+        >
+          অ্যাকাউন্ট মুছে ফেলুন
+        </button>
+
+        <Modal open={deleteModal} onClose={() => !deleteLoading && setDeleteModal(false)} title="অ্যাকাউন্ট মুছে ফেলুন">
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-900">
+              <p className="font-semibold">এই কাজটি আর ফিরিয়ে নেওয়া যাবে না।</p>
+              <p className="mt-1">আপনার লগইন ও ব্যক্তিগত তথ্য মুছে যাবে। সেবার রেকর্ড ঠিক রাখতে পুরোনো রক্তদান ও রক্তের অনুরোধ পরিচয়বিহীনভাবে সংরক্ষিত হতে পারে।</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">
+                নিশ্চিত করতে ইংরেজিতে DELETE লিখুন
+              </label>
+              <input
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                autoComplete="off"
+                className="input-field w-full"
+                placeholder="DELETE"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteModal(false)} disabled={deleteLoading} className="btn-ghost flex-1 border border-[#E5E5E5]">
+                বাতিল
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmation !== 'DELETE' || deleteLoading}
+                className="flex-1 rounded-xl bg-red-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {deleteLoading ? 'মুছে ফেলা হচ্ছে...' : 'স্থায়ীভাবে মুছুন'}
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   )
