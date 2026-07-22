@@ -100,7 +100,7 @@ export default function ConsentModal() {
             📄 Terms of Use
           </Link>
           <Link
-            href="/terms"
+            href="/privacy-policy"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 text-center text-sm font-semibold text-[#555] border-2 border-[#E5E5E5] rounded-xl py-2.5 active:bg-gray-50"

@@ -69,9 +69,12 @@ export default function AboutPage() {
             <span className="text-[#777]">দেশ</span>
             <span className="font-semibold text-[#111]">🇧🇩 বাংলাদেশ</span>
           </div>
-          <div className="border-t border-[#F0F0F0] pt-3 flex gap-3">
+          <div className="border-t border-[#F0F0F0] pt-3 grid grid-cols-3 gap-2">
             <Link href="/terms" className="flex-1 text-center text-xs text-[#D92B2B] font-medium py-2 rounded-xl border border-[#D92B2B]/30 hover:bg-red-50">
               শর্তাবলী
+            </Link>
+            <Link href="/privacy-policy" className="text-center text-xs text-[#D92B2B] font-medium py-2 rounded-xl border border-[#D92B2B]/30 hover:bg-red-50">
+              Privacy
             </Link>
             <Link href="/contact" className="flex-1 text-center text-xs text-[#555] font-medium py-2 rounded-xl border border-[#E5E5E5] hover:bg-gray-50">
               যোগাযোগ

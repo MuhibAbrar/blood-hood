@@ -17,6 +17,11 @@
   --border: #E5E5E5;
 }
 
+.privacy-copy h3 { margin-top: 1rem; color: #111111; font-weight: 700; }
+.privacy-copy ul { list-style: disc; padding-left: 1.25rem; }
+.privacy-copy li + li { margin-top: 0.35rem; }
+.privacy-copy a { color: #D92B2B; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
 @layer base {
   html {
     font-family: 'Hind Siliguri', 'Inter', sans-serif;
