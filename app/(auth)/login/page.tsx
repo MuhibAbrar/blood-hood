@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, formatPhone, validateBDPhone } from '@/lib/auth'
 import { getUser, getUserByPhone } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next') === '/delete-account' ? '/delete-account' : '/dashboard'
   const { showToast } = useToast()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -32,7 +34,7 @@ export default function LoginPage() {
       if (!user) {
         router.replace('/register')
       } else {
-        router.replace('/dashboard')
+        router.replace(nextPath)
       }
     } catch (err: unknown) {
       const e = err as { code?: string }
