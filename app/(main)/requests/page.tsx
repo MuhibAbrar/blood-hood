@@ -28,7 +28,7 @@ export default function RequestsPage() {
     }
     setLoading(true)
     getBloodRequests(undefined, district).then((reqs) => {
-      setRequests(reqs)
+      setRequests(reqs.filter((request) => request.requestedBy !== 'deleted-user'))
       setLoading(false)
     })
   }, [authLoading, user?.district])

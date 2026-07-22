@@ -25,7 +25,7 @@ export async function deleteUserAccount(uid: string) {
     seekerEventsSnap, donorEventsSnap, contactLimitsSnap,
     requestedSnap, respondedSnap, fulfilledSnap,
     donorDonationsSnap, verifiedDonationsSnap,
-    registeredCampsSnap, createdCampsSnap, announcementsSnap,
+    registeredCampsSnap, donatedCampsSnap, createdCampsSnap, announcementsSnap,
   ] = await Promise.all([
     db.collection('organizations').where('memberIds', 'array-contains', uid).get(),
     db.collection('organizations').where('adminIds', 'array-contains', uid).get(),
@@ -40,15 +40,15 @@ export async function deleteUserAccount(uid: string) {
     db.collection('donations').where('donorId', '==', uid).get(),
     db.collection('donations').where('verifiedBy', '==', uid).get(),
     db.collection('camps').where('registeredDonors', 'array-contains', uid).get(),
+    db.collection('camps').where('donatedUids', 'array-contains', uid).get(),
     db.collection('camps').where('createdBy', '==', uid).get(),
     db.collection('announcements').where('createdBy', '==', uid).get(),
   ])
 
-  try {
-    await adminAuth().deleteUser(uid)
-  } catch (error: unknown) {
-    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
-    if (code !== 'auth/user-not-found') throw error
+  const requestedIds = requestedSnap.docs.map((doc) => doc.id)
+  const requestDonationSnaps: FirebaseFirestore.QuerySnapshot[] = []
+  for (let i = 0; i < requestedIds.length; i += 30) {
+    requestDonationSnaps.push(await db.collection('donations').where('requestId', 'in', requestedIds.slice(i, i + 30)).get())
   }
 
   const operations: CleanupOperation[] = []
@@ -72,18 +72,45 @@ export async function deleteUserAccount(uid: string) {
       contactPhone: '',
       details: '',
       note: null,
+      ...(data.status === 'open' ? { status: 'cancelled' } : {}),
+      updatedAt: FieldValue.serverTimestamp(),
     })
     if (data.fulfilledBy === uid) Object.assign(update, { fulfilledBy: null, fulfilledByName: null, fulfilledByPhone: null })
     operations.push({ type: 'update', ref, data: update })
   }
 
-  for (const doc of donorDonationsSnap.docs) operations.push({ type: 'update', ref: doc.ref, data: { donorId: 'deleted-user', donorName: 'Deleted donor', externalDonorPhone: null } })
-  for (const doc of verifiedDonationsSnap.docs) operations.push({ type: 'update', ref: doc.ref, data: { verifiedBy: null } })
-  for (const doc of registeredCampsSnap.docs) operations.push({ type: 'update', ref: doc.ref, data: { registeredDonors: FieldValue.arrayRemove(uid) } })
-  for (const doc of createdCampsSnap.docs) operations.push({ type: 'update', ref: doc.ref, data: { createdBy: 'deleted-user' } })
+  const donationUpdates = new Map<string, { ref: FirebaseFirestore.DocumentReference; data: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> }>()
+  const mergeDonationUpdate = (doc: FirebaseFirestore.QueryDocumentSnapshot, data: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>) => {
+    const existing = donationUpdates.get(doc.ref.path)
+    donationUpdates.set(doc.ref.path, { ref: doc.ref, data: { ...(existing?.data ?? {}), ...data } })
+  }
+  for (const doc of donorDonationsSnap.docs) mergeDonationUpdate(doc, { donorId: 'deleted-user', donorName: 'Deleted donor', externalDonorPhone: null })
+  for (const doc of verifiedDonationsSnap.docs) mergeDonationUpdate(doc, { verifiedBy: null })
+  for (const snap of requestDonationSnaps) {
+    for (const doc of snap.docs) mergeDonationUpdate(doc, { recipientName: 'Deleted recipient' })
+  }
+  for (const update of Array.from(donationUpdates.values())) operations.push({ type: 'update', ...update })
+  const campUpdates = new Map<string, { ref: FirebaseFirestore.DocumentReference; data: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> }>()
+  const mergeCampUpdate = (doc: FirebaseFirestore.QueryDocumentSnapshot, data: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>) => {
+    const existing = campUpdates.get(doc.ref.path)
+    campUpdates.set(doc.ref.path, { ref: doc.ref, data: { ...(existing?.data ?? {}), ...data } })
+  }
+  for (const doc of registeredCampsSnap.docs) mergeCampUpdate(doc, { registeredDonors: FieldValue.arrayRemove(uid) })
+  for (const doc of donatedCampsSnap.docs) mergeCampUpdate(doc, { donatedUids: FieldValue.arrayRemove(uid) })
+  for (const doc of createdCampsSnap.docs) mergeCampUpdate(doc, { createdBy: 'deleted-user' })
+  for (const update of Array.from(campUpdates.values())) operations.push({ type: 'update', ...update })
   for (const doc of announcementsSnap.docs) operations.push({ type: 'update', ref: doc.ref, data: { createdBy: 'deleted-user' } })
-  operations.push({ type: 'delete', ref: db.collection('users').doc(uid) })
-
   await commitInChunks(db, operations)
-  return { cleanedRecords: operations.length }
+
+  // Delete authentication only after linked records are safely cleaned. If
+  // cleanup fails, the signed-in user can retry instead of being locked out.
+  try {
+    await adminAuth().deleteUser(uid)
+  } catch (error: unknown) {
+    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
+    if (code !== 'auth/user-not-found') throw error
+  }
+  await db.collection('users').doc(uid).delete()
+
+  return { cleanedRecords: operations.length + 1 }
 }
