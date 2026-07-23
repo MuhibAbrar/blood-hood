@@ -111,25 +111,25 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="মোট সদস্য"
-              value={loadingStats || statsError ? null : (stats?.totalMembers ?? 0)}
+              value={statsError ? 'error' : loadingStats ? null : (stats?.totalMembers ?? 0)}
               icon={<UsersIcon className="w-5 h-5" />}
               iconColor="text-purple-400" valueColor="text-[#111111]"
             />
             <StatCard
               label="এখন Available"
-              value={loadingStats || statsError ? null : (stats?.availableNow ?? 0)}
+              value={statsError ? 'error' : loadingStats ? null : (stats?.availableNow ?? 0)}
               icon={<CheckCircleIcon className="w-5 h-5" />}
               iconColor="text-[#1A9E6B]" valueColor="text-[#1A9E6B]"
             />
             <StatCard
               label="এই মাসে দান (সব)"
-              value={loadingStats || statsError ? null : (stats?.thisMonthDonations ?? 0)}
+              value={statsError ? 'error' : loadingStats ? null : (stats?.thisMonthDonations ?? 0)}
               icon={<DropIcon className="w-5 h-5" />}
               iconColor="text-[#D92B2B]" valueColor="text-[#D92B2B]"
             />
             <StatCard
               label="অপেক্ষারত Request"
-              value={loadingStats || statsError ? null : (stats?.pendingRequests ?? 0)}
+              value={statsError ? 'error' : loadingStats ? null : (stats?.pendingRequests ?? 0)}
               icon={<ClockIcon className="w-5 h-5" />}
               iconColor="text-orange-400" valueColor="text-orange-600"
             />
@@ -171,8 +171,16 @@ export default function DashboardPage() {
             <Link href="/requests" className="text-sm text-[#D92B2B] font-medium">সব দেখুন</Link>
           </div>
           <div className="space-y-3">
-            {requests.length === 0 ? (
+            {loadingStats ? (
               <RequestCardSkeleton />
+            ) : statsError ? (
+              <div className="card p-5 text-center text-sm text-[#777]">
+                Request load করা যায়নি। উপরের “আবার চেষ্টা করুন” চাপুন।
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="card p-5 text-center text-sm text-[#777]">
+                এই মুহূর্তে কোনো খোলা রক্তের অনুরোধ নেই।
+              </div>
             ) : (
               requests.map((r) => <RequestCard key={r.id} request={r} />)
             )}
@@ -196,7 +204,7 @@ export default function DashboardPage() {
 }
 
 function StatCard({ label, value, icon, iconColor, valueColor }: {
-  label: string; value: number | null
+  label: string; value: number | null | 'error'
   icon: React.ReactNode; iconColor: string; valueColor: string
 }) {
   return (
@@ -209,6 +217,8 @@ function StatCard({ label, value, icon, iconColor, valueColor }: {
         <div className="animate-pulse">
           <div className="h-8 w-12 bg-gray-200 rounded" />
         </div>
+      ) : value === 'error' ? (
+        <p className="text-2xl font-bold leading-none text-[#999]">—</p>
       ) : (
         <p className={`text-3xl font-bold leading-none ${valueColor}`}>{value}</p>
       )}

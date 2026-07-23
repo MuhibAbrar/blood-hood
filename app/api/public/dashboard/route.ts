@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth, adminDb } from '@/lib/firebase-admin'
-import { belongsToDistrict, resolveDistrict } from '@/lib/location'
+import { resolveDistrict } from '@/lib/location'
+import { Timestamp } from 'firebase-admin/firestore'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -30,21 +31,48 @@ export async function GET(req: NextRequest) {
     const db = adminDb()
     const district = req.nextUrl.searchParams.get('district')?.trim() || null
     const authenticated = await isAuthenticated(req)
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    const startOfMonth = Timestamp.fromDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+    const users = db.collection('users')
+    const requests = db.collection('bloodRequests')
+    const donations = db.collection('donations')
 
-    const [usersSnap, requestsSnap, monthDonations, totalDonations, recentSnap] = await Promise.all([
-      db.collection('users').get(),
-      db.collection('bloodRequests').get(),
-      db.collection('donations').where('donatedAt', '>=', startOfMonth).count().get(),
-      db.collection('donations').count().get(),
-      db.collection('bloodRequests').where('status', '==', 'open').limit(50).get(),
+    // Aggregation queries are billed by index entries instead of downloading
+    // every user/request document on every dashboard visit.
+    const membersQuery = district ? users.where('district', '==', district) : users
+    const availableQuery = district
+      ? users.where('district', '==', district).where('isAvailable', '==', true)
+      : users.where('isAvailable', '==', true)
+    const pendingQuery = district
+      ? requests.where('district', '==', district).where('status', '==', 'open')
+      : requests.where('status', '==', 'open')
+    const recentQuery = district
+      ? requests.where('district', '==', district).where('status', '==', 'open').limit(10)
+      : requests.where('status', '==', 'open').limit(10)
+
+    const [
+      membersResult,
+      availableResult,
+      pendingResult,
+      monthDonationsResult,
+      totalDonationsResult,
+      recentResult,
+    ] = await Promise.allSettled([
+      membersQuery.count().get(),
+      availableQuery.count().get(),
+      pendingQuery.count().get(),
+      donations.where('donatedAt', '>=', startOfMonth).count().get(),
+      donations.count().get(),
+      recentQuery.get(),
     ])
 
-    const districtUsers = usersSnap.docs.filter((doc) => belongsToDistrict(doc.data(), district))
-    const districtRequests = requestsSnap.docs.filter((doc) => belongsToDistrict(doc.data(), district))
+    const count = (result: typeof membersResult) =>
+      result.status === 'fulfilled' ? result.value.data().count : 0
+    const recentSnap = recentResult.status === 'fulfilled' ? recentResult.value : null
+    if ([membersResult, availableResult, pendingResult, recentResult].every((result) => result.status === 'rejected')) {
+      throw new Error('All dashboard Firestore queries failed')
+    }
 
-    const recent = recentSnap.docs
-      .filter((doc) => belongsToDistrict(doc.data(), district))
+    const recent = (recentSnap?.docs ?? [])
       .sort((a, b) => (b.data().createdAt?.toMillis?.() ?? 0) - (a.data().createdAt?.toMillis?.() ?? 0))
       .slice(0, 5)
       .map((doc) => {
@@ -70,11 +98,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       stats: {
-        totalMembers: districtUsers.length,
-        availableNow: districtUsers.filter((doc) => doc.data().isAvailable === true).length,
-        pendingRequests: districtRequests.filter((doc) => doc.data().status === 'open').length,
-        thisMonthDonations: monthDonations.data().count,
-        totalDonations: totalDonations.data().count,
+        totalMembers: count(membersResult),
+        availableNow: count(availableResult),
+        pendingRequests: count(pendingResult),
+        thisMonthDonations: count(monthDonationsResult),
+        totalDonations: count(totalDonationsResult),
       },
       recentRequests: recent,
     }, { headers: NO_STORE_HEADERS })

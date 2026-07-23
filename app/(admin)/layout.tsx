@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { logout } from '@/lib/auth'
-import { ChartBarIcon, UsersIcon, ActivityIcon, TentIcon, BuildingIcon, DropIcon, CrownIcon, HomeIcon, LogOutIcon, HeartIcon } from '@/components/ui/Icons'
+import { ChartBarIcon, UsersIcon, ActivityIcon, TentIcon, BuildingIcon, DropIcon, CrownIcon, HomeIcon, LogOutIcon, HeartIcon, ClockIcon } from '@/components/ui/Icons'
 
 const IC = 'w-5 h-5'
 
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/admin/organizations', label: 'সংগঠন', icon: <BuildingIcon className={IC} /> },
   { href: '/admin/requests', label: 'রক্তের অনুরোধ', icon: <HeartIcon className={IC} /> },
   { href: '/admin/analytics', label: 'Analytics', icon: <ChartBarIcon className={IC} /> },
+  { href: '/admin/maintenance', label: 'Data Cleanup', icon: <ClockIcon className={IC} /> },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

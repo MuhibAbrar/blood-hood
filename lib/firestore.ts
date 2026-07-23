@@ -621,20 +621,6 @@ export const getNotifications = async (uid: string): Promise<Notification[]> => 
   )
   const snap = await getDocs(q)
 
-  // ৩০ দিনের পুরনো read notifications আলাদা query দিয়ে delete করি (fire-and-forget)
-  // limit(50) এর বাইরের পুরনো documents-ও clean হবে
-  const thirtyDaysAgo = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-  const oldQ = query(
-    collection(db, 'notifications'),
-    where('userId', '==', uid),
-    where('read', '==', true),
-    where('createdAt', '<', thirtyDaysAgo),
-    limit(50) // batch-এ delete করি, একসাথে বেশি না
-  )
-  getDocs(oldQ)
-    .then(oldSnap => Promise.all(oldSnap.docs.map(d => deleteDoc(d.ref))))
-    .catch(() => {})
-
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
 }
 
