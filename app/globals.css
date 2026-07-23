@@ -39,6 +39,27 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  body.native-app {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  body.native-app input,
+  body.native-app textarea,
+  body.native-app select,
+  body.native-app [contenteditable='true'],
+  body.native-app [data-allow-context-menu] {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  body.native-app img,
+  body.native-app a {
+    -webkit-user-drag: none;
+  }
 }
 
 @layer components {

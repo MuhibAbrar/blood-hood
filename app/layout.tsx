@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/ui/Toast'
+import NativeAppGuards from '@/components/shared/NativeAppGuards'
 
 const BASE_URL = 'https://bloodhood.pro.bd'
 
@@ -114,6 +115,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="antialiased bg-[#FAFAFA]">
+        <NativeAppGuards />
         <AuthProvider>
           <ToastProvider>
             {children}
