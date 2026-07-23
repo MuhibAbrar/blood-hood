@@ -9,7 +9,6 @@ import RequestCard from '@/components/request/RequestCard'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import ConsentModal from '@/components/ui/ConsentModal'
 import type { BloodRequest } from '@/types'
-import { DISTRICTS } from '@/lib/constants'
 import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, CheckCircleIcon, GiftIcon } from '@/components/ui/Icons'
 
 const VOWEL_MATRAS = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ো', 'ৌ', 'ঁ']
@@ -77,20 +76,6 @@ export default function DashboardPage() {
       <DonorHeroCard />
 
       <div className="px-4 mt-4 space-y-5">
-        <section className="card p-4" aria-labelledby="blood-hood-intro">
-          <h1 id="blood-hood-intro" className="text-lg font-bold text-[#111]">
-            বাংলাদেশে রক্তদাতা খুঁজুন ও জরুরি রক্তের অনুরোধ করুন
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-[#666]">
-            Blood Hood একটি বিনামূল্যের কমিউনিটি প্ল্যাটফর্ম। জেলা, উপজেলা ও রক্তের গ্রুপ
-            অনুযায়ী স্বেচ্ছাসেবী রক্তদাতা খুঁজুন, জরুরি অনুরোধ প্রকাশ করুন এবং রক্তদান
-            ক্যাম্প ও সংগঠনের সঙ্গে যুক্ত হোন।
-          </p>
-          <p className="mt-3 text-xs leading-5 text-[#777]">
-            বর্তমানে অন্তর্ভুক্ত জেলা: {DISTRICTS.join(' · ')}
-          </p>
-        </section>
-
         {/* পরিসংখ্যান */}
         <div>
           <h3 className="font-semibold text-[#111111] mb-3">
@@ -187,17 +172,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <section className="card p-4" aria-labelledby="blood-donation-services">
-          <h2 id="blood-donation-services" className="font-semibold text-[#111]">
-            Blood Hood-এ যা করতে পারবেন
-          </h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <Link href="/donors" className="rounded-xl bg-red-50 px-3 py-2.5 text-[#B82424]">রক্তদাতা খুঁজুন</Link>
-            <Link href="/requests" className="rounded-xl bg-orange-50 px-3 py-2.5 text-orange-700">জরুরি অনুরোধ দেখুন</Link>
-            <Link href="/camps" className="rounded-xl bg-green-50 px-3 py-2.5 text-green-700">রক্তদান ক্যাম্প</Link>
-            <Link href="/organizations" className="rounded-xl bg-purple-50 px-3 py-2.5 text-purple-700">রক্তদান সংগঠন</Link>
-          </div>
-        </section>
       </div>
     </div>
   )
