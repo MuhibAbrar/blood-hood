@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
   setDoc,
   updateDoc,
@@ -41,6 +42,11 @@ export const createUser = async (uid: string, data: Omit<User, 'uid' | 'createdA
 
 export const getUser = async (uid: string): Promise<User | null> => {
   const snap = await getDoc(doc(db, 'users', uid))
+  return snap.exists() ? (snap.data() as User) : null
+}
+
+export const getUserFromServer = async (uid: string): Promise<User | null> => {
+  const snap = await getDocFromServer(doc(db, 'users', uid))
   return snap.exists() ? (snap.data() as User) : null
 }
 
@@ -535,8 +541,11 @@ export const recordCampDonation = async (campId: string, donorId: string, orgId:
 // --- Join Requests ---
 
 export const requestJoinOrg = async (orgId: string, user: User): Promise<void> => {
-  // Enforce 1 org per user
-  if (user.organizations.length > 0 && !user.organizations.includes(orgId)) {
+  // Always verify against the server so a recently-left organization cannot
+  // remain stuck because of an old client-side user profile.
+  const freshUser = await getUserFromServer(user.uid)
+  const currentOrganizations = freshUser?.organizations ?? []
+  if (currentOrganizations.length > 0 && !currentOrganizations.includes(orgId)) {
     throw new Error('already-in-org')
   }
 

@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
-import { getUser, updateUser, getOrgsByAdmin } from '@/lib/firestore'
+import { getUser, getUserFromServer, updateUser, getOrgsByAdmin } from '@/lib/firestore'
 import { requestNotificationPermission } from '@/lib/notifications'
 import type { User, Organization } from '@/types'
 
@@ -33,8 +33,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profileLoadError, setProfileLoadError] = useState(false)
 
   const refreshUser = async () => {
-    if (!firebaseUser) return
-    const u = await getUser(firebaseUser.uid)
+    const currentUser = auth.currentUser
+    if (!currentUser) return
+    const u = await getUserFromServer(currentUser.uid)
     setUser(u)
   }
 
