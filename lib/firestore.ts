@@ -334,14 +334,18 @@ export const getOrganization = async (id: string): Promise<Organization | null> 
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Organization) : null
 }
 
-export const getOrganizationsForUser = async (uid: string): Promise<Organization[]> => {
+export const getOrganizationsForUser = async (uid: string, organizationIds: string[] = []): Promise<Organization[]> => {
   const organizationsRef = collection(db, 'organizations')
-  const [memberSnap, adminSnap] = await Promise.all([
+  const [memberSnap, adminSnap, linkedOrganizations] = await Promise.all([
     getDocs(query(organizationsRef, where('memberIds', 'array-contains', uid))),
     getDocs(query(organizationsRef, where('adminIds', 'array-contains', uid))),
+    Promise.all(organizationIds.map((organizationId) => getOrganization(organizationId))),
   ])
 
   const organizations = new Map<string, Organization>()
+  for (const organization of linkedOrganizations) {
+    if (organization) organizations.set(organization.id, organization)
+  }
   for (const organizationDoc of [...memberSnap.docs, ...adminSnap.docs]) {
     organizations.set(
       organizationDoc.id,

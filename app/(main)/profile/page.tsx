@@ -46,7 +46,7 @@ export default function ProfilePage() {
     if (!user?.uid) return
     let active = true
     setOrganizationsLoading(true)
-    getOrganizationsForUser(user.uid)
+    getOrganizationsForUser(user.uid, user.organizations)
       .then((organizations) => {
         if (active) setMemberOrganizations(organizations)
       })

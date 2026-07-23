@@ -20,12 +20,14 @@ export async function POST(req: NextRequest) {
     if (!orgDoc.exists) return NextResponse.json({ error: 'org-not-found' }, { status: 404 })
 
     const orgData = orgDoc.data()!
+    const userDoc = await db.collection('users').doc(uid).get()
     const memberIds: string[] = orgData.memberIds ?? []
     const adminIds: string[] = orgData.adminIds ?? []
     const isMember = memberIds.includes(uid)
     const isAdmin = adminIds.includes(uid)
+    const isLinkedToUser = (userDoc.data()?.organizations ?? []).includes(orgId)
 
-    if (!isMember && !isAdmin) {
+    if (!isMember && !isAdmin && !isLinkedToUser) {
       return NextResponse.json({ error: 'not-a-member' }, { status: 409 })
     }
     if (isAdmin && adminIds.length <= 1) {
