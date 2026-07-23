@@ -334,6 +334,24 @@ export const getOrganization = async (id: string): Promise<Organization | null> 
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Organization) : null
 }
 
+export const getOrganizationsForUser = async (uid: string): Promise<Organization[]> => {
+  const organizationsRef = collection(db, 'organizations')
+  const [memberSnap, adminSnap] = await Promise.all([
+    getDocs(query(organizationsRef, where('memberIds', 'array-contains', uid))),
+    getDocs(query(organizationsRef, where('adminIds', 'array-contains', uid))),
+  ])
+
+  const organizations = new Map<string, Organization>()
+  for (const organizationDoc of [...memberSnap.docs, ...adminSnap.docs]) {
+    organizations.set(
+      organizationDoc.id,
+      { id: organizationDoc.id, ...organizationDoc.data() } as Organization
+    )
+  }
+
+  return Array.from(organizations.values())
+}
+
 export const joinOrganization = async (orgId: string, uid: string) => {
   // Enforce 1 org per user
   const userSnap = await getDoc(doc(db, 'users', uid))

@@ -12,7 +12,7 @@ import { authenticatedFetch } from '@/lib/api-client'
 
 export default function OrgDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [org, setOrg] = useState<Organization | null>(null)
   const [joinRequest, setJoinRequest] = useState<JoinRequest | null>(null)
@@ -46,13 +46,21 @@ export default function OrgDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orgId: org.id, uid: user.uid }),
       })
-      if (!res.ok) throw new Error('leave failed')
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(result.error || 'leave-failed')
       setConfirmLeave(false)
       showToast('সংগঠন ছেড়ে দেওয়া হয়েছে', 'success')
-      const updated = await getOrganization(id)
+      const [updated] = await Promise.all([
+        getOrganization(id),
+        refreshUser(),
+      ])
       setOrg(updated)
-    } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } catch (error) {
+      if (error instanceof Error && error.message === 'last-admin-cannot-leave') {
+        showToast('আগে আরেকজনকে অ্যাডমিন করুন, তারপর সংগঠন ছাড়তে পারবেন', 'error')
+      } else {
+        showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+      }
     } finally {
       setLeaving(false)
     }
@@ -78,6 +86,8 @@ export default function OrgDetailPage() {
   if (!org) return <div className="px-4 py-8 text-center text-[#555555]">সংগঠন পাওয়া যায়নি</div>
 
   const isMember = user ? (org.memberIds.includes(user.uid) || org.adminIds.includes(user.uid)) : false
+  const isAdmin = user ? org.adminIds.includes(user.uid) : false
+  const isLastAdmin = isAdmin && org.adminIds.length <= 1
   const hasPendingRequest = !!joinRequest
   const isInAnotherOrg = user ? (user.organizations.length > 0 && !user.organizations.includes(org.id)) : false
 
@@ -133,14 +143,17 @@ export default function OrgDetailPage() {
               <p className="text-[#1A9E6B] font-semibold text-lg">✓ আপনি এই সংগঠনের সদস্য</p>
               <p className="text-xs text-[#555555] mt-1">আপনি ক্যাম্প ও ঘোষণা পাবেন</p>
             </div>
-            {/* Only non-admins can leave */}
-            {!org.adminIds.includes(user.uid) && (
+            {!isLastAdmin ? (
               <button
                 onClick={() => setConfirmLeave(true)}
                 className="w-full py-2.5 rounded-2xl border border-red-200 text-[#D92B2B] text-sm font-medium hover:bg-red-50 transition-colors"
               >
                 সংগঠন ছেড়ে দিন
               </button>
+            ) : (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs text-amber-800">
+                আপনি এই সংগঠনের একমাত্র অ্যাডমিন। ছাড়ার আগে আরেকজনকে অ্যাডমিন করুন।
+              </p>
             )}
           </div>
         ) : hasPendingRequest ? (

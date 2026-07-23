@@ -16,17 +16,28 @@ export async function POST(req: NextRequest) {
 
     const db = adminDb()
 
-    // Make sure user is actually a member (not an admin)
     const orgDoc = await db.collection('organizations').doc(orgId).get()
     if (!orgDoc.exists) return NextResponse.json({ error: 'org-not-found' }, { status: 404 })
 
     const orgData = orgDoc.data()!
-    if (orgData.adminIds?.includes(uid)) {
-      return NextResponse.json({ error: 'admin-cannot-leave' }, { status: 403 })
+    const memberIds: string[] = orgData.memberIds ?? []
+    const adminIds: string[] = orgData.adminIds ?? []
+    const isMember = memberIds.includes(uid)
+    const isAdmin = adminIds.includes(uid)
+
+    if (!isMember && !isAdmin) {
+      return NextResponse.json({ error: 'not-a-member' }, { status: 409 })
+    }
+    if (isAdmin && adminIds.length <= 1) {
+      return NextResponse.json({ error: 'last-admin-cannot-leave' }, { status: 409 })
     }
 
     await db.runTransaction(async tx => {
-      tx.update(db.collection('organizations').doc(orgId), { memberIds: FieldValue.arrayRemove(uid), updatedAt: FieldValue.serverTimestamp() })
+      tx.update(db.collection('organizations').doc(orgId), {
+        memberIds: FieldValue.arrayRemove(uid),
+        adminIds: FieldValue.arrayRemove(uid),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
       tx.update(db.collection('users').doc(uid), { organizations: FieldValue.arrayRemove(orgId), updatedAt: FieldValue.serverTimestamp() })
     })
 

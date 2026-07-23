@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { updateUser } from '@/lib/firestore'
+import { getOrganizationsForUser, updateUser } from '@/lib/firestore'
 import { logout } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
@@ -19,6 +19,7 @@ import { CheckCircleIcon, ClockIcon, DropIcon, BuildingIcon } from '@/components
 import { Timestamp } from 'firebase/firestore'
 import Modal from '@/components/ui/Modal'
 import { authenticatedFetch } from '@/lib/api-client'
+import type { Organization } from '@/types'
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
@@ -34,10 +35,31 @@ export default function ProfilePage() {
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [memberOrganizations, setMemberOrganizations] = useState<Organization[]>([])
+  const [organizationsLoading, setOrganizationsLoading] = useState(true)
 
   useEffect(() => {
     if (user?.uid) getBloodRequestCountByUser(user.uid).then(setRequestCount)
   }, [user?.uid])
+
+  useEffect(() => {
+    if (!user?.uid) return
+    let active = true
+    setOrganizationsLoading(true)
+    getOrganizationsForUser(user.uid)
+      .then((organizations) => {
+        if (active) setMemberOrganizations(organizations)
+      })
+      .catch(() => {
+        if (active) setMemberOrganizations([])
+      })
+      .finally(() => {
+        if (active) setOrganizationsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [user?.uid, user?.organizations])
 
   if (!user) return (
     <div>
@@ -311,6 +333,51 @@ export default function ProfilePage() {
               value={user.role === 'superadmin' ? 'সুপার অ্যাডমিন' : user.role === 'admin' ? 'অ্যাডমিন' : 'ডোনার'}
             />
           </div>
+        )}
+
+        <div className="pt-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#AAA]">Organizations</p>
+          <h3 className="font-bold text-[#111111] mt-0.5">আমার সংগঠন</h3>
+        </div>
+        {organizationsLoading ? (
+          <div className="card h-20 animate-pulse bg-gray-100" />
+        ) : memberOrganizations.length > 0 ? (
+          <div className="space-y-2">
+            {memberOrganizations.map((organization) => {
+              const isAdmin = organization.adminIds.includes(user.uid)
+              return (
+                <a
+                  key={organization.id}
+                  href={`/organizations/${organization.id}`}
+                  className="card flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="w-10 h-10 shrink-0 rounded-xl bg-purple-50 flex items-center justify-center">
+                      <BuildingIcon className="w-5 h-5 stroke-purple-600" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-[#111111]">{organization.name}</p>
+                      <p className="truncate text-xs text-[#777777]">{organization.area || 'এলাকা দেওয়া নেই'}</p>
+                    </div>
+                  </div>
+                  <div className="ml-3 flex shrink-0 items-center gap-2">
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${isAdmin ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+                      {isAdmin ? 'অ্যাডমিন' : 'সদস্য'}
+                    </span>
+                    <span className="text-[#BBBBBB]">›</span>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+        ) : (
+          <a href="/organizations" className="card flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
+            <div>
+              <p className="font-medium text-[#111111]">কোনো সংগঠনে যোগ দেননি</p>
+              <p className="mt-0.5 text-xs text-[#777777]">সংগঠন খুঁজে যোগ দেওয়ার অনুরোধ করুন</p>
+            </div>
+            <span className="text-[#BBBBBB]">›</span>
+          </a>
         )}
 
         {/* Links */}
