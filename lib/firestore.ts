@@ -342,17 +342,21 @@ export const getOrganization = async (id: string): Promise<Organization | null> 
 
 export const getOrganizationsForUser = async (uid: string, organizationIds: string[] = []): Promise<Organization[]> => {
   const organizationsRef = collection(db, 'organizations')
-  const [memberSnap, adminSnap, linkedOrganizations] = await Promise.all([
-    getDocs(query(organizationsRef, where('memberIds', 'array-contains', uid))),
-    getDocs(query(organizationsRef, where('adminIds', 'array-contains', uid))),
-    Promise.all(organizationIds.map((organizationId) => getOrganization(organizationId))),
+  const [memberDocs, adminDocs, linkedOrganizations] = await Promise.all([
+    getDocs(query(organizationsRef, where('memberIds', 'array-contains', uid)))
+      .then(snapshot => snapshot.docs)
+      .catch(() => []),
+    getDocs(query(organizationsRef, where('adminIds', 'array-contains', uid)))
+      .then(snapshot => snapshot.docs)
+      .catch(() => []),
+    Promise.all((organizationIds ?? []).map((organizationId) => getOrganization(organizationId))),
   ])
 
   const organizations = new Map<string, Organization>()
   for (const organization of linkedOrganizations) {
     if (organization) organizations.set(organization.id, organization)
   }
-  for (const organizationDoc of [...memberSnap.docs, ...adminSnap.docs]) {
+  for (const organizationDoc of [...memberDocs, ...adminDocs]) {
     organizations.set(
       organizationDoc.id,
       { id: organizationDoc.id, ...organizationDoc.data() } as Organization

@@ -3,8 +3,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
-import { getUser, getUserFromServer, updateUser, getOrgsByAdmin } from '@/lib/firestore'
+import { getUserFromServer, updateUser, getOrgsByAdmin } from '@/lib/firestore'
 import { requestNotificationPermission } from '@/lib/notifications'
+import { authenticatedFetch } from '@/lib/api-client'
 import type { User, Organization } from '@/types'
 
 interface AuthContextType {
@@ -35,6 +36,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshUser = async () => {
     const currentUser = auth.currentUser
     if (!currentUser) return
+    await authenticatedFetch('/api/reconcile-org-membership', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: currentUser.uid }),
+    }).catch(() => null)
     const u = await getUserFromServer(currentUser.uid)
     setUser(u)
   }
@@ -52,8 +58,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         try {
         setProfileLoadError(false)
+        await authenticatedFetch('/api/reconcile-org-membership', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: fbUser.uid }),
+        }).catch(() => null)
+
         const [u, orgs] = await Promise.all([
-          getUser(fbUser.uid),
+          getUserFromServer(fbUser.uid),
           getOrgsByAdmin(fbUser.uid),
         ])
         setUser(u)
