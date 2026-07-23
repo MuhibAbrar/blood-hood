@@ -4,6 +4,9 @@ import { belongsToDistrict, resolveDistrict } from '@/lib/location'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+// Firebase Admin can take longer on a cold serverless start. Give the first
+// request enough time to establish its secure connection instead of failing.
+export const maxDuration = 30
 
 const NO_STORE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
