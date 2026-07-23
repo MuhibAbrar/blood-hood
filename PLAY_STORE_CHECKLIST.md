@@ -68,15 +68,15 @@ Completed:
 - Compile SDK 36, target SDK 35, minimum SDK 23.
 - Only notification permission is requested by the app; no location, contacts,
   SMS, call log, camera, microphone, or storage permissions are declared.
-- Unsigned release APK and AAB compile successfully.
+- Signed release APK and AAB compile successfully.
+- Upload certificate fingerprint is published in the source Asset Links file.
 
 Before publishing:
 
-1. Create or securely restore the production upload signing key.
+1. Back up the production upload keystore and password in two secure locations.
 2. Enroll in Play App Signing and copy the Play app-signing SHA-256 fingerprint.
-3. Replace the fingerprint placeholder in `android/assetlinks.template.json`,
-   publish it as `/.well-known/assetlinks.json`, and verify the public URL.
-4. Generate the signed production `.aab`.
-5. Test install, login, OTP, notification opt-in, account deletion, offline behavior, and external phone links on a physical Android device.
-6. Complete Data Safety, Health Apps, Content Rating, Target Audience, App Access, Ads, and Account Deletion sections in Play Console.
-7. Upload store listing assets and submit to a testing track before production rollout.
+3. Add the Play app-signing fingerprint beside the upload fingerprint in
+   `public/.well-known/assetlinks.json` and verify the public URL.
+4. Test install, login, OTP, notification opt-in, account deletion, offline behavior, and external phone links on a physical Android device.
+5. Complete Data Safety, Health Apps, Content Rating, Target Audience, App Access, Ads, and Account Deletion sections in Play Console.
+6. Upload store listing assets and submit the signed AAB to a testing track before production rollout.

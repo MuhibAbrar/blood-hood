@@ -7,6 +7,7 @@
       "namespace": "android_app",
       "package_name": "com.bloodhood.app",
       "sha256_cert_fingerprints": [
+        "9C:A2:83:B4:2C:52:16:20:24:F4:92:F8:BD:4B:6C:A5:0B:1C:30:11:83:86:BB:C8:A1:DE:B1:17:63:FE:AA:68",
         "REPLACE_WITH_PLAY_APP_SIGNING_SHA256"
       ]
     }

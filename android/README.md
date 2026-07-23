@@ -8,7 +8,10 @@ Production Trusted Web Activity wrapper for `https://bloodhood.pro.bd`.
 - The Play App Signing SHA-256 fingerprint must be added to
   `public/.well-known/assetlinks.json` after the app is created in Play Console.
 - `assetlinks.template.json` contains the production package ID and the
-  fingerprint placeholder.
+  upload certificate plus the Play app-signing fingerprint placeholder.
+- The public Asset Links file currently verifies locally signed builds with the
+  upload certificate. Add the separate Play app-signing certificate before
+  production rollout.
 
 Generate/update the native project with Bubblewrap:
 
