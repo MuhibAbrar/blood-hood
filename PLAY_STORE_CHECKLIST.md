@@ -58,19 +58,25 @@ These answers must be checked again against the final Android wrapper and every 
 - The app is not a hospital, blood bank, diagnostic tool, treatment provider, or medical device.
 - Store listing and in-app descriptions must not claim medical diagnosis, treatment, or guaranteed blood availability.
 
-## Android release project still required
+## Android release status
 
-This repository contains the Next.js PWA, but no Android project (`AndroidManifest.xml`, Gradle project, package name, signing configuration, or AAB build).
+Completed:
+
+- Production Trusted Web Activity project created under `android/`.
+- Permanent package name: `com.bloodhood.app`.
+- Version `1.0.0`, version code `1`.
+- Compile SDK 36, target SDK 35, minimum SDK 23.
+- Only notification permission is requested by the app; no location, contacts,
+  SMS, call log, camera, microphone, or storage permissions are declared.
+- Unsigned release APK and AAB compile successfully.
 
 Before publishing:
 
-1. Create the production Android wrapper (normally a Trusted Web Activity for `bloodhood.pro.bd`).
-2. Choose the permanent package name.
-3. Add and verify Digital Asset Links at `/.well-known/assetlinks.json`.
-4. Set current Play-required target SDK and compile SDK.
-5. Request only `INTERNET` and notification permission if the wrapper actually needs it; do not add location, contacts, SMS, call log, camera, microphone, or storage permissions.
-6. Configure production signing and Play App Signing.
-7. Generate a signed `.aab`.
-8. Test install, login, OTP, notification opt-in, account deletion, offline behavior, and external phone links on a physical Android device.
-9. Complete Data Safety, Health Apps, Content Rating, Target Audience, App Access, Ads, and Account Deletion sections in Play Console.
-10. Upload store listing assets and submit to a testing track before production rollout.
+1. Create or securely restore the production upload signing key.
+2. Enroll in Play App Signing and copy the Play app-signing SHA-256 fingerprint.
+3. Replace the fingerprint placeholder in `android/assetlinks.template.json`,
+   publish it as `/.well-known/assetlinks.json`, and verify the public URL.
+4. Generate the signed production `.aab`.
+5. Test install, login, OTP, notification opt-in, account deletion, offline behavior, and external phone links on a physical Android device.
+6. Complete Data Safety, Health Apps, Content Rating, Target Audience, App Access, Ads, and Account Deletion sections in Play Console.
+7. Upload store listing assets and submit to a testing track before production rollout.
