@@ -400,6 +400,13 @@ export default function ProfilePage() {
             </div>
             <span className="text-[#BBBBBB]">›</span>
           </a>
+          <a href="/privacy-policy" className="flex items-center justify-between p-4 active:bg-[#FAFAFA] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-sm" aria-hidden>🔒</span>
+              <span className="font-medium text-[#111111]">গোপনীয়তা নীতি</span>
+            </div>
+            <span className="text-[#BBBBBB]">›</span>
+          </a>
         </div>
 
         <button
@@ -421,6 +428,9 @@ export default function ProfilePage() {
             <div className="rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-900">
               <p className="font-semibold">এই কাজটি আর ফিরিয়ে নেওয়া যাবে না।</p>
               <p className="mt-1">আপনার লগইন ও ব্যক্তিগত তথ্য মুছে যাবে। সেবার রেকর্ড ঠিক রাখতে পুরোনো রক্তদান ও রক্তের অনুরোধ পরিচয়বিহীনভাবে সংরক্ষিত হতে পারে।</p>
+              <a href="/privacy-policy" className="mt-2 inline-block font-semibold underline underline-offset-2">
+                তথ্য কীভাবে পরিচালিত হয় দেখুন
+              </a>
             </div>
             <div>
               <label className="block text-sm font-medium text-[#111111] mb-1.5">

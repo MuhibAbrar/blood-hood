@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/lib/firestore'
+import { getNotifications, markNotificationRead, markAllNotificationsRead, updateUser } from '@/lib/firestore'
 import TopBar from '@/components/layout/TopBar'
 import type { Notification } from '@/types'
+import { requestNotificationPermission } from '@/lib/notifications'
+import { useToast } from '@/components/ui/Toast'
 
 const typeIcon = (type: Notification['type']) => ({
   blood_request: '🩸',
@@ -28,9 +30,16 @@ const timeAgo = (date: Date): string => {
 
 export default function NotificationsPage() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const [enablingPush, setEnablingPush] = useState(false)
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>('default')
+
+  useEffect(() => {
+    setPushPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission)
+  }, [])
 
   const load = async () => {
     if (!user) return
@@ -64,6 +73,31 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
   }
 
+  const handleEnablePush = async () => {
+    if (!user) return
+    setEnablingPush(true)
+    try {
+      const token = await requestNotificationPermission()
+      const permission = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+      setPushPermission(permission)
+      if (!token) {
+        showToast(
+          permission === 'denied'
+            ? 'Browser settings থেকে notification permission চালু করুন'
+            : 'Notification চালু করা যায়নি',
+          'error'
+        )
+        return
+      }
+      await updateUser(user.uid, { fcmToken: token })
+      showToast('Push notification চালু হয়েছে', 'success')
+    } catch {
+      showToast('Notification চালু করা যায়নি', 'error')
+    } finally {
+      setEnablingPush(false)
+    }
+  }
+
   return (
     <div>
       <TopBar
@@ -82,6 +116,22 @@ export default function NotificationsPage() {
       />
 
       <div className="px-4 py-4">
+        {pushPermission !== 'granted' && pushPermission !== 'unsupported' && (
+          <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <p className="font-semibold text-[#111111]">জরুরি রক্তের খবর পেতে চান?</p>
+            <p className="mt-1 text-xs leading-5 text-[#555555]">
+              আপনার অনুমতি দিলে জরুরি রক্তের অনুরোধ ও গুরুত্বপূর্ণ আপডেট push notification-এ পাঠানো হবে।
+            </p>
+            <button
+              onClick={handleEnablePush}
+              disabled={enablingPush}
+              className="mt-3 rounded-xl bg-[#D92B2B] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {enablingPush ? 'চালু হচ্ছে...' : 'Notification চালু করুন'}
+            </button>
+          </div>
+        )}
+
         {/* Unread badge */}
         {unreadCount > 0 && (
           <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">

@@ -3,8 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
-import { getUserFromServer, updateUser, getOrgsByAdmin } from '@/lib/firestore'
-import { requestNotificationPermission } from '@/lib/notifications'
+import { getUserFromServer, getOrgsByAdmin } from '@/lib/firestore'
 import { authenticatedFetch } from '@/lib/api-client'
 import type { User, Organization } from '@/types'
 
@@ -72,11 +71,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setOrgAdmins(orgs)
 
         // FCM token update in background — don't block
-        requestNotificationPermission().then((token) => {
-          if (token && u && u.fcmToken !== token) {
-            updateUser(fbUser.uid, { fcmToken: token }).catch(() => {})
-          }
-        }).catch(() => {})
         } catch (error) {
           console.error('Unable to load authenticated profile:', error)
           setProfileLoadError(true)

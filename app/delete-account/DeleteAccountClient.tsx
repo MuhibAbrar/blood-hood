@@ -55,6 +55,9 @@ export default function DeleteAccountClient() {
               <li>সেবার ইতিহাস ও নিরাপত্তার জন্য পুরোনো রক্তদান বা অনুরোধ পরিচয়বিহীনভাবে রাখা হতে পারে।</li>
               <li>এই কাজটি শেষ হলে অ্যাকাউন্ট ফিরিয়ে আনা যাবে না।</li>
             </ul>
+            <Link href="/privacy-policy" className="mt-3 inline-block font-semibold text-[#D92B2B] underline underline-offset-2">
+              সম্পূর্ণ গোপনীয়তা নীতি পড়ুন
+            </Link>
           </div>
 
           {loading ? (
