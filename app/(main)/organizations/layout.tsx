@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'রক্তদান সংগঠন — Blood Organizations Khulna',
-  description: 'খুলনার রক্তদান সংগঠনগুলোর তালিকা। কলেজ, বিশ্ববিদ্যালয়, NGO, হাসপাতাল ও কমিউনিটি সংগঠনে যোগ দিন এবং একসাথে রক্তদান করুন।',
+  title: 'বাংলাদেশের রক্তদান সংগঠন — Blood Organizations',
+  description: 'বাংলাদেশের রক্তদান সংগঠনগুলোর তালিকা দেখুন। কলেজ, বিশ্ববিদ্যালয়, NGO, হাসপাতাল ও কমিউনিটি সংগঠনে যোগ দিন।',
   alternates: { canonical: '/organizations' },
   openGraph: {
-    title: 'রক্তদান সংগঠন — Blood Hood Khulna',
-    description: 'খুলনার রক্তদান সংগঠনে যোগ দিন এবং সম্মিলিতভাবে জীবন বাঁচান।',
+    title: 'বাংলাদেশের রক্তদান সংগঠন — Blood Hood',
+    description: 'আপনার এলাকার রক্তদান সংগঠন খুঁজুন, সদস্য হোন এবং সম্মিলিতভাবে মানুষের পাশে দাঁড়ান।',
   },
 }
 

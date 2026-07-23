@@ -12,10 +12,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: 'রক্তের অনুরোধ — Blood Hood',
-    description: 'Blood Hood — খুলনার কমিউনিটি রক্তদান প্ল্যাটফর্ম',
+    description: 'Blood Hood — বাংলাদেশের কমিউনিটি রক্তদান প্ল্যাটফর্ম',
     openGraph: {
       title: 'রক্তের অনুরোধ — Blood Hood',
-      description: 'Blood Hood — খুলনার কমিউনিটি রক্তদান প্ল্যাটফর্ম',
+      description: 'Blood Hood — বাংলাদেশের কমিউনিটি রক্তদান প্ল্যাটফর্ম',
       url: pageUrl,
       siteName: 'Blood Hood',
       type: 'website',

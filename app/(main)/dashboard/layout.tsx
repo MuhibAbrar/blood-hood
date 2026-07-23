@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'হোম — রক্তদান ড্যাশবোর্ড',
-  description: 'Blood Hood ড্যাশবোর্ড — খুলনার সাম্প্রতিক রক্তের অনুরোধ, প্ল্যাটফর্ম পরিসংখ্যান এবং রক্তদাতাদের তথ্য দেখুন।',
+  title: 'বাংলাদেশের রক্তদাতা ও জরুরি রক্ত — হোম',
+  description: 'Blood Hood-এ বাংলাদেশের সাম্প্রতিক জরুরি রক্তের অনুরোধ, রক্তদাতা, রক্তদান ক্যাম্প, সংগঠন ও প্ল্যাটফর্ম পরিসংখ্যান দেখুন।',
   alternates: { canonical: '/dashboard' },
 }
 

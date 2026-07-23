@@ -13,6 +13,11 @@ export default function robots(): MetadataRoute.Robots {
           '/organizations',
           '/leaderboard',
           '/camps',
+          '/about',
+          '/contact',
+          '/terms',
+          '/privacy-policy',
+          '/delete-account',
         ],
         disallow: [
           '/admin',

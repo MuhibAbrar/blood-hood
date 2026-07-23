@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'রক্তদাতা খুঁজুন — Blood Donors Khulna',
-  description: 'খুলনার সকল রক্তদাতাদের তালিকা। রক্তের গ্রুপ, এলাকা ও উপজেলা অনুযায়ী রক্তদাতা খুঁজুন — A+, A-, B+, B-, AB+, AB-, O+, O-।',
+  title: 'বাংলাদেশে রক্তদাতা খুঁজুন — Blood Donors',
+  description: 'বাংলাদেশে জেলা, উপজেলা ও রক্তের গ্রুপ অনুযায়ী রক্তদাতা খুঁজুন—A+, A-, B+, B-, AB+, AB-, O+ ও O-।',
   alternates: { canonical: '/donors' },
   openGraph: {
-    title: 'রক্তদাতা খুঁজুন — Blood Hood Khulna',
-    description: 'খুলনায় রক্তের প্রয়োজন? এখনই আপনার গ্রুপের রক্তদাতা খুঁজুন।',
+    title: 'বাংলাদেশে রক্তদাতা খুঁজুন — Blood Hood',
+    description: 'রক্তের প্রয়োজন? জেলা, উপজেলা ও রক্তের গ্রুপ নির্বাচন করে রক্তদাতা খুঁজুন।',
   },
 }
 

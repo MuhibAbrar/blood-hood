@@ -11,15 +11,16 @@ const BASE_URL = 'https://bloodhood.pro.bd'
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: 'Blood Hood — খুলনার রক্তদান প্ল্যাটফর্ম',
+    default: 'Blood Hood — বাংলাদেশের রক্তদাতা ও জরুরি রক্ত খোঁজার প্ল্যাটফর্ম',
     template: '%s | Blood Hood',
   },
-  description: 'Blood Hood — খুলনার কমিউনিটি রক্তদান প্ল্যাটফর্ম। রক্তদাতা খুঁজুন, জরুরি রক্তের অনুরোধ করুন, রক্তদান ক্যাম্পে অংশ নিন। Khulna blood donor finder — A+, A-, B+, B-, AB+, AB-, O+, O-.',
+  description: 'Blood Hood বাংলাদেশের একটি বিনামূল্যের কমিউনিটি রক্তদান প্ল্যাটফর্ম। জেলা, উপজেলা ও রক্তের গ্রুপ অনুযায়ী রক্তদাতা খুঁজুন, জরুরি রক্তের অনুরোধ করুন এবং রক্তদান ক্যাম্প ও সংগঠনের সঙ্গে যুক্ত হোন।',
   keywords: [
-    'blood donation Khulna', 'রক্তদান খুলনা', 'রক্তদাতা খুঁজুন', 'blood donor Bangladesh',
-    'রক্তের প্রয়োজন', 'blood need Khulna', 'খুলনা রক্তদান', 'Blood Hood', 'রক্তের বন্ধন',
-    'A+ blood Khulna', 'O+ blood donor', 'blood camp Khulna', 'রক্তদান ক্যাম্প',
-    'emergency blood Bangladesh', 'জরুরি রক্ত', 'free blood donation app',
+    'blood donor Bangladesh', 'রক্তদাতা বাংলাদেশ', 'রক্তদাতা খুঁজুন', 'blood donation Bangladesh',
+    'জরুরি রক্তের প্রয়োজন', 'emergency blood Bangladesh', 'Blood Hood', 'রক্তের বন্ধন',
+    'A+ blood donor', 'O+ blood donor', 'blood donation camp Bangladesh', 'রক্তদান ক্যাম্প',
+    'রক্তদান অ্যাপ', 'free blood donation app', 'ঢাকা রক্তদাতা', 'খুলনা রক্তদাতা',
+    'চট্টগ্রাম রক্তদাতা', 'রাজশাহী রক্তদাতা', 'সিলেট রক্তদাতা', 'বরিশাল রক্তদাতা',
   ],
   authors: [{ name: 'Blood Hood', url: BASE_URL }],
   creator: 'Blood Hood',
@@ -34,21 +35,21 @@ export const metadata: Metadata = {
     locale: 'bn_BD',
     url: BASE_URL,
     siteName: 'Blood Hood',
-    title: 'Blood Hood — খুলনার রক্তদান প্ল্যাটফর্ম',
-    description: 'রক্তদাতা খুঁজুন, জরুরি রক্তের অনুরোধ করুন — খুলনার সবচেয়ে বড় কমিউনিটি রক্তদান নেটওয়ার্ক।',
+    title: 'Blood Hood — বাংলাদেশের রক্তদাতা ও জরুরি রক্ত খোঁজার প্ল্যাটফর্ম',
+    description: 'জেলা, উপজেলা ও রক্তের গ্রুপ অনুযায়ী রক্তদাতা খুঁজুন, জরুরি রক্তের অনুরোধ করুন এবং রক্তদান কমিউনিটির সঙ্গে যুক্ত হোন।',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Blood Hood — খুলনার রক্তদান প্ল্যাটফর্ম',
+        alt: 'Blood Hood — বাংলাদেশের কমিউনিটি রক্তদান প্ল্যাটফর্ম',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blood Hood — খুলনার রক্তদান প্ল্যাটফর্ম',
-    description: 'রক্তদাতা খুঁজুন, জরুরি রক্তের অনুরোধ করুন — খুলনার কমিউনিটি রক্তদান নেটওয়ার্ক।',
+    title: 'Blood Hood — বাংলাদেশের রক্তদাতা খোঁজার প্ল্যাটফর্ম',
+    description: 'বাংলাদেশে রক্তদাতা খুঁজুন, জরুরি রক্তের অনুরোধ করুন এবং স্বেচ্ছায় রক্তদান করুন।',
     images: ['/og-image.png'],
   },
   robots: {
@@ -85,24 +86,44 @@ export const viewport: Viewport = {
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: 'Blood Hood',
-  url: BASE_URL,
-  description: 'খুলনার কমিউনিটি রক্তদান প্ল্যাটফর্ম — রক্তদাতা খুঁজুন, রক্তের অনুরোধ করুন, ক্যাম্পে অংশ নিন।',
-  applicationCategory: 'HealthApplication',
-  operatingSystem: 'Web, Android, iOS',
-  inLanguage: 'bn',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'BDT' },
-  areaServed: {
-    '@type': 'City',
-    name: 'Khulna',
-    addressCountry: 'BD',
-  },
-  provider: {
-    '@type': 'Organization',
-    name: 'Blood Hood',
-    url: BASE_URL,
-  },
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${BASE_URL}/#website`,
+      name: 'Blood Hood',
+      alternateName: 'রক্তের বন্ধন',
+      url: BASE_URL,
+      inLanguage: 'bn-BD',
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': `${BASE_URL}/#app`,
+      name: 'Blood Hood',
+      url: BASE_URL,
+      description: 'বাংলাদেশের কমিউনিটি রক্তদান প্ল্যাটফর্ম—জেলা, উপজেলা ও রক্তের গ্রুপ অনুযায়ী রক্তদাতা খুঁজুন, রক্তের অনুরোধ করুন এবং ক্যাম্পে অংশ নিন।',
+      applicationCategory: 'HealthApplication',
+      operatingSystem: 'Web, Android, iOS',
+      inLanguage: ['bn-BD', 'en'],
+      featureList: [
+        'জেলা ও উপজেলা অনুযায়ী রক্তদাতা খোঁজা',
+        'জরুরি রক্তের অনুরোধ',
+        'রক্তদান ক্যাম্প',
+        'রক্তদান সংগঠন',
+        'রক্তদাতা লিডারবোর্ড',
+      ],
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BDT' },
+      areaServed: {
+        '@type': 'Country',
+        name: 'Bangladesh',
+        alternateName: 'বাংলাদেশ',
+      },
+      provider: {
+        '@type': 'Organization',
+        name: 'Blood Hood',
+        url: BASE_URL,
+      },
+    },
+  ],
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -36,7 +36,7 @@ export async function GET() {
 
         {/* Tagline */}
         <div style={{ fontSize: '32px', color: 'rgba(255,255,255,0.85)', marginTop: '16px', display: 'flex', fontFamily: 'NotoSansBengali' }}>
-          খুলনার কমিউনিটি রক্তদান প্ল্যাটফর্ম
+          বাংলাদেশের কমিউনিটি রক্তদান প্ল্যাটফর্ম
         </div>
 
         {/* Features row */}
