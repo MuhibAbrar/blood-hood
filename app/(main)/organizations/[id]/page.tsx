@@ -85,7 +85,13 @@ export default function OrgDetailPage() {
   if (loading) return <div className="px-4 py-4 animate-pulse"><div className="card h-48 bg-gray-100" /></div>
   if (!org) return <div className="px-4 py-8 text-center text-[#555555]">সংগঠন পাওয়া যায়নি</div>
 
-  const isMember = user ? (org.memberIds.includes(user.uid) || org.adminIds.includes(user.uid)) : false
+  const isMember = user
+    ? (
+        org.memberIds.includes(user.uid)
+        || org.adminIds.includes(user.uid)
+        || user.organizations.includes(org.id)
+      )
+    : false
   const isAdmin = user ? org.adminIds.includes(user.uid) : false
   const isLastAdmin = isAdmin && org.adminIds.length <= 1
   const hasPendingRequest = !!joinRequest
