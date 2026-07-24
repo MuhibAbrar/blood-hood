@@ -20,6 +20,8 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true)
   const [cleaning, setCleaning] = useState(false)
   const [message, setMessage] = useState('')
+  const [legacyUsers, setLegacyUsers] = useState<number | null>(null)
+  const [migrating, setMigrating] = useState(false)
 
   const loadPreview = useCallback(async () => {
     setLoading(true)
@@ -36,6 +38,12 @@ export default function MaintenancePage() {
   }, [])
 
   useEffect(() => { loadPreview() }, [loadPreview])
+
+  useEffect(() => {
+    authenticatedFetch('/api/admin/migrate-legacy-districts', { cache: 'no-store' })
+      .then(async (response) => response.ok ? setLegacyUsers((await response.json()).legacyUsers) : null)
+      .catch(() => {})
+  }, [])
 
   const runCleanup = async () => {
     if (!preview || !window.confirm(
@@ -60,6 +68,26 @@ export default function MaintenancePage() {
     }
   }
 
+  const migrateLegacyUsers = async () => {
+    if (legacyUsers === null || !window.confirm(
+      `District ফাঁকা থাকা ${legacyUsers} জন পুরোনো member-কে খুলনা জেলার member হিসেবে update করবেন?`
+    )) return
+
+    setMigrating(true)
+    setMessage('')
+    try {
+      const response = await authenticatedFetch('/api/admin/migrate-legacy-districts', { method: 'POST' })
+      if (!response.ok) throw new Error('migration-failed')
+      const result = await response.json() as { updated: number }
+      setLegacyUsers(0)
+      setMessage(`${result.updated} জন পুরোনো member-এর district খুলনা করা হয়েছে।`)
+    } catch {
+      setMessage('পুরোনো member migration করা যায়নি। আবার চেষ্টা করুন।')
+    } finally {
+      setMigrating(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -74,6 +102,25 @@ export default function MaintenancePage() {
           <li>• Cancelled blood request: ৯০ দিন পর মুছে যাবে</li>
           <li>• Fulfilled request ও donation history: স্বয়ংক্রিয়ভাবে মুছবে না</li>
         </ul>
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <h2 className="font-semibold text-[#111]">Legacy Khulna members</h2>
+        <p className="mt-2 text-sm leading-6 text-[#666]">
+          জেলা feature যোগ করার আগের যেসব member-এর district ফাঁকা আছে, শুধু তাদের খুলনা হিসেবে update করবে।
+          আগে থেকে district থাকা কোনো member পরিবর্তন হবে না।
+        </p>
+        <p className="mt-3 text-sm font-semibold text-amber-800">
+          {legacyUsers === null ? 'হিসাব হচ্ছে...' : `${legacyUsers} জন member update করা বাকি`}
+        </p>
+        <button
+          type="button"
+          onClick={migrateLegacyUsers}
+          disabled={migrating || legacyUsers === null || legacyUsers === 0}
+          className="mt-4 rounded-xl bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {migrating ? 'Update হচ্ছে...' : 'District খুলনা করুন'}
+        </button>
       </div>
 
       <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
