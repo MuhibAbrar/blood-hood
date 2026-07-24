@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { getUser, getDonationsByUser, logContactEvent, checkAndIncrementDailyContact } from '@/lib/firestore'
+import { getUser, getDonationsByUser } from '@/lib/firestore'
+import { authenticatedFetch } from '@/lib/api-client'
 import { useAuth } from '@/context/AuthContext'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
@@ -22,6 +23,8 @@ export default function DonorProfilePage() {
   const [donations, setDonations] = useState<Donation[]>([])
   const [loading, setLoading] = useState(true)
   const [revealed, setRevealed] = useState(false)   // must be above early returns
+  const [revealedPhone, setRevealedPhone] = useState('')
+  const [contactLoading, setContactLoading] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -40,16 +43,36 @@ export default function DonorProfilePage() {
   const daysSinceDonation = donor.lastDonatedAt ? daysSince(donor.lastDonatedAt.toDate()) : null
 
   const handleContact = async () => {
-    if (!currentUser) return
-    if (currentUser.uid !== donor.uid && !isSuperAdmin) {
-      const allowed = await checkAndIncrementDailyContact(currentUser.uid)
-      if (!allowed) {
-        showToast('আজকের জন্য সর্বোচ্চ ১০টি নম্বর দেখা হয়ে গেছে। কাল আবার চেষ্টা করুন।', 'error')
+    if (!currentUser || contactLoading) return
+    setContactLoading(true)
+    try {
+      const response = await authenticatedFetch('/api/donors/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ donorId: donor.uid }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        if (response.status === 429) {
+          showToast('আজকের জন্য সর্বোচ্চ ১০টি নম্বর দেখা হয়ে গেছে। কাল আবার চেষ্টা করুন।', 'error')
+        } else if (response.status === 409) {
+          showToast('ডোনার বর্তমানে Available নেই।', 'error')
+        } else {
+          showToast('নম্বর দেখানো যায়নি। আবার চেষ্টা করুন।', 'error')
+        }
         return
       }
-      logContactEvent(currentUser.uid, donor).catch(() => {})
+      if (typeof result.phone !== 'string' || !result.phone) {
+        showToast('এই ডোনারের ফোন নম্বর পাওয়া যায়নি।', 'error')
+        return
+      }
+      setRevealedPhone(result.phone)
+      setRevealed(true)
+    } catch {
+      showToast('নেটওয়ার্ক সমস্যার কারণে নম্বর দেখানো যায়নি। আবার চেষ্টা করুন।', 'error')
+    } finally {
+      setContactLoading(false)
     }
-    setRevealed(true)
   }
 
   return (
@@ -91,13 +114,13 @@ export default function DonorProfilePage() {
         ) : showContact ? (
           revealed ? (
             /* Number revealed — tap to call */
-            <a href={`tel:${donor.phone}`} className="btn-primary w-full text-center flex items-center justify-center gap-2">
-              <PhoneIcon className="w-4 h-4 stroke-white" /> {donor.phone} — কল করুন
+            <a href={`tel:${revealedPhone}`} className="btn-primary w-full text-center flex items-center justify-center gap-2">
+              <PhoneIcon className="w-4 h-4 stroke-white" /> {revealedPhone} — কল করুন
             </a>
           ) : (
             /* First tap: log the event, then show number */
-            <button onClick={handleContact} className="btn-primary w-full flex items-center justify-center gap-2">
-              <PhoneIcon className="w-4 h-4 stroke-white" /> নম্বর দেখুন ও যোগাযোগ করুন
+            <button onClick={handleContact} disabled={contactLoading} className="btn-primary w-full flex items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-70">
+              <PhoneIcon className="w-4 h-4 stroke-white" /> {contactLoading ? 'নম্বর লোড হচ্ছে...' : 'নম্বর দেখুন ও যোগাযোগ করুন'}
             </button>
           )
         ) : (
