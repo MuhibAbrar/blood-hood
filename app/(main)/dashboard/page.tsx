@@ -11,11 +11,6 @@ import ConsentModal from '@/components/ui/ConsentModal'
 import type { BloodRequest } from '@/types'
 import { DropIcon, UsersIcon, ClockIcon, TentIcon, BuildingIcon, ChartBarIcon, BellIcon, CheckCircleIcon, GiftIcon } from '@/components/ui/Icons'
 
-const VOWEL_MATRAS = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ো', 'ৌ', 'ঁ']
-function districtGenitive(d: string) {
-  return VOWEL_MATRAS.includes(d.slice(-1)) ? `${d}র` : `${d}এর`
-}
-
 interface Stats {
   totalMembers: number
   availableNow: number
@@ -25,7 +20,7 @@ interface Stats {
 }
 
 export default function DashboardPage() {
-  const { user, firebaseUser } = useAuth()
+  const { firebaseUser } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
@@ -40,9 +35,7 @@ export default function DashboardPage() {
         setStatsError(false)
         const headers = new Headers()
         if (firebaseUser) headers.set('Authorization', `Bearer ${await firebaseUser.getIdToken()}`)
-        const district = user?.district?.trim()
-        const query = district ? `?district=${encodeURIComponent(district)}` : ''
-        const response = await fetch(`/api/public/dashboard${query}`, { headers, cache: 'no-store' })
+        const response = await fetch('/api/public/dashboard', { headers, cache: 'no-store' })
         if (!response.ok) throw new Error('Dashboard request failed')
         const data = await response.json()
         if (cancelled) return
@@ -67,7 +60,7 @@ export default function DashboardPage() {
     }
     load()
     return () => { cancelled = true }
-  }, [firebaseUser, user?.district, retryKey])
+  }, [firebaseUser, retryKey])
 
   return (
     <div className="pb-8">
@@ -78,9 +71,7 @@ export default function DashboardPage() {
       <div className="px-4 mt-4 space-y-5">
         {/* পরিসংখ্যান */}
         <div>
-          <h3 className="font-semibold text-[#111111] mb-3">
-            {user?.district ? `${districtGenitive(user.district)} পরিসংখ্যান` : 'প্ল্যাটফর্ম পরিসংখ্যান'}
-          </h3>
+          <h3 className="font-semibold text-[#111111] mb-3">প্ল্যাটফর্ম পরিসংখ্যান</h3>
           {statsError && (
             <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5">
               <p className="text-xs font-medium text-[#B82424]">পরিসংখ্যান লোড করা যায়নি। আপনার data মুছে যায়নি।</p>
