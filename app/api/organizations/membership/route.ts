@@ -5,9 +5,12 @@ import { ApiAuthError, authErrorResponse, requireOrgAdmin } from '@/lib/api-auth
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, orgId, uid, requestId } = await req.json()
-    if (!['accept', 'reject', 'remove'].includes(action) || typeof orgId !== 'string') {
+    const { action, orgId, uid, requestId, isAvailable } = await req.json()
+    if (!['accept', 'reject', 'remove', 'availability'].includes(action) || typeof orgId !== 'string') {
       return NextResponse.json({ error: 'Invalid membership action' }, { status: 400 })
+    }
+    if (action === 'availability' && typeof isAvailable !== 'boolean') {
+      return NextResponse.json({ error: 'Availability status required' }, { status: 400 })
     }
     await requireOrgAdmin(req, orgId)
     const db = adminDb()
@@ -26,6 +29,28 @@ export async function POST(req: NextRequest) {
         return
       }
       if (!userRef || !userSnap?.exists) throw new ApiAuthError(404, 'User not found')
+      if (action === 'availability') {
+        const org = orgSnap.data()!
+        const user = userSnap.data()!
+        const isMember = org.memberIds?.includes(uid) || org.adminIds?.includes(uid)
+        if (!isMember) throw new ApiAuthError(403, 'User is not a member of this organization')
+        if (user.manuallyAdded !== true) {
+          throw new ApiAuthError(403, 'Only manually added members can be managed')
+        }
+        if (isAvailable) {
+          const lastDonatedAtMs = user.lastDonatedAt?.toMillis?.() ?? 0
+          const nextAvailableAtMs = user.nextAvailableAt?.toMillis?.()
+            ?? (lastDonatedAtMs ? lastDonatedAtMs + 90 * 24 * 60 * 60 * 1000 : 0)
+          if (nextAvailableAtMs > Date.now()) {
+            throw new ApiAuthError(409, 'Donation cooldown active')
+          }
+        }
+        tx.update(userRef, {
+          isAvailable,
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+        return
+      }
       if (action === 'accept') {
         if (!joinSnap?.exists || joinSnap.data()?.orgId !== orgId || joinSnap.data()?.userId !== uid || joinSnap.data()?.status !== 'pending') throw new ApiAuthError(409, 'Join request is no longer pending')
         const organizations: string[] = userSnap.data()?.organizations ?? []

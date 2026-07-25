@@ -28,6 +28,7 @@ export default function OrgMembersPage() {
   const [searching, setSearching] = useState(false)
   const [adding, setAdding] = useState(false)
   const [processingReq, setProcessingReq] = useState<string | null>(null)
+  const [updatingAvailability, setUpdatingAvailability] = useState<string | null>(null)
   const [showManualModal, setShowManualModal] = useState(false)
   const [manualLoading, setManualLoading] = useState(false)
   const [manualForm, setManualForm] = useState({
@@ -204,6 +205,43 @@ export default function OrgMembersPage() {
     }
   }
 
+  const handleAvailability = async (member: User) => {
+    if (!org || !member.manuallyAdded || updatingAvailability) return
+    setUpdatingAvailability(member.uid)
+    try {
+      const response = await authenticatedFetch('/api/organizations/membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'availability',
+          orgId: org.id,
+          uid: member.uid,
+          isAvailable: !member.isAvailable,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        if (result.error === 'Donation cooldown active') {
+          showToast('এই সদস্যের রক্তদানের ৯০ দিনের বিরতি এখনো শেষ হয়নি', 'error')
+        } else {
+          showToast('রক্তদানের অবস্থা পরিবর্তন করা যায়নি', 'error')
+        }
+        return
+      }
+      setMembers(current => current.map(item =>
+        item.uid === member.uid ? { ...item, isAvailable: !member.isAvailable } : item
+      ))
+      showToast(
+        !member.isAvailable ? 'সদস্যকে Available করা হয়েছে ✓' : 'সদস্যকে Unavailable করা হয়েছে',
+        !member.isAvailable ? 'success' : 'info'
+      )
+    } catch {
+      showToast('রক্তদানের অবস্থা পরিবর্তন করা যায়নি', 'error')
+    } finally {
+      setUpdatingAvailability(null)
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -342,11 +380,27 @@ export default function OrgMembersPage() {
                     <p className="text-[10px] text-[#555555]">দান</p>
                   </div>
 
-                  <span className={`text-[10px] px-2 py-1 rounded-full font-medium shrink-0 hidden sm:inline ${
-                    m.isAvailable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-[#555555]'
-                  }`}>
-                    {m.isAvailable ? '● আছেন' : '○ নেই'}
-                  </span>
+                  {m.manuallyAdded ? (
+                    <button
+                      type="button"
+                      onClick={() => handleAvailability(m)}
+                      disabled={updatingAvailability === m.uid}
+                      title="রক্তদানের অবস্থা পরিবর্তন করুন"
+                      className={`text-[10px] px-2.5 py-1.5 rounded-full font-semibold shrink-0 transition-colors disabled:opacity-50 ${
+                        m.isAvailable
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-[#555555] hover:bg-gray-200'
+                      }`}
+                    >
+                      {updatingAvailability === m.uid ? '...' : m.isAvailable ? '● Available' : '○ Unavailable'}
+                    </button>
+                  ) : (
+                    <span className={`text-[10px] px-2 py-1 rounded-full font-medium shrink-0 hidden sm:inline ${
+                      m.isAvailable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-[#555555]'
+                    }`}>
+                      {m.isAvailable ? '● আছেন' : '○ নেই'}
+                    </span>
+                  )}
 
                   {!isAdmin && (
                     <button
