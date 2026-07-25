@@ -10,8 +10,8 @@ export default function InstallBanner() {
   useEffect(() => {
     if (getInstallPrompt()) { setHasPrompt(true); return }
     const handler = () => setHasPrompt(true)
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    window.addEventListener('bloodhood:installprompt', handler)
+    return () => window.removeEventListener('bloodhood:installprompt', handler)
   }, [])
 
   const handleInstall = async () => {

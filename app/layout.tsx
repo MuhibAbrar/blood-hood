@@ -131,6 +131,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="bn">
       <head>
         <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bloodHoodInstallPrompt=e;window.dispatchEvent(new Event('bloodhood:installprompt'));});window.addEventListener('appinstalled',function(){window.__bloodHoodInstallPrompt=null;});})();`,
+          }}
+        />
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
