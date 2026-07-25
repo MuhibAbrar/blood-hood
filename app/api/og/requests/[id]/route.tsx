@@ -31,7 +31,9 @@ function truncate(value: unknown, max: number): string {
 
 function spacedText(value: unknown, fontSize: number): string {
   const words = String(value ?? '').trim().split(/\s+/).filter(Boolean)
-  const gap = Math.round(fontSize * 0.42)
+  // resvg gives Bengali font spaces almost no visible width. Social apps then
+  // shrink the 1200px image further, so use an intentionally generous gap.
+  const gap = Math.max(8, Math.round(fontSize * 0.68))
   return words.map((word, index) =>
     index === 0
       ? `<tspan>${escapeXml(word)}</tspan>`
@@ -82,9 +84,12 @@ function buildRequestShareCardSvg(data: RequestPreview | null): string {
         ? { primary: '#D92B2B', deep: '#8B1A1A', soft: '#FDECEC', label: 'জরুরি রক্তের প্রয়োজন', action: 'এখনই সাহায্য করুন' }
         : { primary: '#C62828', deep: '#7F1D1D', soft: '#FFF1F1', label: 'রক্তের প্রয়োজন', action: 'একটি শেয়ার জীবন বাঁচাতে পারে' }
 
-  const patientFontSize = String(data?.patientName ?? '').length > 18 ? 38 : 46
-  const hospitalFontSize = String(data?.hospital ?? '').length > 30 ? 25 : 29
-  const areaFontSize = String(data?.area ?? '').length > 30 ? 24 : 28
+  const patientLength = String(data?.patientName ?? '').length
+  const hospitalLength = String(data?.hospital ?? '').length
+  const areaLength = String(data?.area ?? '').length
+  const patientFontSize = patientLength > 18 ? 37 : 45
+  const hospitalFontSize = hospitalLength > 32 ? 23 : hospitalLength > 23 ? 25 : 28
+  const areaFontSize = areaLength > 32 ? 22 : areaLength > 23 ? 24 : 27
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">

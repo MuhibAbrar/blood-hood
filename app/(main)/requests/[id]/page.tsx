@@ -7,7 +7,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://bloodhood.pro.bd'
-  const ogImageUrl = `${baseUrl}/api/og/requests/${params.id}?v=4`
+  const ogImageUrl = `${baseUrl}/api/og/requests/${params.id}?v=5`
   const pageUrl = `${baseUrl}/requests/${params.id}`
 
   return {
