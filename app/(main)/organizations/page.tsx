@@ -7,12 +7,23 @@ import TopBar from '@/components/layout/TopBar'
 import EmptyState from '@/components/shared/EmptyState'
 import type { Organization } from '@/types'
 
+const memberCount = (org: Organization) =>
+  new Set([...(org.memberIds ?? []), ...(org.adminIds ?? [])]).size
+
+const rankOrganizations = (organizations: Organization[]) =>
+  [...organizations].sort((a, b) =>
+    Number(b.isVerified) - Number(a.isVerified)
+    || memberCount(b) - memberCount(a)
+    || (b.totalDonations ?? 0) - (a.totalDonations ?? 0)
+    || a.name.localeCompare(b.name, 'bn')
+  )
+
 export default function OrganizationsPage() {
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getOrganizations().then((o) => { setOrgs(o); setLoading(false) })
+    getOrganizations().then((o) => { setOrgs(rankOrganizations(o)); setLoading(false) })
   }, [])
 
   const typeLabel = (type: Organization['type']) =>
@@ -39,7 +50,7 @@ export default function OrganizationsPage() {
                     {org.isVerified && <span className="text-blue-600 text-xs">✓</span>}
                   </div>
                   <p className="text-sm text-[#555555]">{typeLabel(org.type)} · {org.area}</p>
-                  <p className="text-xs text-[#555555]/70">{new Set([...org.memberIds, ...org.adminIds]).size} সদস্য · {org.totalDonations} দান</p>
+                  <p className="text-xs text-[#555555]/70">{memberCount(org)} সদস্য · {org.totalDonations} দান</p>
                 </div>
               </Link>
               {org.phone && (
