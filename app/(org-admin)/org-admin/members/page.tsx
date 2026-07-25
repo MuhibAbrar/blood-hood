@@ -159,8 +159,17 @@ export default function OrgMembersPage() {
       await acceptJoinRequest(req)
       await load(org)
       showToast(`${req.userName}-কে সদস্য করা হয়েছে ✓`, 'success')
-    } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      if (message.includes('another organization')) {
+        showToast('এই সদস্য ইতিমধ্যে অন্য একটি সংগঠনে যুক্ত আছেন', 'error')
+      } else if (message.includes('no longer pending')) {
+        showToast('অনুরোধটি আর pending নেই। পেজটি refresh করুন।', 'error')
+      } else if (message.includes('User not found')) {
+        showToast('সদস্যের account আর পাওয়া যাচ্ছে না', 'error')
+      } else {
+        showToast('অনুরোধ অনুমোদন করা যায়নি। আবার চেষ্টা করুন।', 'error')
+      }
     } finally {
       setProcessingReq(null)
     }

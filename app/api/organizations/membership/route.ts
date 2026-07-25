@@ -29,9 +29,23 @@ export async function POST(req: NextRequest) {
       if (action === 'accept') {
         if (!joinSnap?.exists || joinSnap.data()?.orgId !== orgId || joinSnap.data()?.userId !== uid || joinSnap.data()?.status !== 'pending') throw new ApiAuthError(409, 'Join request is no longer pending')
         const organizations: string[] = userSnap.data()?.organizations ?? []
-        if (organizations.length > 0 && !organizations.includes(orgId)) throw new ApiAuthError(409, 'User already belongs to another organization')
+        const otherOrgIds = organizations.filter(id => typeof id === 'string' && id && id !== orgId)
+        if (otherOrgIds.length > 0) {
+          // A legacy/failed leave could leave only the user's organization pointer
+          // behind. Block a real second membership, but do not let an orphaned
+          // pointer permanently prevent a valid pending request from being accepted.
+          const otherOrgSnaps = await Promise.all(
+            otherOrgIds.map(id => tx.get(db.collection('organizations').doc(id)))
+          )
+          const belongsToAnotherOrg = otherOrgSnaps.some(snap => {
+            if (!snap.exists) return false
+            const data = snap.data()
+            return data?.memberIds?.includes(uid) || data?.adminIds?.includes(uid)
+          })
+          if (belongsToAnotherOrg) throw new ApiAuthError(409, 'User already belongs to another organization')
+        }
         tx.update(orgRef, { memberIds: FieldValue.arrayUnion(uid), updatedAt: FieldValue.serverTimestamp() })
-        tx.update(userRef, { organizations: FieldValue.arrayUnion(orgId), updatedAt: FieldValue.serverTimestamp() })
+        tx.update(userRef, { organizations: [orgId], updatedAt: FieldValue.serverTimestamp() })
         tx.update(joinRef!, { status: 'accepted', updatedAt: FieldValue.serverTimestamp() })
       } else {
         if (orgSnap.data()?.adminIds?.includes(uid)) throw new ApiAuthError(403, 'Organization admin cannot be removed as a member')
