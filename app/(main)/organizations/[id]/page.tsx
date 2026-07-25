@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast'
 import TopBar from '@/components/layout/TopBar'
 import type { Organization, JoinRequest } from '@/types'
 import { authenticatedFetch } from '@/lib/api-client'
+import { resolveOrganizationDistrict } from '@/lib/location'
 
 export default function OrgDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -70,12 +71,15 @@ export default function OrgDetailPage() {
     if (!user || !org) return
     setRequesting(true)
     try {
-      await requestJoinOrg(org.id, user)
+      await requestJoinOrg(org.id)
       setJoinRequest({ id: 'pending', orgId: org.id, userId: user.uid, userName: user.name, userPhone: user.phone, userBloodGroup: user.bloodGroup, status: 'pending', createdAt: null as never })
       showToast('যোগ দেওয়ার অনুরোধ পাঠানো হয়েছে! অ্যাডমিন অনুমোদন করলে যোগ হবে।', 'success')
     } catch (err: unknown) {
       const e = err as Error
       if (e?.message === 'already-in-org') showToast('আপনি ইতিমধ্যে অন্য একটি সংগঠনে আছেন', 'error')
+      else if (e?.message === 'district-required') showToast('আগে Profile থেকে আপনার জেলা নির্বাচন করুন', 'error')
+      else if (e?.message === 'organization-district-missing') showToast('এই সংগঠনের জেলা এখনো নির্ধারণ করা হয়নি', 'error')
+      else if (e?.message === 'district-mismatch') showToast('শুধু নিজের জেলার সংগঠনে যোগ দেওয়া যাবে', 'error')
       else showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
       setRequesting(false)
@@ -96,6 +100,8 @@ export default function OrgDetailPage() {
   const isLastAdmin = isAdmin && org.adminIds.length <= 1
   const hasPendingRequest = !!joinRequest
   const isInAnotherOrg = user ? (user.organizations.length > 0 && !user.organizations.includes(org.id)) : false
+  const orgDistrict = resolveOrganizationDistrict(org)
+  const isDifferentDistrict = !!user?.district && !!orgDistrict && user.district.trim() !== orgDistrict
 
   const orgIcon = org.type === 'college' || org.type === 'university' ? '🏫' : org.type === 'ngo' ? '🤝' : org.type === 'hospital' ? '🏥' : '🏘️'
   const totalMembers = new Set([...org.memberIds, ...org.adminIds]).size
@@ -161,6 +167,16 @@ export default function OrgDetailPage() {
                 আপনি এই সংগঠনের একমাত্র অ্যাডমিন। ছাড়ার আগে আরেকজনকে অ্যাডমিন করুন।
               </p>
             )}
+          </div>
+        ) : isDifferentDistrict ? (
+          <div className="bg-gray-50 border border-[#E5E5E5] rounded-2xl p-4 text-center">
+            <p className="text-[#555555] font-medium">এই সংগঠনটি {orgDistrict} জেলার</p>
+            <p className="text-xs text-[#555555] mt-1">শুধু নিজের জেলার সংগঠনে যোগ দেওয়া যাবে।</p>
+          </div>
+        ) : !orgDistrict ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+            <p className="text-amber-800 font-medium">সংগঠনটির জেলা এখনো নির্ধারণ করা হয়নি</p>
+            <p className="text-xs text-amber-700 mt-1">Admin জেলা আপডেট করার পর যোগ দেওয়া যাবে।</p>
           </div>
         ) : hasPendingRequest ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">

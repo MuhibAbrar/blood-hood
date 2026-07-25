@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getOrganizations } from '@/lib/firestore'
+import { resolveOrganizationDistrict } from '@/lib/location'
+import { useAuth } from '@/context/AuthContext'
 import TopBar from '@/components/layout/TopBar'
 import EmptyState from '@/components/shared/EmptyState'
 import type { Organization } from '@/types'
@@ -19,12 +21,26 @@ const rankOrganizations = (organizations: Organization[]) =>
   )
 
 export default function OrganizationsPage() {
+  const { user, loading: authLoading } = useAuth()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getOrganizations().then((o) => { setOrgs(rankOrganizations(o)); setLoading(false) })
-  }, [])
+    if (authLoading) return
+    if (!user) {
+      setOrgs([])
+      setLoading(false)
+      return
+    }
+    getOrganizations()
+      .then((organizations) => {
+        const visible = user.role === 'superadmin'
+          ? organizations
+          : organizations.filter(org => resolveOrganizationDistrict(org) === user.district?.trim())
+        setOrgs(rankOrganizations(visible))
+      })
+      .finally(() => setLoading(false))
+  }, [authLoading, user])
 
   const typeLabel = (type: Organization['type']) =>
     ({ college: 'কলেজ', university: 'বিশ্ববিদ্যালয়', ngo: 'NGO', hospital: 'হাসপাতাল', community: 'কমিউনিটি' })[type] ?? type
@@ -35,8 +51,14 @@ export default function OrganizationsPage() {
       <div className="px-4 py-4 space-y-3">
         {loading ? (
           [...Array(3)].map((_, i) => <div key={i} className="card h-20 animate-pulse bg-gray-100" />)
+        ) : !user?.district && user?.role !== 'superadmin' ? (
+          <div className="card p-6 text-center">
+            <p className="font-semibold text-[#111111]">আগে Profile থেকে আপনার জেলা নির্বাচন করুন</p>
+            <p className="mt-1 text-sm text-[#555555]">জেলা অনুযায়ী কাছের সংগঠন দেখানো হবে।</p>
+            <Link href="/profile" className="btn-primary mt-4 inline-flex">Profile আপডেট করুন</Link>
+          </div>
         ) : orgs.length === 0 ? (
-          <EmptyState icon="🏫" title="কোনো সংগঠন নেই" />
+          <EmptyState icon="🏫" title={`${user?.district ?? 'এই জেলায়'} কোনো সংগঠন নেই`} />
         ) : (
           orgs.map((org) => (
             <div key={org.id} className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
@@ -49,7 +71,7 @@ export default function OrganizationsPage() {
                     <p className="font-semibold text-[#111111] truncate">{org.name}</p>
                     {org.isVerified && <span className="text-blue-600 text-xs">✓</span>}
                   </div>
-                  <p className="text-sm text-[#555555]">{typeLabel(org.type)} · {org.area}</p>
+                  <p className="text-sm text-[#555555]">{typeLabel(org.type)} · {resolveOrganizationDistrict(org) || 'জেলা নির্ধারিত নয়'} · {org.area}</p>
                   <p className="text-xs text-[#555555]/70">{memberCount(org)} সদস্য · {org.totalDonations} দান</p>
                 </div>
               </Link>

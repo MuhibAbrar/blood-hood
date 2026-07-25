@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { FieldValue } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { ApiAuthError, authErrorResponse, requireOrgAdmin } from '@/lib/api-auth'
+import { resolveOrganizationDistrict } from '@/lib/location'
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,6 +54,11 @@ export async function POST(req: NextRequest) {
       }
       if (action === 'accept') {
         if (!joinSnap?.exists || joinSnap.data()?.orgId !== orgId || joinSnap.data()?.userId !== uid || joinSnap.data()?.status !== 'pending') throw new ApiAuthError(409, 'Join request is no longer pending')
+        const userDistrict = userSnap.data()?.district?.trim?.() ?? ''
+        const orgDistrict = resolveOrganizationDistrict(orgSnap.data()!)
+        if (!userDistrict || !orgDistrict || userDistrict !== orgDistrict) {
+          throw new ApiAuthError(409, 'User and organization districts do not match')
+        }
         const organizations: string[] = userSnap.data()?.organizations ?? []
         const otherOrgIds = organizations.filter(id => typeof id === 'string' && id && id !== orgId)
         if (otherOrgIds.length > 0) {

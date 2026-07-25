@@ -544,33 +544,14 @@ export const recordCampDonation = async (campId: string, donorId: string, orgId:
 
 // --- Join Requests ---
 
-export const requestJoinOrg = async (orgId: string, user: User): Promise<void> => {
-  // Always verify against the server so a recently-left organization cannot
-  // remain stuck because of an old client-side user profile.
-  const freshUser = await getUserFromServer(user.uid)
-  const currentOrganizations = freshUser?.organizations ?? []
-  if (currentOrganizations.length > 0 && !currentOrganizations.includes(orgId)) {
-    throw new Error('already-in-org')
-  }
-
-  // Check if already pending
-  const existing = await getDocs(query(
-    collection(db, 'joinRequests'),
-    where('orgId', '==', orgId),
-    where('userId', '==', user.uid),
-    where('status', '==', 'pending')
-  ))
-  if (!existing.empty) return // Already requested
-
-  await addDoc(collection(db, 'joinRequests'), {
-    orgId,
-    userId: user.uid,
-    userName: user.name,
-    userPhone: user.phone,
-    userBloodGroup: user.bloodGroup,
-    status: 'pending',
-    createdAt: Timestamp.now(),
+export const requestJoinOrg = async (orgId: string): Promise<void> => {
+  const response = await authenticatedFetch('/api/organizations/join-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orgId }),
   })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to request organization membership')
 }
 
 export const getJoinRequests = async (orgId: string): Promise<JoinRequest[]> => {

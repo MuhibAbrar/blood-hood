@@ -54,15 +54,15 @@ export default function AdminOrgsPage() {
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   const handleSave = async () => {
-    if (!form.name || !form.area) { showToast('সব তথ্য পূরণ করুন', 'error'); return }
+    if (!form.name || !form.district || !form.area) { showToast('নাম, জেলা ও এলাকা পূরণ করুন', 'error'); return }
     if (!user) return
     setSaving(true)
     try {
       if (editing) {
-        await updateOrganization(editing.id, { name: form.name, type: form.type, area: form.area, isVerified: form.isVerified })
+        await updateOrganization(editing.id, { name: form.name, type: form.type, district: form.district, area: form.area, isVerified: form.isVerified })
         showToast('সংগঠন আপডেট হয়েছে', 'success')
       } else {
-        await createOrganization({ name: form.name, type: form.type, area: form.area, isVerified: form.isVerified, adminIds: [user.uid], logo: null })
+        await createOrganization({ name: form.name, type: form.type, district: form.district, area: form.area, isVerified: form.isVerified, adminIds: [user.uid], logo: null })
         showToast('নতুন সংগঠন তৈরি হয়েছে', 'success')
       }
       setShowModal(false)

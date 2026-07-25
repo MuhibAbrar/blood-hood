@@ -92,7 +92,12 @@ service cloud.firestore {
       allow read: if signedIn()
         && (resource.data.userId == request.auth.uid
         || get(/databases/$(database)/documents/organizations/$(resource.data.orgId)).data.adminIds.hasAny([request.auth.uid]));
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      // New clients use the server endpoint. Keep compatible direct creation
+      // constrained to the same district for older cached PWA versions.
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.district
+          == get(/databases/$(database)/documents/organizations/$(request.resource.data.orgId)).data.district;
       allow update: if false;
       allow delete: if signedIn()
         && (resource.data.userId == request.auth.uid
