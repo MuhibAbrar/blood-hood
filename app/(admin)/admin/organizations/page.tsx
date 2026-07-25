@@ -35,6 +35,11 @@ export default function AdminOrgsPage() {
   const [adminSaving, setAdminSaving] = useState(false)
 
   const load = async () => {
+    // Safe and idempotent: only organizations created before district support
+    // have a blank district, and all of those were Khulna-based.
+    await authenticatedFetch('/api/admin/migrate-legacy-organization-districts', {
+      method: 'POST',
+    }).catch(() => null)
     const [o, u] = await Promise.all([getOrganizations(), getAllUsers()])
     setOrgs(o)
     setAllUsers(u)

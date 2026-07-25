@@ -35,10 +35,8 @@ export function resolveOrganizationDistrict(record: LocationRecord): string {
   const district = record.district?.trim()
   if (district) return district
 
-  const area = record.area?.trim()
-  if (!area) return ''
-  const matches = Object.entries(DISTRICTS_DATA)
-    .filter(([, areas]) => areas.includes(area))
-    .map(([name]) => name)
-  return matches.length === 1 ? matches[0] : ''
+  // Every organization created before district support belonged to Khulna.
+  // New organization creation requires an explicit district, so this fallback
+  // is limited to legacy records that do not have the field yet.
+  return 'খুলনা'
 }
