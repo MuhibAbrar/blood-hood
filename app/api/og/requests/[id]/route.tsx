@@ -64,7 +64,7 @@ async function fetchRequest(id: string): Promise<RequestPreview | null> {
   }
 }
 
-export function buildRequestShareCardSvg(data: RequestPreview | null): string {
+function buildRequestShareCardSvg(data: RequestPreview | null): string {
   const bloodGroup = escapeXml(data?.bloodGroup || '?')
   const patientName = truncate(data?.patientName || 'রক্তের অনুরোধ', 24)
   const hospital = truncate(data?.hospital || 'হাসপাতালের তথ্য দেখুন', 38)
