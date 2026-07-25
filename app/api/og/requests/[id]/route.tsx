@@ -5,321 +5,180 @@ import path from 'path'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function x(text: string): string {
-  return String(text)
+type RequestPreview = {
+  bloodGroup: string
+  patientName: string
+  hospital: string
+  area: string
+  urgency: string
+  status: string
+  bags: number
+}
+
+function escapeXml(value: unknown): string {
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 }
 
-function trunc(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + '…' : text
+function truncate(value: unknown, max: number): string {
+  const text = String(value ?? '').trim()
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
 
-/**
- * Bengali font space glyph = zero advance-width in resvg.
- * Split on spaces → emit <tspan dx> for each word boundary.
- */
-function w(text: string, fontSize: number): string {
-  const words = String(text).split(' ').filter(Boolean)
-  if (words.length === 0) return ''
-  if (words.length === 1) return x(words[0])
-  const spacePx = Math.round(fontSize * 0.50)   // ≈ 0.5em word-space
-  return words
-    .map((word, i) =>
-      i === 0
-        ? `<tspan>${x(word)}</tspan>`
-        : `<tspan dx="${spacePx}">${x(word)}</tspan>`
-    )
-    .join('')
+function spacedText(value: unknown, fontSize: number): string {
+  const words = String(value ?? '').trim().split(/\s+/).filter(Boolean)
+  const gap = Math.round(fontSize * 0.42)
+  return words.map((word, index) =>
+    index === 0
+      ? `<tspan>${escapeXml(word)}</tspan>`
+      : `<tspan dx="${gap}">${escapeXml(word)}</tspan>`
+  ).join('')
 }
 
-async function fetchRequest(id: string): Promise<Record<string, string | number> | null> {
+async function fetchRequest(id: string): Promise<RequestPreview | null> {
   try {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
     if (!projectId) return null
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/bloodRequests/${id}`
-    const res = await fetch(url, { next: { revalidate: 60 } })
-    if (!res.ok) return null
-    const json = await res.json()
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/bloodRequests/${encodeURIComponent(id)}`
+    const response = await fetch(url, { next: { revalidate: 60 } })
+    if (!response.ok) return null
+
+    const json = await response.json()
     if (!json.fields) return null
-    const f = json.fields as Record<string, { stringValue?: string; integerValue?: string }>
+    const fields = json.fields as Record<string, { stringValue?: string; integerValue?: string }>
     return {
-      bloodGroup:  f.bloodGroup?.stringValue  ?? '',
-      patientName: f.patientName?.stringValue ?? '',
-      hospital:    f.hospital?.stringValue    ?? '',
-      area:        f.area?.stringValue        ?? '',
-      urgency:     f.urgency?.stringValue     ?? 'normal',
-      status:      f.status?.stringValue      ?? 'open',
-      bags:        parseInt(f.bags?.integerValue ?? '1', 10),
+      bloodGroup: fields.bloodGroup?.stringValue ?? '',
+      patientName: fields.patientName?.stringValue ?? '',
+      hospital: fields.hospital?.stringValue ?? '',
+      area: fields.area?.stringValue ?? '',
+      urgency: fields.urgency?.stringValue ?? 'normal',
+      status: fields.status?.stringValue ?? 'open',
+      bags: Number.parseInt(fields.bags?.integerValue ?? '1', 10) || 1,
     }
   } catch {
     return null
   }
 }
 
+export function buildRequestShareCardSvg(data: RequestPreview | null): string {
+  const bloodGroup = escapeXml(data?.bloodGroup || '?')
+  const patientName = truncate(data?.patientName || 'রক্তের অনুরোধ', 24)
+  const hospital = truncate(data?.hospital || 'হাসপাতালের তথ্য দেখুন', 38)
+  const area = truncate(data?.area || 'বিস্তারিত ঠিকানা দেখুন', 38)
+  const bags = Math.max(1, Number(data?.bags ?? 1))
+  const isUrgent = data?.urgency === 'urgent'
+  const isFulfilled = data?.status === 'fulfilled'
+  const isCancelled = data?.status === 'cancelled'
+
+  const theme = isFulfilled
+    ? { primary: '#158A5C', deep: '#0E5F40', soft: '#E9F8F1', label: 'রক্তের ব্যবস্থা হয়েছে', action: 'অনুরোধটি পূর্ণ হয়েছে' }
+    : isCancelled
+      ? { primary: '#6B7280', deep: '#374151', soft: '#F3F4F6', label: 'অনুরোধ বাতিল', action: 'এই অনুরোধটি আর সক্রিয় নেই' }
+      : isUrgent
+        ? { primary: '#D92B2B', deep: '#8B1A1A', soft: '#FDECEC', label: 'জরুরি রক্তের প্রয়োজন', action: 'এখনই সাহায্য করুন' }
+        : { primary: '#C62828', deep: '#7F1D1D', soft: '#FFF1F1', label: 'রক্তের প্রয়োজন', action: 'একটি শেয়ার জীবন বাঁচাতে পারে' }
+
+  const patientFontSize = String(data?.patientName ?? '').length > 18 ? 38 : 46
+  const hospitalFontSize = String(data?.hospital ?? '').length > 30 ? 25 : 29
+  const areaFontSize = String(data?.area ?? '').length > 30 ? 24 : 28
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="leftPanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${theme.primary}"/>
+      <stop offset="100%" stop-color="${theme.deep}"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#6B0F0F" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="#F7F8FA"/>
+  <circle cx="1115" cy="62" r="180" fill="${theme.soft}"/>
+  <circle cx="1050" cy="640" r="230" fill="${theme.soft}" fill-opacity="0.7"/>
+
+  <g transform="translate(54 40)">
+    <rect width="52" height="52" rx="16" fill="${theme.primary}"/>
+    <path d="M26 10C19 20 14 27 14 33a12 12 0 0 0 24 0c0-6-5-13-12-23z" fill="white"/>
+    <text x="68" y="35" font-family="Hind Siliguri" font-size="30" font-weight="700" fill="#171717">Blood Hood</text>
+    <text x="68" y="57" font-family="Hind Siliguri" font-size="15" font-weight="500" fill="#7B7B7B">${spacedText('রক্তের বন্ধনে বাংলাদেশ', 15)}</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="52" y="122" width="1096" height="410" rx="34" fill="white"/>
+    <path d="M86 122H386V532H86C67.2 532 52 516.8 52 498V156C52 137.2 67.2 122 86 122Z" fill="url(#leftPanel)"/>
+  </g>
+
+  <circle cx="219" cy="315" r="121" fill="none" stroke="white" stroke-opacity="0.10" stroke-width="24"/>
+  <circle cx="219" cy="315" r="91" fill="white"/>
+  <path d="M219 190C190 234 169 263 169 291a50 50 0 0 0 100 0c0-28-21-57-50-101z" fill="${theme.soft}"/>
+  <text x="219" y="347" text-anchor="middle" font-family="Hind Siliguri" font-size="72" font-weight="700" fill="${theme.primary}">${bloodGroup}</text>
+  <text x="219" y="444" text-anchor="middle" font-family="Hind Siliguri" font-size="19" font-weight="500" fill="white" fill-opacity="0.76">${spacedText('রক্তের গ্রুপ', 19)}</text>
+
+  <rect x="430" y="158" width="270" height="46" rx="23" fill="${theme.soft}"/>
+  <circle cx="457" cy="181" r="7" fill="${theme.primary}"/>
+  <text x="477" y="189" font-family="Hind Siliguri" font-size="22" font-weight="700" fill="${theme.primary}">${spacedText(theme.label, 22)}</text>
+
+  <text x="430" y="241" font-family="Hind Siliguri" font-size="17" font-weight="500" fill="#8A8A8A">${spacedText('রোগীর নাম', 17)}</text>
+  <text x="430" y="294" font-family="Hind Siliguri" font-size="${patientFontSize}" font-weight="700" fill="#171717">${spacedText(patientName, patientFontSize)}</text>
+
+  <g transform="translate(430 326)">
+    <rect width="45" height="45" rx="13" fill="${theme.soft}"/>
+    <path d="M20 11h6v8h8v6h-8v8h-6v-8h-8v-6h8z" fill="${theme.primary}"/>
+    <text x="63" y="31" font-family="Hind Siliguri" font-size="${hospitalFontSize}" font-weight="500" fill="#353535">${spacedText(hospital, hospitalFontSize)}</text>
+  </g>
+
+  <g transform="translate(430 391)">
+    <rect width="45" height="45" rx="13" fill="${theme.soft}"/>
+    <path d="M23 10c-7 0-12 5-12 12 0 9 12 16 12 16s12-7 12-16c0-7-5-12-12-12zm0 16a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" fill="${theme.primary}"/>
+    <text x="63" y="31" font-family="Hind Siliguri" font-size="${areaFontSize}" font-weight="500" fill="#525252">${spacedText(area, areaFontSize)}</text>
+  </g>
+
+  <g transform="translate(430 462)">
+    <rect width="180" height="48" rx="24" fill="${theme.primary}"/>
+    <path d="M26 11c-6 8-9 13-9 18a9 9 0 0 0 18 0c0-5-3-10-9-18z" fill="white"/>
+    <text x="48" y="32" font-family="Hind Siliguri" font-size="22" font-weight="700" fill="white">${spacedText(`${bags} ব্যাগ প্রয়োজন`, 22)}</text>
+  </g>
+
+  <g transform="translate(52 560)">
+    <text x="0" y="28" font-family="Hind Siliguri" font-size="24" font-weight="700" fill="${theme.primary}">${spacedText(theme.action, 24)}</text>
+    <text x="1096" y="28" text-anchor="end" font-family="Hind Siliguri" font-size="20" font-weight="600" fill="#777777">bloodhood.pro.bd</text>
+  </g>
+</svg>`
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansBengali-Bold.ttf')
-  const data     = await fetchRequest(params.id)
-
-  const bloodGroup  = String(data?.bloodGroup  ?? '')
-  const patientName = trunc(String(data?.patientName ?? 'রক্তের অনুরোধ'), 16)
-  const hospital    = trunc(String(data?.hospital    ?? ''), 24)
-  const area        = trunc(String(data?.area        ?? ''), 24)
-  const urgency     = data?.urgency === 'urgent' ? 'urgent' : 'normal'
-  const status      = String(data?.status ?? 'open')
-  const bags        = Number(data?.bags ?? 1)
-
-  const isUrgent    = urgency === 'urgent'
-  const isFulfilled = status === 'fulfilled'
-  const isCancelled = status === 'cancelled'
-
-  // ── Colours ──────────────────────────────────────────────────────────────
-  const accent    = isUrgent ? '#FF4444' : '#DD2222'
-  const accentDim = isUrgent ? '#CC2222' : '#991111'
-  const bgFrom    = isUrgent ? '#620000' : '#720000'
-  const bgMid     = '#1a0000'
-
-  // ── Font sizes ────────────────────────────────────────────────────────────
-  const bgFontSize   = bloodGroup.length > 2 ? 58 : 74
-  const nameFontSize = patientName.length > 11 ? 40 : 50
-
-  // ── Tagline (top of info panel — instantly tells reader what this is) ─────
-  const tagline = isFulfilled
-    ? 'রক্তের ব্যবস্থা হয়েছে'
-    : isCancelled
-    ? 'এই অনুরোধ বাতিল হয়েছে'
-    : isUrgent
-    ? 'জরুরি রক্তের প্রয়োজন!'
-    : 'রক্তের প্রয়োজন আছে'
-
-  const taglineColor = isFulfilled ? '#3DEBA0' : isCancelled ? '#999999' : accent
-  const taglineBg    = isFulfilled ? '#1A9E6B' : isCancelled ? '#444444' : accentDim
-
-  // ── Status badge ──────────────────────────────────────────────────────────
-  const statusText = isFulfilled
-    ? 'পূর্ণ হয়েছে'
-    : isCancelled
-    ? 'বাতিল'
-    : isUrgent
-    ? 'এখনই সাহায্য করুন!'
-    : 'রক্ত দিন'
-
-  const statusColor  = isFulfilled ? '#3DEBA0' : isCancelled ? '#bbbbbb' : isUrgent ? '#FFAAAA' : '#ffffff'
-  const statusFill   = isFulfilled ? '#1A9E6B' : isCancelled ? '#555555' : accentDim
-  const urgencyLabel = isUrgent ? 'URGENT' : 'Blood Request'
-
-  // ── Pre-compute Bengali tspan strings ─────────────────────────────────────
-  const taglineSpans     = w(tagline,     28)
-  const patientNameSpans = w(patientName, nameFontSize)
-  const hospitalSpans    = w(hospital,    25)
-  const areaSpans        = w(area,        25)
-  const statusSpans      = w(statusText,  20)
-  const bagsLabel        = w(`${bags} ব্যাগ দরকার`, 17)
-
-  // ── Vertical layout (right panel: x≥382, y=100–546) ──────────────────────
-  //  100–155  tagline strip
-  //  172      PATIENT micro-label
-  //  228      patient name baseline      (top ≈ 193 for font-50)
-  //  258      accent underline
-  //  315      hospital text baseline     (icon y=290–320)
-  //  390      area text baseline         (icon cy=382)
-  //  445–495  CTA strip (link / bags)
-  const nameY      = 228
-  const hospY      = 315   // hospital text baseline
-  const areaY      = 390   // area text baseline
-  const ctaY       = 460   // CTA / bags strip
-
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg"
-     width="1200" height="630" viewBox="0 0 1200 630">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"
-                    gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="${bgFrom}"/>
-      <stop offset="100%" stop-color="${bgMid}"/>
-    </linearGradient>
-    <linearGradient id="cg" x1="0.25" y1="0.25" x2="1" y2="1"
-                    gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="${isUrgent ? '#ff5555' : '#cc3333'}"/>
-      <stop offset="100%" stop-color="${isUrgent ? '#880000' : '#660000'}"/>
-    </linearGradient>
-  </defs>
-
-  <!-- ── Background ── -->
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <!-- subtle radial glows -->
-  <circle cx="1160" cy="-60"  r="360" fill="white" fill-opacity="0.028"/>
-  <circle cx="-40"  cy="690"  r="300" fill="white" fill-opacity="0.025"/>
-  ${isUrgent ? `<circle cx="600" cy="630" r="440" fill="${accentDim}" fill-opacity="0.06"/>` : ''}
-
-  <!-- ── TOP BAR ── -->
-  <!-- brand pill -->
-  <rect x="48" y="28" width="60" height="60" rx="16"
-        fill="white" fill-opacity="0.09"/>
-  <ellipse cx="78" cy="66" rx="11" ry="13.5" fill="${accent}"/>
-  <polygon points="78,42 65,65 91,65" fill="${accent}"/>
-  <text x="124" y="74"
-        font-family="NotoSansBengali" font-size="28" font-weight="700"
-        fill="white" fill-opacity="0.92">Blood Hood</text>
-
-  <!-- urgency badge -->
-  <rect x="${isUrgent ? 1008 : 944}" y="28"
-        width="${isUrgent ? 160 : 224}" height="56" rx="28"
-        fill="${isUrgent ? accentDim : 'none'}"
-        stroke="${isUrgent ? 'none' : 'white'}" stroke-opacity="0.20" stroke-width="1.5"/>
-  <text x="${isUrgent ? 1088 : 1056}" y="67"
-        font-family="NotoSansBengali" font-size="23" font-weight="700"
-        text-anchor="middle" fill="white"
-        fill-opacity="${isUrgent ? '1' : '0.72'}"
-        >${x(urgencyLabel)}</text>
-
-  <!-- ── BLOOD GROUP CIRCLE ── -->
-  <!-- outer glow ring -->
-  <circle cx="210" cy="305" r="124"
-          fill="none" stroke="${accentDim}"
-          stroke-opacity="${isUrgent ? '0.38' : '0.15'}"
-          stroke-width="26"/>
-  <!-- main filled circle -->
-  <circle cx="210" cy="305" r="104"
-          fill="url(#cg)" stroke="white" stroke-opacity="0.15" stroke-width="3"/>
-  <!-- blood group text -->
-  <text x="210" y="${305 + bgFontSize * 0.36}"
-        font-family="NotoSansBengali" font-size="${bgFontSize}" font-weight="700"
-        text-anchor="middle" fill="white" letter-spacing="-1"
-        >${x(bloodGroup) || '?'}</text>
-  <!-- "রক্তের গ্রুপ" label below circle -->
-  <text x="210" y="432"
-        font-family="NotoSansBengali" font-size="14" letter-spacing="1"
-        text-anchor="middle" fill="white" fill-opacity="0.40"
-        >${w('রক্তের গ্রুপ', 14)}</text>
-
-  ${bags > 1 ? `
-  <!-- bags badge -->
-  <rect x="130" y="450" width="160" height="36" rx="18"
-        fill="${accentDim}" fill-opacity="0.20"
-        stroke="${accentDim}" stroke-opacity="0.50" stroke-width="1.5"/>
-  <text x="210" y="474"
-        font-family="NotoSansBengali" font-size="17" font-weight="700"
-        text-anchor="middle" fill="${accent}"
-        >${bagsLabel}</text>
-  ` : ''}
-
-  <!-- ── VERTICAL DIVIDER ── -->
-  <line x1="366" y1="100" x2="366" y2="530"
-        stroke="white" stroke-opacity="0.055" stroke-width="1"/>
-
-  <!-- ════════════════════════════════════════════════════════ -->
-  <!-- ── INFO PANEL ──                                        -->
-  <!-- ════════════════════════════════════════════════════════ -->
-
-  <!-- ① TAGLINE STRIP — first thing the eye sees -->
-  <rect x="366" y="100" width="834" height="55"
-        fill="${taglineBg}" fill-opacity="0.16"/>
-  <!-- left accent bar -->
-  <rect x="366" y="100" width="6" height="55"
-        fill="${taglineColor}" fill-opacity="1"/>
-  <!-- tagline text -->
-  <text x="386" y="139"
-        font-family="NotoSansBengali" font-size="28" font-weight="700"
-        fill="${taglineColor}"
-        >${taglineSpans}</text>
-
-  <!-- ② PATIENT micro-label -->
-  <text x="386" y="180"
-        font-family="NotoSansBengali" font-size="13" letter-spacing="3.5"
-        fill="white" fill-opacity="0.36"
-        >PATIENT</text>
-
-  <!-- ③ Patient name -->
-  <text x="386" y="${nameY}"
-        font-family="NotoSansBengali" font-size="${nameFontSize}" font-weight="700"
-        fill="white"
-        >${patientNameSpans}</text>
-
-  <!-- ④ Accent underline below name -->
-  <rect x="386" y="${nameY + 16}" width="56" height="4" rx="2"
-        fill="${accentDim}" fill-opacity="0.9"/>
-
-  <!-- ⑤ Hospital row -->
-  <!-- H-shaped icon -->
-  <rect x="386" y="${hospY - 26}" width="4" height="30" rx="2"
-        fill="white" fill-opacity="0.32"/>
-  <rect x="400" y="${hospY - 26}" width="4" height="30" rx="2"
-        fill="white" fill-opacity="0.32"/>
-  <rect x="386" y="${hospY - 12}" width="18" height="4" rx="2"
-        fill="white" fill-opacity="0.32"/>
-  <text x="418" y="${hospY}"
-        font-family="NotoSansBengali" font-size="25" font-weight="700"
-        fill="white" fill-opacity="0.88"
-        >${hospitalSpans}</text>
-
-  <!-- ⑥ Area row -->
-  <!-- pin icon -->
-  <circle cx="393" cy="${areaY - 8}" r="9"
-          fill="${accentDim}" fill-opacity="0.65"/>
-  <circle cx="393" cy="${areaY - 8}" r="4"
-          fill="white" fill-opacity="0.50"/>
-  <text x="418" y="${areaY}"
-        font-family="NotoSansBengali" font-size="25" font-weight="700"
-        fill="white" fill-opacity="0.88"
-        >${areaSpans}</text>
-
-  <!-- ⑦ CTA / info strip near bottom -->
-  <rect x="366" y="${ctaY}" width="834" height="52"
-        fill="white" fill-opacity="0.04"/>
-  ${bags > 1 && !isFulfilled && !isCancelled ? `
-  <!-- bags needed info in right panel -->
-  <text x="386" y="${ctaY + 33}"
-        font-family="NotoSansBengali" font-size="19" font-weight="700"
-        fill="${accent}" fill-opacity="0.85"
-        >${w(bags + ' ব্যাগ রক্তের প্রয়োজন', 19)}</text>
-  ` : `
-  <!-- call to action text -->
-  <text x="386" y="${ctaY + 33}"
-        font-family="NotoSansBengali" font-size="19"
-        fill="white" fill-opacity="0.38"
-        >${w('Blood Hood-এ বিস্তারিত দেখুন', 19)}</text>
-  `}
-
-  <!-- ── BOTTOM BAR ── -->
-  <rect x="48" y="548" width="330" height="50" rx="25"
-        fill="${statusFill}" fill-opacity="0.22"
-        stroke="${statusFill}" stroke-opacity="0.58" stroke-width="2"/>
-  <text x="213" y="580"
-        font-family="NotoSansBengali" font-size="20" font-weight="700"
-        text-anchor="middle" fill="${statusColor}"
-        >${statusSpans}</text>
-
-  <text x="1148" y="580"
-        font-family="NotoSansBengali" font-size="17"
-        text-anchor="end" fill="white" fill-opacity="0.22"
-        >bloodhood.pro.bd</text>
-</svg>`
+  const data = await fetchRequest(params.id)
+  const svg = buildRequestShareCardSvg(data)
+  const mediumFont = path.join(process.cwd(), 'public', 'fonts', 'HindSiliguri-Medium.ttf')
+  const semiboldFont = path.join(process.cwd(), 'public', 'fonts', 'HindSiliguri-SemiBold.ttf')
+  const boldFont = path.join(process.cwd(), 'public', 'fonts', 'HindSiliguri-Bold.ttf')
 
   try {
-    const resvg = new Resvg(svg, {
+    const renderer = new Resvg(svg, {
       font: {
         loadSystemFonts: false,
-        fontFiles: [fontPath],
+        fontFiles: [mediumFont, semiboldFont, boldFont],
       },
       fitTo: { mode: 'width' as const, value: 1200 },
     })
-
-    const pngBuffer = resvg.render().asPng()
-
-    return new NextResponse(pngBuffer as unknown as BodyInit, {
+    const png = renderer.render().asPng()
+    return new NextResponse(png as unknown as BodyInit, {
       headers: {
-        'Content-Type':  'image/png',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=900, s-maxage=900, stale-while-revalidate=3600',
       },
     })
-  } catch (err) {
-    console.error('[OG resvg]', err)
-    return new NextResponse('error', { status: 500 })
+  } catch (error) {
+    console.error('[request OG image]', error)
+    return new NextResponse('Unable to render image', { status: 500 })
   }
 }

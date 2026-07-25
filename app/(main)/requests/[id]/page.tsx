@@ -7,7 +7,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://bloodhood.pro.bd'
-  const ogImageUrl = `${baseUrl}/api/og/requests/${params.id}`
+  const ogImageUrl = `${baseUrl}/api/og/requests/${params.id}?v=4`
   const pageUrl = `${baseUrl}/requests/${params.id}`
 
   return {
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: pageUrl,
       siteName: 'Blood Hood',
       type: 'website',
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: 'Blood Hood রক্তের অনুরোধ' }],
     },
     twitter: {
       card: 'summary_large_image',
