@@ -36,11 +36,13 @@ export interface User {
 export interface BloodRequest {
   id: string
   patientName: string
+  patientProblem?: string
   bloodGroup: BloodGroup
   hospital: string
   district?: string
   area: string
   contactPhone: string
+  requesterRelation?: string
   requestedBy: string
   urgency: Urgency
   status: RequestStatus
@@ -53,6 +55,8 @@ export interface BloodRequest {
   bags: number
   orgId: string | null
   expiresAt?: Timestamp | null
+  neededAt?: Timestamp | null
+  confirmedAccurate?: boolean
   createdAt: Timestamp
   fulfilledAt: Timestamp | null
 }

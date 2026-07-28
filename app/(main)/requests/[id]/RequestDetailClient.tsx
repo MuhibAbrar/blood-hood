@@ -269,6 +269,19 @@ export default function RequestDetailClient() {
           {request.note && (
             <p className="mt-3 text-sm text-[#555555] bg-gray-50 rounded-xl p-3">{request.note}</p>
           )}
+          {(request.patientProblem || request.neededAt || request.requesterRelation) && (
+            <div className="mt-3 grid gap-2 rounded-xl bg-[#FAFAFA] p-3 text-sm">
+              {request.patientProblem && (
+                <p><span className="text-[#666]">রোগীর সমস্যা:</span> <strong>{request.patientProblem}</strong></p>
+              )}
+              {request.neededAt && (
+                <p><span className="text-[#666]">রক্ত লাগবে:</span> <strong>{formatBanglaDate(request.neededAt.toDate())}</strong></p>
+              )}
+              {request.requesterRelation && (
+                <p><span className="text-[#666]">যোগাযোগকারীর সম্পর্ক:</span> <strong>{request.requesterRelation}</strong></p>
+              )}
+            </div>
+          )}
 
           {/* Share button — always visible */}
           <div className="mt-4 pt-4 border-t border-[#E5E5E5] relative" ref={shareMenuRef}>
