@@ -28,6 +28,11 @@ export async function POST(req: NextRequest) {
     const date = dhakaDateKey()
     const limitRef = db.collection('contactLimits').doc(`${actor.uid}_${date}`)
     const eventRef = db.collection('contactEvents').doc(`reveal_${actor.uid}_${donorId}`)
+    const orgAdminSnap = await db.collection('organizations')
+      .where('adminIds', 'array-contains', actor.uid)
+      .limit(1)
+      .get()
+    const isOrgAdmin = !orgAdminSnap.empty
 
     const phone = await db.runTransaction(async (tx) => {
       const [seekerSnap, donorSnap, limitSnap] = await Promise.all([
@@ -50,7 +55,7 @@ export async function POST(req: NextRequest) {
         throw new ApiAuthError(404, 'Donor phone number was not found')
       }
 
-      if (!isOwnProfile && !isSuperAdmin) {
+      if (!isOwnProfile && !isSuperAdmin && !isOrgAdmin) {
         const limit = limitSnap.data()
         const donorIds = Array.isArray(limit?.donorIds) ? limit.donorIds : []
         const alreadyRevealedToday = donorIds.includes(donorId)
