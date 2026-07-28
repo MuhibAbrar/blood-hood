@@ -57,8 +57,8 @@ export default function NewRequestPage() {
     bags: 1,
     neededAt: '',
     neededDay: '',
-    neededMonth: '',
-    neededYear: '',
+    neededMonth: String(new Date().getMonth() + 1),
+    neededYear: String(new Date().getFullYear()),
     requesterRelation: '',
     otherRelation: '',
     confirmedAccurate: false,
@@ -79,6 +79,14 @@ export default function NewRequestPage() {
   const setDatePart = (part: 'neededDay' | 'neededMonth' | 'neededYear', value: string) => {
     setForm(current => {
       const next = { ...current, [part]: value }
+      const now = new Date()
+      if (
+        part === 'neededYear'
+        && Number(value) === now.getFullYear()
+        && Number(next.neededMonth) < now.getMonth() + 1
+      ) {
+        next.neededMonth = String(now.getMonth() + 1)
+      }
       const year = Number(next.neededYear)
       const month = Number(next.neededMonth)
       const maxDay = year && month ? new Date(year, month, 0).getDate() : 31
@@ -158,6 +166,13 @@ export default function NewRequestPage() {
       setLoading(false)
     }
   }
+
+  const calendarYear = Number(form.neededYear) || new Date().getFullYear()
+  const calendarMonth = Number(form.neededMonth) || new Date().getMonth() + 1
+  const calendarDays = new Date(calendarYear, calendarMonth, 0).getDate()
+  const calendarOffset = new Date(calendarYear, calendarMonth - 1, 1).getDay()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
 
   if (!user) return (
     <div>
@@ -316,58 +331,82 @@ export default function NewRequestPage() {
 
         <div>
           <label className="block text-sm font-medium text-[#111111] mb-1.5">কবে রক্ত লাগবে? *</label>
-          <div className="rounded-2xl border-2 border-[#E5E5E5] bg-white p-3">
-            <div className="mb-3 flex items-center gap-2 text-sm text-[#555]">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50">📅</span>
-              <span>প্রয়োজনের দিন, মাস ও বছর নির্বাচন করুন</span>
+          <div className="overflow-hidden rounded-2xl border-2 border-[#E5E5E5] bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-red-50 to-white p-3">
+              <div>
+                <p className="text-xs text-[#666]">রক্ত লাগার তারিখ</p>
+                <p className="font-bold text-[#D92B2B]">
+                  {form.neededAt
+                    ? `${toBanglaDigits(form.neededDay)} ${BANGLA_MONTHS[calendarMonth - 1]} ${toBanglaDigits(calendarYear)}`
+                    : 'দিন নির্বাচন করুন'}
+                </p>
+              </div>
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl shadow-sm">📅</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <label className="block">
-                <span className="mb-1 block text-center text-xs font-semibold text-[#666]">দিন</span>
-                <select
-                  value={form.neededDay}
-                  onChange={event => setDatePart('neededDay', event.target.value)}
-                  className="input-field appearance-none px-2 text-center font-semibold"
-                >
-                  <option value="">দিন</option>
-                  {Array.from({
-                    length: form.neededMonth && form.neededYear
-                      ? new Date(Number(form.neededYear), Number(form.neededMonth), 0).getDate()
-                      : 31,
-                  }, (_, index) => index + 1).map(day => (
-                    <option key={day} value={day}>{toBanglaDigits(day)}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-center text-xs font-semibold text-[#666]">মাস</span>
-                <select
-                  value={form.neededMonth}
-                  onChange={event => setDatePart('neededMonth', event.target.value)}
-                  className="input-field appearance-none px-1 text-center font-semibold"
-                >
-                  <option value="">মাস</option>
-                  {BANGLA_MONTHS.map((month, index) => (
-                    <option key={month} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-center text-xs font-semibold text-[#666]">বছর</span>
-                <select
-                  value={form.neededYear}
-                  onChange={event => setDatePart('neededYear', event.target.value)}
-                  className="input-field appearance-none px-2 text-center font-semibold"
-                >
-                  <option value="">বছর</option>
-                  {[new Date().getFullYear(), new Date().getFullYear() + 1].map(year => (
-                    <option key={year} value={year}>{toBanglaDigits(year)}</option>
-                  ))}
-                </select>
-              </label>
+
+            <div className="flex gap-2 border-b border-[#EEEEEE] p-3">
+              <select
+                value={form.neededMonth}
+                onChange={event => setDatePart('neededMonth', event.target.value)}
+                className="h-10 flex-1 rounded-xl border border-[#E5E5E5] bg-white px-2 text-center text-sm font-semibold outline-none focus:border-[#D92B2B]"
+                aria-label="মাস নির্বাচন করুন"
+              >
+                {BANGLA_MONTHS.map((month, index) => (
+                  <option
+                    key={month}
+                    value={index + 1}
+                    disabled={calendarYear === new Date().getFullYear() && index < new Date().getMonth()}
+                  >
+                    {month}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={form.neededYear}
+                onChange={event => setDatePart('neededYear', event.target.value)}
+                className="h-10 w-28 rounded-xl border border-[#E5E5E5] bg-white px-2 text-center text-sm font-semibold outline-none focus:border-[#D92B2B]"
+                aria-label="বছর নির্বাচন করুন"
+              >
+                {[new Date().getFullYear(), new Date().getFullYear() + 1].map(year => (
+                  <option key={year} value={year}>{toBanglaDigits(year)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-3">
+              <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-semibold text-[#888]">
+                {['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'].map(day => <span key={day}>{day}</span>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: calendarOffset }, (_, index) => <span key={`empty-${index}`} />)}
+                {Array.from({ length: calendarDays }, (_, index) => index + 1).map(day => {
+                  const date = new Date(calendarYear, calendarMonth - 1, day)
+                  const disabled = date.getTime() < todayStart.getTime()
+                  const selected = form.neededDay === String(day)
+                    && form.neededMonth === String(calendarMonth)
+                    && form.neededYear === String(calendarYear)
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setDatePart('neededDay', String(day))}
+                      className={`aspect-square min-h-9 rounded-xl text-sm font-semibold transition-colors ${
+                        selected
+                          ? 'bg-[#D92B2B] text-white shadow-md shadow-red-100'
+                          : disabled
+                            ? 'text-gray-300'
+                            : 'text-[#333] hover:bg-red-50 active:bg-red-100'
+                      }`}
+                    >
+                      {toBanglaDigits(day)}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             {form.neededAt && (
-              <p className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-center text-sm font-semibold text-[#1A9E6B]">
+              <p className="mx-3 mb-3 rounded-xl bg-green-50 px-3 py-2 text-center text-sm font-semibold text-[#1A9E6B]">
                 নির্বাচিত তারিখ: {toBanglaDigits(form.neededDay)} {BANGLA_MONTHS[Number(form.neededMonth) - 1]} {toBanglaDigits(form.neededYear)}
               </p>
             )}

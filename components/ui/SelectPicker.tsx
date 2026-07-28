@@ -68,12 +68,6 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
                 <button
                   key={opt}
                   type="button"
-                  onPointerDown={(event) => {
-                    event.preventDefault()
-                    onChange(opt)
-                    setOpen(false)
-                    setSearch('')
-                  }}
                   onClick={() => { onChange(opt); setOpen(false); setSearch('') }}
                   className={`w-full min-h-12 touch-manipulation text-left px-4 py-3 text-sm transition-colors ${
                     value === opt
