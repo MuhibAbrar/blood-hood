@@ -252,35 +252,51 @@ export default function RequestDetailClient() {
             <BloodGroupBadge group={request.bloodGroup} size="lg" />
             <div className="flex-1">
               <h2 className="text-lg font-bold text-[#111111]">{request.patientName}</h2>
-              <p className="text-[#555555] text-sm mt-1">🏥 {request.hospital}</p>
-              <p className="text-[#555555] text-sm">📍 {request.area}</p>
               <p className="text-xs text-[#555555]/70 mt-1">
                 {daysAgo === 0 ? 'আজকে' : `${daysAgo} দিন আগে`} — {request.respondedBy.length} জন সাড়া দিয়েছেন
               </p>
             </div>
           </div>
-          {/* Bags count */}
-          {request.bags > 1 && (
-            <div className="mt-3 flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2">
-              <span>🩸</span>
-              <span className="text-sm font-semibold text-[#D92B2B]">{request.bags} ব্যাগ রক্তের প্রয়োজন</span>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-[#E8E8E8] bg-[#FAFAFA]">
+            <div className="border-b border-[#E8E8E8] bg-white px-4 py-2.5">
+              <p className="text-sm font-bold text-[#111111]">অনুরোধের বিস্তারিত</p>
             </div>
-          )}
-          {request.note && (
-            <p className="mt-3 text-sm text-[#555555] bg-gray-50 rounded-xl p-3">{request.note}</p>
-          )}
-          {(request.patientProblem || request.neededAt || request.requesterRelation) && (
-            <div className="mt-3 grid gap-2 rounded-xl bg-[#FAFAFA] p-3 text-sm">
+            <div className="grid grid-cols-2 gap-px bg-[#E8E8E8]">
+              <div className="col-span-2 bg-[#FAFAFA] p-3">
+                <p className="text-[11px] text-[#777]">হাসপাতাল</p>
+                <p className="mt-0.5 text-sm font-semibold text-[#222]">🏥 {request.hospital}</p>
+              </div>
+              <div className="bg-[#FAFAFA] p-3">
+                <p className="text-[11px] text-[#777]">উপজেলা / থানা</p>
+                <p className="mt-0.5 text-sm font-semibold text-[#222]">📍 {request.area || 'উল্লেখ নেই'}</p>
+              </div>
+              <div className="bg-red-50 p-3">
+                <p className="text-[11px] text-[#9A5555]">প্রয়োজন</p>
+                <p className="mt-0.5 text-sm font-bold text-[#D92B2B]">🩸 {request.bags || 1} ব্যাগ</p>
+              </div>
               {request.patientProblem && (
-                <p><span className="text-[#666]">রোগীর সমস্যা:</span> <strong>{request.patientProblem}</strong></p>
+                <div className="bg-[#FAFAFA] p-3">
+                  <p className="text-[11px] text-[#777]">রোগীর সমস্যা</p>
+                  <p className="mt-0.5 text-sm font-semibold text-[#222]">🩺 {request.patientProblem}</p>
+                </div>
               )}
               {request.neededAt && (
-                <p><span className="text-[#666]">রক্ত লাগবে:</span> <strong>{formatBanglaDate(request.neededAt.toDate())}</strong></p>
+                <div className="bg-amber-50 p-3">
+                  <p className="text-[11px] text-amber-700">রক্ত লাগবে</p>
+                  <p className="mt-0.5 text-sm font-semibold text-amber-800">📅 {formatBanglaDate(request.neededAt.toDate())}</p>
+                </div>
               )}
               {request.requesterRelation && (
-                <p><span className="text-[#666]">যোগাযোগকারীর সম্পর্ক:</span> <strong>{request.requesterRelation}</strong></p>
+                <div className="col-span-2 bg-[#FAFAFA] p-3">
+                  <p className="text-[11px] text-[#777]">যোগাযোগকারীর পরিচয়</p>
+                  <p className="mt-0.5 text-sm font-semibold text-[#222]">👤 {request.requesterRelation}</p>
+                </div>
               )}
             </div>
+          </div>
+          {request.note && (
+            <p className="mt-3 rounded-xl bg-gray-50 p-3 text-sm text-[#555555]">{request.note}</p>
           )}
 
           {/* Share button — always visible */}

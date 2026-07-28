@@ -104,19 +104,12 @@ export default function RequestCard({ request }: RequestCardProps) {
             </span>
           )}
         </div>
-        <p className="text-sm text-[#555555] flex items-center gap-2">
-          <PhoneIcon className="w-4 h-4 shrink-0 stroke-[#999]" />
-          {user ? (
-            <span className="font-medium text-[#111111]">{request.contactPhone}</span>
-          ) : (
-            <button
-              onClick={e => { e.stopPropagation(); router.push('/login') }}
-              className="text-[#D92B2B] font-medium underline underline-offset-2 text-sm"
-            >
-              নম্বর দেখতে লগইন করুন
-            </button>
-          )}
-        </p>
+        {request.requesterRelation && (
+          <p className="flex items-center gap-2 text-sm text-[#555555]">
+            <span className="flex w-4 shrink-0 justify-center">👤</span>
+            <span><span className="text-[#777]">যোগাযোগকারী:</span> {request.requesterRelation}</span>
+          </p>
+        )}
         {request.note && (
           <p className="text-sm text-[#555555] bg-[#F8F8F8] rounded-xl px-3 py-2 leading-relaxed">
             {request.note}
