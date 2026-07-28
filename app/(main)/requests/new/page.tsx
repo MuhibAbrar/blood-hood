@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { createBloodRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
-import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import { DISTRICTS_DATA } from '@/lib/constants'
 import SelectPicker from '@/components/ui/SelectPicker'
 import TopBar from '@/components/layout/TopBar'
 import HospitalInput from '@/components/ui/HospitalInput'
@@ -54,6 +54,7 @@ export default function NewRequestPage() {
     bags: 1,
     neededAt: '',
     requesterRelation: '',
+    otherRelation: '',
     confirmedAccurate: false,
   })
 
@@ -81,11 +82,18 @@ export default function NewRequestPage() {
     if (!form.bloodGroup) return 'রক্তের গ্রুপ নির্বাচন করুন'
     const hospitalError = validateMeaningfulName(form.hospital, 'হাসপাতালের সঠিক নাম')
     if (hospitalError) return hospitalError
-    if (!form.district) return 'জেলা নির্বাচন করুন'
+    if (!form.district) return 'আপনার profile-এ জেলা দেওয়া নেই। আগে profile থেকে জেলা নির্বাচন করুন'
     if (!form.area) return 'উপজেলা/থানা নির্বাচন করুন'
-    if (!form.neededAt) return 'কবে রক্ত লাগবে তারিখ ও সময় দিন'
-    if (new Date(form.neededAt).getTime() <= Date.now()) return 'রক্ত লাগার সময় বর্তমান সময়ের পরে হতে হবে'
+    if (!form.neededAt) return 'কবে রক্ত লাগবে তারিখ দিন'
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (new Date(`${form.neededAt}T00:00:00`).getTime() < today.getTime()) return 'অতীতের তারিখ দেওয়া যাবে না'
     if (!form.requesterRelation) return 'রোগীর সঙ্গে আপনার সম্পর্ক নির্বাচন করুন'
+    if (form.requesterRelation === 'অন্যান্য') {
+      const relationError = validateMeaningfulName(form.otherRelation, 'সম্পর্ক')
+      if (relationError) return relationError
+    }
+    if (!Number.isInteger(form.bags) || form.bags < 1 || form.bags > 10) return 'কত ব্যাগ রক্ত লাগবে নির্বাচন করুন'
     if (!/^01[3-9]\d{8}$/.test(normalizedPhone(form.contactPhone))) return 'সঠিক ১১ সংখ্যার বাংলাদেশি মোবাইল নম্বর দিন'
     if (!form.confirmedAccurate) return 'তথ্য সঠিক হওয়ার নিশ্চয়তা দিন'
     return null
@@ -114,13 +122,13 @@ export default function NewRequestPage() {
         district: form.district || undefined,
         area: form.area,
         contactPhone: normalizedPhone(form.contactPhone),
-        requesterRelation: form.requesterRelation,
+        requesterRelation: form.requesterRelation === 'অন্যান্য' ? form.otherRelation.trim() : form.requesterRelation,
         requestedBy: user.uid,
         urgency: form.urgency,
         bags: form.bags,
         orgId: null,
         note: null,
-        neededAt: Timestamp.fromDate(new Date(form.neededAt)),
+        neededAt: Timestamp.fromDate(new Date(`${form.neededAt}T12:00:00`)),
         confirmedAccurate: true,
       })
       showToast('সফলভাবে অনুরোধ পাঠানো হয়েছে!', 'success')
@@ -233,13 +241,14 @@ export default function NewRequestPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা *</label>
-          <SelectPicker
-            value={form.district}
-            onChange={(val) => setForm((f) => ({ ...f, district: val, area: '' }))}
-            options={DISTRICTS}
-            placeholder="জেলা নির্বাচন করুন"
-          />
+          <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+          <div className={`input-field flex items-center justify-between ${form.district ? 'bg-gray-50' : 'border-red-300 bg-red-50'}`}>
+            <span>{form.district || 'Profile-এ জেলা দেওয়া নেই'}</span>
+            <span className="text-xs text-[#777]">Profile থেকে নেওয়া</span>
+          </div>
+          {!form.district && (
+            <p className="mt-1 text-xs text-[#D92B2B]">Request দেওয়ার আগে profile থেকে জেলা নির্বাচন করুন।</p>
+          )}
         </div>
         {form.district && (
           <div>
@@ -261,7 +270,7 @@ export default function NewRequestPage() {
 
         {/* Bags count */}
         <div>
-          <label className="block text-sm font-medium text-[#111111] mb-2">কয় ব্যাগ রক্ত লাগবে?</label>
+          <label className="block text-sm font-medium text-[#111111] mb-2">কয় ব্যাগ রক্ত লাগবে? *</label>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -291,8 +300,8 @@ export default function NewRequestPage() {
           <input
             value={form.neededAt}
             onChange={set('neededAt')}
-            type="datetime-local"
-            min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+            type="date"
+            min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)}
             className="input-field"
           />
         </div>
@@ -301,10 +310,19 @@ export default function NewRequestPage() {
           <label className="block text-sm font-medium text-[#111111] mb-1.5">রোগীর সঙ্গে আপনার সম্পর্ক *</label>
           <SelectPicker
             value={form.requesterRelation}
-            onChange={(val) => setForm(f => ({ ...f, requesterRelation: val }))}
+            onChange={(val) => setForm(f => ({ ...f, requesterRelation: val, otherRelation: val === 'অন্যান্য' ? f.otherRelation : '' }))}
             options={RELATION_OPTIONS}
             placeholder="সম্পর্ক নির্বাচন করুন"
           />
+          {form.requesterRelation === 'অন্যান্য' && (
+            <input
+              value={form.otherRelation}
+              onChange={set('otherRelation')}
+              placeholder="রোগীর সঙ্গে আপনার সম্পর্ক লিখুন"
+              className="input-field mt-2"
+              maxLength={80}
+            />
+          )}
         </div>
 
         <label className="flex items-start gap-3 rounded-2xl border border-[#E5E5E5] bg-white p-4 cursor-pointer">
@@ -346,9 +364,9 @@ export default function NewRequestPage() {
               <div className="flex justify-between gap-4"><span className="text-[#666]">রক্ত</span><strong className="text-[#D92B2B]">{form.bloodGroup} · {form.bags} ব্যাগ</strong></div>
               <div className="flex justify-between gap-4"><span className="text-[#666]">হাসপাতাল</span><strong className="text-right">{form.hospital.trim()}</strong></div>
               <div className="flex justify-between gap-4"><span className="text-[#666]">স্থান</span><strong className="text-right">{form.area}, {form.district}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-[#666]">সময়</span><strong className="text-right">{new Date(form.neededAt).toLocaleString('bn-BD')}</strong></div>
+              <div className="flex justify-between gap-4"><span className="text-[#666]">তারিখ</span><strong className="text-right">{new Date(`${form.neededAt}T12:00:00`).toLocaleDateString('bn-BD')}</strong></div>
               <div className="flex justify-between gap-4"><span className="text-[#666]">যোগাযোগ</span><strong className="text-right">{normalizedPhone(form.contactPhone)}</strong></div>
-              <div className="flex justify-between gap-4"><span className="text-[#666]">সম্পর্ক</span><strong className="text-right">{form.requesterRelation}</strong></div>
+              <div className="flex justify-between gap-4"><span className="text-[#666]">সম্পর্ক</span><strong className="text-right">{form.requesterRelation === 'অন্যান্য' ? form.otherRelation.trim() : form.requesterRelation}</strong></div>
             </div>
 
             <div className="mt-5 flex gap-3">
