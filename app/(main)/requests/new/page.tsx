@@ -16,7 +16,10 @@ import type { BloodGroup, Urgency } from '@/types'
 
 const PROBLEM_OPTIONS = ['অপারেশন', 'দুর্ঘটনা', 'প্রসূতি/ডেলিভারি', 'থ্যালাসেমিয়া', 'ক্যানসার', 'ডায়ালাইসিস', 'রক্তস্বল্পতা', 'অন্যান্য']
 const RELATION_OPTIONS = ['নিজে', 'পরিবারের সদস্য', 'আত্মীয়', 'বন্ধু', 'সংগঠনের স্বেচ্ছাসেবক', 'হাসপাতালের প্রতিনিধি', 'অন্যান্য']
+const BANGLA_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
 const BLOCKED_TEXT = new Set(['test', 'testing', 'xxx', 'xxxx', 'unknown', 'none', 'n/a', 'জানি না', 'নাই', 'কেউ না'])
+const toBanglaDigits = (value: string | number) =>
+  String(value).replace(/\d/g, digit => '০১২৩৪৫৬৭৮৯'[Number(digit)])
 
 function validateMeaningfulName(value: string, label: string): string | null {
   const text = value.trim().replace(/\s+/g, ' ')
@@ -53,6 +56,9 @@ export default function NewRequestPage() {
     urgency: 'normal' as Urgency,
     bags: 1,
     neededAt: '',
+    neededDay: '',
+    neededMonth: '',
+    neededYear: '',
     requesterRelation: '',
     otherRelation: '',
     confirmedAccurate: false,
@@ -70,6 +76,19 @@ export default function NewRequestPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
   const setHospital = (val: string) => setForm(f => ({ ...f, hospital: val }))
+  const setDatePart = (part: 'neededDay' | 'neededMonth' | 'neededYear', value: string) => {
+    setForm(current => {
+      const next = { ...current, [part]: value }
+      const year = Number(next.neededYear)
+      const month = Number(next.neededMonth)
+      const maxDay = year && month ? new Date(year, month, 0).getDate() : 31
+      if (Number(next.neededDay) > maxDay) next.neededDay = ''
+      next.neededAt = next.neededDay && next.neededMonth && next.neededYear
+        ? `${next.neededYear}-${next.neededMonth.padStart(2, '0')}-${next.neededDay.padStart(2, '0')}`
+        : ''
+      return next
+    })
+  }
 
   const validateForm = () => {
     const patientNameError = validateMeaningfulName(form.patientName, 'রোগীর পূর্ণ নাম')
@@ -160,7 +179,7 @@ export default function NewRequestPage() {
   return (
     <div>
       <TopBar title="রক্তের অনুরোধ" back />
-      <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
+      <form onSubmit={handleSubmit} className="px-4 pt-4 pb-28 space-y-4">
         {/* Urgency */}
         <div>
           <label className="block text-sm font-medium text-[#111111] mb-2">জরুরি স্তর *</label>
@@ -297,13 +316,62 @@ export default function NewRequestPage() {
 
         <div>
           <label className="block text-sm font-medium text-[#111111] mb-1.5">কবে রক্ত লাগবে? *</label>
-          <input
-            value={form.neededAt}
-            onChange={set('neededAt')}
-            type="date"
-            min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)}
-            className="input-field"
-          />
+          <div className="rounded-2xl border-2 border-[#E5E5E5] bg-white p-3">
+            <div className="mb-3 flex items-center gap-2 text-sm text-[#555]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50">📅</span>
+              <span>প্রয়োজনের দিন, মাস ও বছর নির্বাচন করুন</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="block">
+                <span className="mb-1 block text-center text-xs font-semibold text-[#666]">দিন</span>
+                <select
+                  value={form.neededDay}
+                  onChange={event => setDatePart('neededDay', event.target.value)}
+                  className="input-field appearance-none px-2 text-center font-semibold"
+                >
+                  <option value="">দিন</option>
+                  {Array.from({
+                    length: form.neededMonth && form.neededYear
+                      ? new Date(Number(form.neededYear), Number(form.neededMonth), 0).getDate()
+                      : 31,
+                  }, (_, index) => index + 1).map(day => (
+                    <option key={day} value={day}>{toBanglaDigits(day)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-center text-xs font-semibold text-[#666]">মাস</span>
+                <select
+                  value={form.neededMonth}
+                  onChange={event => setDatePart('neededMonth', event.target.value)}
+                  className="input-field appearance-none px-1 text-center font-semibold"
+                >
+                  <option value="">মাস</option>
+                  {BANGLA_MONTHS.map((month, index) => (
+                    <option key={month} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-center text-xs font-semibold text-[#666]">বছর</span>
+                <select
+                  value={form.neededYear}
+                  onChange={event => setDatePart('neededYear', event.target.value)}
+                  className="input-field appearance-none px-2 text-center font-semibold"
+                >
+                  <option value="">বছর</option>
+                  {[new Date().getFullYear(), new Date().getFullYear() + 1].map(year => (
+                    <option key={year} value={year}>{toBanglaDigits(year)}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {form.neededAt && (
+              <p className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-center text-sm font-semibold text-[#1A9E6B]">
+                নির্বাচিত তারিখ: {toBanglaDigits(form.neededDay)} {BANGLA_MONTHS[Number(form.neededMonth) - 1]} {toBanglaDigits(form.neededYear)}
+              </p>
+            )}
+          </div>
         </div>
 
         <div>

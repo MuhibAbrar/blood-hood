@@ -48,7 +48,7 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-[#E5E5E5] rounded-2xl shadow-xl overflow-hidden">
+        <div className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[100] bg-white border border-[#E5E5E5] rounded-2xl shadow-2xl overflow-hidden md:absolute md:inset-x-0 md:bottom-auto md:mt-1 md:w-full md:shadow-xl">
           {searchable && (
             <div className="p-2 border-b border-[#F0F0F0]">
               <input
@@ -60,7 +60,7 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
               />
             </div>
           )}
-          <div className="max-h-52 overflow-y-auto overscroll-contain">
+          <div className="max-h-[60vh] overflow-y-auto overscroll-contain pb-3 scroll-pb-6">
             {filtered.length === 0 ? (
               <p className="text-center text-sm text-[#AAAAAA] py-4">কিছু পাওয়া যায়নি</p>
             ) : (
@@ -68,8 +68,14 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
                 <button
                   key={opt}
                   type="button"
+                  onPointerDown={(event) => {
+                    event.preventDefault()
+                    onChange(opt)
+                    setOpen(false)
+                    setSearch('')
+                  }}
                   onClick={() => { onChange(opt); setOpen(false); setSearch('') }}
-                  className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                  className={`w-full min-h-12 touch-manipulation text-left px-4 py-3 text-sm transition-colors ${
                     value === opt
                       ? 'bg-[#FFF0F0] text-[#D92B2B] font-semibold'
                       : 'text-[#111111] hover:bg-[#F5F5F5]'
