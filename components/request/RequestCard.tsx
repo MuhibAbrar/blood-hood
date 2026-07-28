@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import { triggerInstall } from '@/lib/installPrompt'
+import { formatBanglaDate } from '@/lib/constants'
 import type { BloodRequest } from '@/types'
 import { HospitalIcon, DropIcon, PhoneIcon, UsersIcon } from '@/components/ui/Icons'
 
@@ -33,6 +34,7 @@ export default function RequestCard({ request }: RequestCardProps) {
   const daysLeft = request.status === 'open' && request.expiresAt && !isExpired
     ? Math.ceil((request.expiresAt.toDate().getTime() - Date.now()) / 86400000)
     : null
+  const neededDate = request.neededAt?.toDate?.()
 
   const handleRespond = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -85,12 +87,23 @@ export default function RequestCard({ request }: RequestCardProps) {
           <HospitalIcon className="w-4 h-4 shrink-0 stroke-[#999]" />
           <span className="truncate">{request.hospital}{request.area ? `, ${request.area}` : ''}</span>
         </p>
-        {request.bags > 1 && (
-          <p className="text-sm text-[#555555] flex items-center gap-2">
-            <DropIcon className="w-4 h-4 shrink-0 stroke-[#D92B2B]" />
-            <span className="font-medium text-[#D92B2B]">{request.bags} ব্যাগ রক্ত লাগবে</span>
+        {request.patientProblem && (
+          <p className="flex items-center gap-2 text-sm text-[#555555]">
+            <span className="flex w-4 shrink-0 justify-center">🩺</span>
+            <span className="truncate"><span className="text-[#777]">সমস্যা:</span> {request.patientProblem}</span>
           </p>
         )}
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-bold text-[#D92B2B]">
+            <DropIcon className="h-3.5 w-3.5 stroke-current" />
+            {request.bags || 1} ব্যাগ
+          </span>
+          {neededDate && (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700">
+              📅 {formatBanglaDate(neededDate)}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-[#555555] flex items-center gap-2">
           <PhoneIcon className="w-4 h-4 shrink-0 stroke-[#999]" />
           {user ? (
