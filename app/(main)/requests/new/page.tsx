@@ -61,6 +61,7 @@ export default function NewRequestPage() {
     neededYear: String(new Date().getFullYear()),
     requesterRelation: '',
     otherRelation: '',
+    note: '',
     confirmedAccurate: false,
   })
 
@@ -121,6 +122,7 @@ export default function NewRequestPage() {
       if (relationError) return relationError
     }
     if (!Number.isInteger(form.bags) || form.bags < 1 || form.bags > 10) return 'কত ব্যাগ রক্ত লাগবে নির্বাচন করুন'
+    if (form.note.trim().length > 180) return 'বিস্তারিত তথ্য ১৮০ অক্ষরের মধ্যে লিখুন'
     if (!/^01[3-9]\d{8}$/.test(normalizedPhone(form.contactPhone))) return 'সঠিক ১১ সংখ্যার বাংলাদেশি মোবাইল নম্বর দিন'
     if (!form.confirmedAccurate) return 'তথ্য সঠিক হওয়ার নিশ্চয়তা দিন'
     return null
@@ -154,7 +156,7 @@ export default function NewRequestPage() {
         urgency: form.urgency,
         bags: form.bags,
         orgId: null,
-        note: null,
+        note: form.note.trim() || null,
         neededAt: Timestamp.fromDate(new Date(`${form.neededAt}T12:00:00`)),
         confirmedAccurate: true,
       })
@@ -432,6 +434,24 @@ export default function NewRequestPage() {
           )}
         </div>
 
+        <div>
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-[#111111]">বিস্তারিত তথ্য <span className="font-normal text-[#888]">(ঐচ্ছিক)</span></label>
+            <span className={`text-xs ${form.note.length >= 170 ? 'font-semibold text-[#D92B2B]' : 'text-[#888]'}`}>
+              {toBanglaDigits(form.note.length)}/১৮০
+            </span>
+          </div>
+          <textarea
+            value={form.note}
+            onChange={set('note')}
+            placeholder="রোগীর কী হয়েছে বা donor-এর জানা প্রয়োজন—সংক্ষেপে লিখুন"
+            className="input-field min-h-24 resize-none"
+            maxLength={180}
+            rows={4}
+          />
+          <p className="mt-1 text-xs text-[#777]">Phone number বা অপ্রয়োজনীয় ব্যক্তিগত তথ্য এখানে লিখবেন না।</p>
+        </div>
+
         <label className="flex items-start gap-3 rounded-2xl border border-[#E5E5E5] bg-white p-4 cursor-pointer">
           <input
             type="checkbox"
@@ -474,6 +494,12 @@ export default function NewRequestPage() {
               <div className="flex justify-between gap-4"><span className="text-[#666]">তারিখ</span><strong className="text-right">{new Date(`${form.neededAt}T12:00:00`).toLocaleDateString('bn-BD')}</strong></div>
               <div className="flex justify-between gap-4"><span className="text-[#666]">যোগাযোগ</span><strong className="text-right">{normalizedPhone(form.contactPhone)}</strong></div>
               <div className="flex justify-between gap-4"><span className="text-[#666]">সম্পর্ক</span><strong className="text-right">{form.requesterRelation === 'অন্যান্য' ? form.otherRelation.trim() : form.requesterRelation}</strong></div>
+              {form.note.trim() && (
+                <div className="border-t border-[#EEEEEE] pt-3">
+                  <span className="text-[#666]">বিস্তারিত</span>
+                  <p className="mt-1 whitespace-pre-wrap font-medium text-[#222]">{form.note.trim()}</p>
+                </div>
+              )}
             </div>
 
             <div className="mt-5 flex gap-3">

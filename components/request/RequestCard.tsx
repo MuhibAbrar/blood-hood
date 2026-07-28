@@ -111,8 +111,8 @@ export default function RequestCard({ request }: RequestCardProps) {
           </p>
         )}
         {request.note && (
-          <p className="text-sm text-[#555555] bg-[#F8F8F8] rounded-xl px-3 py-2 leading-relaxed">
-            {request.note}
+          <p className="line-clamp-2 rounded-xl border border-[#EEEEEE] bg-[#F8F8F8] px-3 py-2 text-sm leading-relaxed text-[#555555]">
+            <span className="font-semibold text-[#333]">বিস্তারিত: </span>{request.note}
           </p>
         )}
       </div>

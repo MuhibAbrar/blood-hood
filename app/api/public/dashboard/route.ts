@@ -89,8 +89,11 @@ export async function GET(req: NextRequest) {
           urgency: data.urgency ?? 'normal',
           status: data.status ?? 'open',
           respondedBy: Array.isArray(data.respondedBy) ? data.respondedBy : [],
+          patientProblem: data.patientProblem ?? null,
+          requesterRelation: data.requesterRelation ?? null,
           note: data.note ?? null,
           bags: data.bags ?? 1,
+          neededAtMs: data.neededAt?.toMillis?.() ?? null,
           createdAtMs: data.createdAt?.toMillis?.() ?? Date.now(),
           expiresAtMs: data.expiresAt?.toMillis?.() ?? null,
         }

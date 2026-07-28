@@ -51,6 +51,7 @@ export default function DashboardPage() {
           ...request,
           createdAt: Timestamp.fromMillis(request.createdAtMs as number),
           expiresAt: request.expiresAtMs ? Timestamp.fromMillis(request.expiresAtMs as number) : null,
+          neededAt: request.neededAtMs ? Timestamp.fromMillis(request.neededAtMs as number) : null,
           fulfilledAt: null,
           fulfilledBy: null,
           fulfilledByName: null,

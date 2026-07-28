@@ -296,7 +296,10 @@ export default function RequestDetailClient() {
             </div>
           </div>
           {request.note && (
-            <p className="mt-3 rounded-xl bg-gray-50 p-3 text-sm text-[#555555]">{request.note}</p>
+            <div className="mt-3 rounded-xl border border-[#E8E8E8] bg-gray-50 p-3">
+              <p className="text-[11px] font-semibold text-[#777]">বিস্তারিত তথ্য</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#444]">{request.note}</p>
+            </div>
           )}
 
           {/* Share button — always visible */}
