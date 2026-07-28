@@ -167,7 +167,7 @@ export default function RequestCard({ request }: RequestCardProps) {
               onClick={handleRespond}
               className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-60"
             >
-              <span className="flex items-center justify-center gap-1.5"><DropIcon className="w-4 h-4 stroke-white" /> কীভাবে সাহায্য করবেন?</span>
+              <span className="flex items-center justify-center gap-1.5"><DropIcon className="w-4 h-4 stroke-white" /> সাহায্য করুন</span>
             </button>
           )}
         </div>
