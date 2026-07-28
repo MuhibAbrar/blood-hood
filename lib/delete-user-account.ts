@@ -66,6 +66,11 @@ export async function deleteUserAccount(uid: string) {
   for (const doc of [...requestedSnap.docs, ...respondedSnap.docs, ...fulfilledSnap.docs]) requestRefs.set(doc.id, { ref: doc.ref, data: doc.data() })
   for (const { ref, data } of Array.from(requestRefs.values())) {
     const update: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = { respondedBy: FieldValue.arrayRemove(uid) }
+    if (data.responseTypes && typeof data.responseTypes === 'object') {
+      const responseTypes = { ...data.responseTypes }
+      delete responseTypes[uid]
+      update.responseTypes = responseTypes
+    }
     if (data.requestedBy === uid) Object.assign(update, {
       requestedBy: 'deleted-user',
       patientName: 'Deleted request',

@@ -5,6 +5,7 @@ export type UserRole = 'donor' | 'admin' | 'superadmin'
 export type Gender = 'male' | 'female' | 'other'
 export type Urgency = 'urgent' | 'normal'
 export type RequestStatus = 'open' | 'fulfilled' | 'cancelled'
+export type ResponseType = 'self' | 'manage'
 export type CampStatus = 'upcoming' | 'ongoing' | 'completed'
 export type OrgType = 'college' | 'university' | 'ngo' | 'hospital' | 'community'
 
@@ -44,6 +45,7 @@ export interface BloodRequest {
   urgency: Urgency
   status: RequestStatus
   respondedBy: string[]
+  responseTypes?: Record<string, ResponseType>
   fulfilledBy: string | null
   fulfilledByName: string | null
   fulfilledByPhone: string | null

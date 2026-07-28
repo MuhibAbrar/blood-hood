@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
         if (!request.respondedBy?.includes(donorUid) && !['admin', 'superadmin'].includes(role)) {
           throw new ApiAuthError(400, 'Selected donor did not respond to this request')
         }
+        if (request.responseTypes?.[donorUid] === 'manage') {
+          throw new ApiAuthError(400, 'This responder offered to arrange a donor, not donate personally')
+        }
         const donor = donorSnap.data()!
         donorId = donorUid
         donorName = donor.name ?? 'Unknown'

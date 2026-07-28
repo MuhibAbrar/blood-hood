@@ -9,9 +9,12 @@ import type { BloodGroup } from '@/types'
 export async function POST(req: NextRequest) {
   try {
     const actor = await requireUser(req)
-    const { requestId } = await req.json()
+    const { requestId, responseType } = await req.json()
     if (typeof requestId !== 'string' || !requestId) {
       return NextResponse.json({ error: 'requestId required' }, { status: 400 })
+    }
+    if (responseType !== 'self' && responseType !== 'manage') {
+      return NextResponse.json({ error: 'Valid responseType required' }, { status: 400 })
     }
 
     const db = adminDb()
@@ -34,12 +37,15 @@ export async function POST(req: NextRequest) {
       if (!requestDistrict || donorDistrict !== requestDistrict) {
         throw new ApiAuthError(403, 'Only donors from the request district can respond')
       }
-      if (!donor.isAvailable || !canDonate(donor.bloodGroup as BloodGroup, request.bloodGroup as BloodGroup)) {
+      if (responseType === 'self' && (!donor.isAvailable || !canDonate(donor.bloodGroup as BloodGroup, request.bloodGroup as BloodGroup))) {
         throw new ApiAuthError(403, 'Donor is not currently compatible and available')
       }
       if (Array.isArray(request.respondedBy) && request.respondedBy.includes(actor.uid)) return
 
-      tx.update(requestRef, { respondedBy: FieldValue.arrayUnion(actor.uid) })
+      tx.update(requestRef, {
+        respondedBy: FieldValue.arrayUnion(actor.uid),
+        responseTypes: { ...(request.responseTypes ?? {}), [actor.uid]: responseType },
+      })
     })
 
     return NextResponse.json({ success: true })

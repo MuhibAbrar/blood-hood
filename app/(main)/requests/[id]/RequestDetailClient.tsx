@@ -13,7 +13,7 @@ import { belongsToDistrict, resolveDistrict } from '@/lib/location'
 import TopBar from '@/components/layout/TopBar'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
-import type { BloodRequest, User, Organization } from '@/types'
+import type { BloodRequest, User, Organization, ResponseType } from '@/types'
 
 export default function RequestDetailClient() {
   const { id } = useParams<{ id: string }>()
@@ -83,11 +83,11 @@ export default function RequestDetailClient() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const handleRespond = async () => {
+  const handleRespond = async (responseType: ResponseType) => {
     if (!user || !request) return
     setActionLoading(true)
     try {
-      await respondToRequest(request.id, user.uid)
+      await respondToRequest(request.id, user.uid, responseType)
       setShowPhone(true)
       showToast('সফলভাবে সাড়া দেওয়া হয়েছে!', 'success')
       await reload()
@@ -227,11 +227,15 @@ export default function RequestDetailClient() {
   const daysAgo = daysSince(request.createdAt.toDate())
   const isExpired = request.status === 'open' && request.expiresAt != null && request.expiresAt.toDate() < new Date()
   const requestDistrict = resolveDistrict(request)
-  const canCurrentUserRespond = !!user
+  const canCurrentUserManage = !!user
     && !!requestDistrict
     && belongsToDistrict(user, requestDistrict)
+  const canCurrentUserDonate = canCurrentUserManage
     && user.isAvailable
     && canDonate(user.bloodGroup, request.bloodGroup)
+  const selfResponders = responders.filter(
+    responder => (request.responseTypes?.[responder.uid] ?? 'self') === 'self'
+  )
 
   return (
     <div>
@@ -357,12 +361,36 @@ export default function RequestDetailClient() {
         )}
 
         {/* Donor actions */}
-        {request.status === 'open' && !isExpired && user && !isOwner && canCurrentUserRespond && (
+        {request.status === 'open' && !isExpired && user && !isOwner && canCurrentUserManage && (
           <div className="space-y-3">
             {!alreadyResponded && !showPhone ? (
-              <button onClick={handleRespond} disabled={actionLoading} className="btn-primary w-full">
-                {actionLoading ? 'হচ্ছে...' : '🩸 আমি সাহায্য করতে পারব'}
-              </button>
+              <div className="card p-4 space-y-3">
+                <div>
+                  <p className="font-semibold text-[#111111]">কীভাবে সাহায্য করবেন?</p>
+                  <p className="text-xs text-[#555555] mt-1">সঠিক অপশনটি বেছে নিন—দুই ক্ষেত্রেই অনুরোধকারীর নম্বর দেখতে পারবেন।</p>
+                </div>
+                <button
+                  onClick={() => handleRespond('self')}
+                  disabled={actionLoading || !canCurrentUserDonate}
+                  className="w-full text-left p-3 rounded-xl border-2 border-red-100 bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <p className="font-semibold text-[#D92B2B]">🩸 আমি নিজে রক্ত দেব</p>
+                  <p className="text-xs text-[#555555] mt-1">
+                    {canCurrentUserDonate
+                      ? 'আপনার রক্তের গ্রুপ মিলেছে এবং আপনি বর্তমানে available।'
+                      : 'নিজে দিতে হলে রক্তের গ্রুপ মিলতে হবে এবং available থাকতে হবে।'}
+                  </p>
+                </button>
+                <button
+                  onClick={() => handleRespond('manage')}
+                  disabled={actionLoading}
+                  className="w-full text-left p-3 rounded-xl border-2 border-green-100 bg-green-50 disabled:opacity-60"
+                >
+                  <p className="font-semibold text-[#1A9E6B]">🤝 Donor খুঁজে/ব্যবস্থা করে দেব</p>
+                  <p className="text-xs text-[#555555] mt-1">আপনার blood group না মিললেও পরিচিত donor ব্যবস্থা করে সাহায্য করতে পারবেন।</p>
+                </button>
+                {actionLoading && <p className="text-xs text-center text-[#555555]">সাড়া পাঠানো হচ্ছে...</p>}
+              </div>
             ) : (
               <a href={`tel:${request.contactPhone}`} className="btn-primary w-full">
                 📞 এখনই ফোন করুন — {request.contactPhone}
@@ -420,6 +448,15 @@ export default function RequestDetailClient() {
                       <p className="text-xs text-[#555555]">
                         <span className="font-bold text-[#D92B2B]">{r.bloodGroup}</span> · {r.upazila}
                       </p>
+                      <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        (request.responseTypes?.[r.uid] ?? 'self') === 'self'
+                          ? 'bg-red-50 text-[#D92B2B]'
+                          : 'bg-green-50 text-[#1A9E6B]'
+                      }`}>
+                        {(request.responseTypes?.[r.uid] ?? 'self') === 'self'
+                          ? 'নিজে রক্ত দেবেন'
+                          : 'Donor ব্যবস্থা করবেন'}
+                      </span>
                     </div>
                     <a
                       href={`tel:${r.phone}`}
@@ -464,13 +501,13 @@ export default function RequestDetailClient() {
             <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
 
               {/* Responders list */}
-              {responders.length > 0 && (
+              {selfResponders.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-[#111111] mb-2">
-                    🙋 সাড়া দিয়েছেন ({responders.length} জন)
+                    🩸 নিজে রক্ত দেবেন ({selfResponders.length} জন)
                   </p>
                   <div className="space-y-2">
-                    {responders.map(r => {
+                    {selfResponders.map(r => {
                       const isSelected = selectedDonor !== 'external' && (selectedDonor as User)?.uid === r.uid
                       return (
                       <button
@@ -496,9 +533,9 @@ export default function RequestDetailClient() {
                 </div>
               )}
 
-              {responders.length === 0 && (
+              {selfResponders.length === 0 && (
                 <div className="bg-yellow-50 rounded-xl p-3 text-sm text-yellow-700">
-                  কেউ এখনো সাড়া দেননি। নিচে ফোন নম্বর দিয়ে খুঁজুন।
+                  কেউ এখনো নিজে রক্ত দেওয়ার সাড়া দেননি। Donor পাওয়া গেলে নিচে ফোন নম্বর দিয়ে খুঁজুন।
                 </div>
               )}
 

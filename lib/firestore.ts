@@ -25,7 +25,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { authenticatedFetch } from './api-client'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent, ResponseType } from '@/types'
 import { belongsToDistrict } from './location'
 
 // --- Users ---
@@ -85,12 +85,13 @@ export const subscribeToUser = (uid: string, cb: (user: User | null) => void) =>
 
 // --- Blood Requests ---
 
-export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'createdAt' | 'fulfilledAt' | 'respondedBy' | 'fulfilledBy' | 'fulfilledByName' | 'fulfilledByPhone' | 'status'>): Promise<string> => {
+export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'createdAt' | 'fulfilledAt' | 'respondedBy' | 'responseTypes' | 'fulfilledBy' | 'fulfilledByName' | 'fulfilledByPhone' | 'status'>): Promise<string> => {
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
   const ref = await addDoc(collection(db, 'bloodRequests'), {
     ...data,
     status: 'open',
     respondedBy: [],
+    responseTypes: {},
     fulfilledBy: null,
     fulfilledByName: null,
     fulfilledByPhone: null,
@@ -146,11 +147,11 @@ export const getBloodRequest = async (id: string): Promise<BloodRequest | null> 
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as BloodRequest) : null
 }
 
-export const respondToRequest = async (requestId: string, donorUid: string) => {
+export const respondToRequest = async (requestId: string, donorUid: string, responseType: ResponseType) => {
   const response = await authenticatedFetch('/api/requests/respond', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ requestId }),
+    body: JSON.stringify({ requestId, responseType }),
   })
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
@@ -176,6 +177,7 @@ export const respondToRequest = async (requestId: string, donorUid: string) => {
             requestId,
             donorName,
             bloodGroup: requestData.bloodGroup,
+            responseType,
           },
         }),
       }).catch(() => {})

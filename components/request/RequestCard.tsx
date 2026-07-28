@@ -1,10 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { respondToRequest } from '@/lib/firestore'
-import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import { triggerInstall } from '@/lib/installPrompt'
 import type { BloodRequest } from '@/types'
@@ -28,11 +25,7 @@ function timeAgo(date: Date): string {
 export default function RequestCard({ request }: RequestCardProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { showToast } = useToast()
-  const [responding, setResponding] = useState(false)
-  const [responded, setResponded] = useState(
-    user ? request.respondedBy.includes(user.uid) : false
-  )
+  const responded = user ? request.respondedBy.includes(user.uid) : false
 
   const isOwner = user?.uid === request.requestedBy
   const isUrgent = request.urgency === 'urgent'
@@ -41,19 +34,10 @@ export default function RequestCard({ request }: RequestCardProps) {
     ? Math.ceil((request.expiresAt.toDate().getTime() - Date.now()) / 86400000)
     : null
 
-  const handleRespond = async (e: React.MouseEvent) => {
+  const handleRespond = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!user) { router.push('/login'); return }
-    setResponding(true)
-    try {
-      await respondToRequest(request.id, user.uid)
-      setResponded(true)
-      showToast('সাড়া দেওয়া হয়েছে! এখন কল করুন 📞', 'success')
-    } catch {
-      showToast('কিছু একটা সমস্যা হয়েছে', 'error')
-    } finally {
-      setResponding(false)
-    }
+    router.push(`/requests/${request.id}`)
   }
 
   return (
@@ -181,10 +165,9 @@ export default function RequestCard({ request }: RequestCardProps) {
           ) : (
             <button
               onClick={handleRespond}
-              disabled={responding}
               className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-60"
             >
-              {responding ? 'হচ্ছে...' : <span className="flex items-center justify-center gap-1.5"><DropIcon className="w-4 h-4 stroke-white" /> আমি সাহায্য করব</span>}
+              <span className="flex items-center justify-center gap-1.5"><DropIcon className="w-4 h-4 stroke-white" /> কীভাবে সাহায্য করবেন?</span>
             </button>
           )}
         </div>
