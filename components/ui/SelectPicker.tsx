@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 interface SelectPickerProps {
@@ -15,6 +15,14 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [mounted, setMounted] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [position, setPosition] = useState<{
+    left: number
+    top?: number
+    bottom?: number
+    width: number
+    maxHeight: number
+  } | null>(null)
 
   const filtered = searchable && search
     ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
@@ -26,17 +34,44 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
 
   useEffect(() => {
     if (!open) return
-    const previousOverflow = document.body.style.overflow
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false)
     }
-    document.body.style.overflow = 'hidden'
+    const closeOnViewportChange = () => setOpen(false)
     document.addEventListener('keydown', closeOnEscape)
+    window.addEventListener('resize', closeOnViewportChange)
     return () => {
-      document.body.style.overflow = previousOverflow
       document.removeEventListener('keydown', closeOnEscape)
+      window.removeEventListener('resize', closeOnViewportChange)
     }
   }, [open])
+
+  const openPicker = () => {
+    const trigger = triggerRef.current
+    if (!trigger || options.length === 0) return
+    const rect = trigger.getBoundingClientRect()
+    const viewportPadding = 12
+    const gap = 6
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding - gap
+    const spaceAbove = rect.top - viewportPadding - gap
+    const openBelow = spaceBelow >= 220 || spaceBelow >= spaceAbove
+    const availableHeight = Math.max(140, openBelow ? spaceBelow : spaceAbove)
+    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2)
+    const left = Math.min(
+      Math.max(viewportPadding, rect.left),
+      window.innerWidth - width - viewportPadding
+    )
+    setPosition({
+      left,
+      width,
+      maxHeight: Math.min(320, availableHeight),
+      ...(openBelow
+        ? { top: rect.bottom + gap }
+        : { bottom: window.innerHeight - rect.top + gap }),
+    })
+    setSearch('')
+    setOpen(true)
+  }
 
   const choose = (option: string) => {
     onChange(option)
@@ -46,30 +81,16 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
 
   const panel = open && mounted ? createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/40 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:items-center md:p-6"
+      className="fixed inset-0 z-[120]"
       onClick={() => setOpen(false)}
     >
       <div
-        role="dialog"
-        aria-modal="true"
+        role="listbox"
         aria-label={placeholder}
-        className="flex max-h-[78dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-[#E5E5E5] bg-white shadow-2xl"
+        className="fixed flex flex-col overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white shadow-2xl"
+        style={position ?? undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#EEEEEE] px-4 py-3">
-          <div className="min-w-0">
-            <p className="text-xs text-[#777]">নির্বাচন করুন</p>
-            <p className="truncate text-sm font-semibold text-[#111]">{value || placeholder}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xl text-[#555]"
-            aria-label="বন্ধ করুন"
-          >
-            ×
-          </button>
-        </div>
         {searchable && (
           <div className="shrink-0 border-b border-[#F0F0F0] p-3">
             <input
@@ -81,7 +102,7 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
             />
           </div>
         )}
-        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-2 py-2 pb-5">
+        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain p-2">
           {filtered.length === 0 ? (
             <p className="py-6 text-center text-sm text-[#AAAAAA]">কিছু পাওয়া যায়নি</p>
           ) : (
@@ -110,8 +131,9 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => { setOpen(true); setSearch('') }}
+        onClick={openPicker}
         disabled={options.length === 0}
         aria-expanded={open}
         className="input-field flex w-full items-center justify-between text-left disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-60"
