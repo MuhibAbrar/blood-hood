@@ -251,7 +251,6 @@ export default function AdminOrgsPage() {
                     onChange={(val) => setForm(f => ({ ...f, area: val }))}
                     options={DISTRICTS_DATA[form.district] ?? []}
                     placeholder="উপজেলা নির্বাচন করুন"
-                    searchable
                   />
                 </div>
               )}
