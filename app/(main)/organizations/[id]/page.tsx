@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { getOrganization, requestJoinOrg, getUserJoinRequest } from '@/lib/firestore'
+import { cancelJoinOrgRequest, getOrganization, requestJoinOrg, getUserJoinRequest } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import TopBar from '@/components/layout/TopBar'
@@ -19,6 +19,7 @@ export default function OrgDetailPage() {
   const [joinRequest, setJoinRequest] = useState<JoinRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
+  const [cancellingRequest, setCancellingRequest] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
 
@@ -83,6 +84,20 @@ export default function OrgDetailPage() {
       else showToast('কিছু একটা সমস্যা হয়েছে', 'error')
     } finally {
       setRequesting(false)
+    }
+  }
+
+  const handleCancelJoinRequest = async () => {
+    if (!org || cancellingRequest) return
+    setCancellingRequest(true)
+    try {
+      await cancelJoinOrgRequest(org.id)
+      setJoinRequest(null)
+      showToast('যোগ দেওয়ার অনুরোধ বাতিল করা হয়েছে', 'success')
+    } catch {
+      showToast('অনুরোধ বাতিল করা যায়নি, আবার চেষ্টা করুন', 'error')
+    } finally {
+      setCancellingRequest(false)
     }
   }
 
@@ -179,9 +194,19 @@ export default function OrgDetailPage() {
             <p className="text-xs text-amber-700 mt-1">Admin জেলা আপডেট করার পর যোগ দেওয়া যাবে।</p>
           </div>
         ) : hasPendingRequest ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
-            <p className="text-yellow-700 font-semibold">⏳ অনুরোধ পেন্ডিং</p>
-            <p className="text-xs text-[#555555] mt-1">অ্যাডমিন অনুমোদন করলে আপনি সদস্য হবেন</p>
+          <div className="space-y-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+            <div>
+              <p className="font-semibold text-yellow-700">⏳ অনুরোধ পেন্ডিং</p>
+              <p className="mt-1 text-xs text-[#555555]">অ্যাডমিন অনুমোদন করলে আপনি সদস্য হবেন</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCancelJoinRequest}
+              disabled={cancellingRequest}
+              className="w-full rounded-xl border border-red-200 bg-white py-2.5 text-sm font-semibold text-[#D92B2B] transition-colors hover:bg-red-50 disabled:opacity-60"
+            >
+              {cancellingRequest ? 'বাতিল করা হচ্ছে...' : 'অনুরোধ বাতিল করুন'}
+            </button>
           </div>
         ) : isInAnotherOrg ? (
           <div className="bg-gray-50 border border-[#E5E5E5] rounded-2xl p-4 text-center">

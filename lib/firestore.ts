@@ -556,6 +556,16 @@ export const requestJoinOrg = async (orgId: string): Promise<void> => {
   if (!response.ok) throw new Error(result.error || 'Unable to request organization membership')
 }
 
+export const cancelJoinOrgRequest = async (orgId: string): Promise<void> => {
+  const response = await authenticatedFetch('/api/organizations/join-request', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orgId }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to cancel join request')
+}
+
 export const getJoinRequests = async (orgId: string): Promise<JoinRequest[]> => {
   const q = query(
     collection(db, 'joinRequests'),

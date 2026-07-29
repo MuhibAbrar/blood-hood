@@ -87,3 +87,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unable to request organization membership' }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const actor = await requireUser(req)
+    const { orgId } = await req.json()
+    if (typeof orgId !== 'string' || !orgId.trim()) {
+      return NextResponse.json({ error: 'Organization required' }, { status: 400 })
+    }
+
+    const db = adminDb()
+    const pending = await db.collection('joinRequests')
+      .where('orgId', '==', orgId)
+      .where('userId', '==', actor.uid)
+      .where('status', '==', 'pending')
+      .get()
+
+    if (!pending.empty) {
+      await db.runTransaction(async transaction => {
+        const latest = await Promise.all(pending.docs.map(document => transaction.get(document.ref)))
+        latest.forEach(document => {
+          const data = document.data()
+          if (
+            document.exists
+            && data?.orgId === orgId
+            && data?.userId === actor.uid
+            && data?.status === 'pending'
+          ) {
+            transaction.delete(document.ref)
+          }
+        })
+      })
+    }
+
+    return NextResponse.json({ success: true, cancelled: pending.size })
+  } catch (error: unknown) {
+    const authError = authErrorResponse(error)
+    if (authError) return authError
+    console.error('Cancel organization join request failed:', error)
+    return NextResponse.json({ error: 'Unable to cancel join request' }, { status: 500 })
+  }
+}
