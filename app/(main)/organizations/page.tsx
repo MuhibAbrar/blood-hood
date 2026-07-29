@@ -34,9 +34,10 @@ export default function OrganizationsPage() {
     }
     getOrganizations()
       .then((organizations) => {
-        const visible = user.role === 'superadmin'
-          ? organizations
-          : organizations.filter(org => resolveOrganizationDistrict(org) === user.district?.trim())
+        const district = user.district?.trim()
+        const visible = district
+          ? organizations.filter(org => resolveOrganizationDistrict(org) === district)
+          : []
         setOrgs(rankOrganizations(visible))
       })
       .finally(() => setLoading(false))
@@ -51,7 +52,7 @@ export default function OrganizationsPage() {
       <div className="px-4 py-4 space-y-3">
         {loading ? (
           [...Array(3)].map((_, i) => <div key={i} className="card h-20 animate-pulse bg-gray-100" />)
-        ) : !user?.district && user?.role !== 'superadmin' ? (
+        ) : !user?.district ? (
           <div className="card p-6 text-center">
             <p className="font-semibold text-[#111111]">আগে Profile থেকে আপনার জেলা নির্বাচন করুন</p>
             <p className="mt-1 text-sm text-[#555555]">জেলা অনুযায়ী কাছের সংগঠন দেখানো হবে।</p>

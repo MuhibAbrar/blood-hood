@@ -100,9 +100,32 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     if (!user) return
+    const name = form.name.trim()
+    if (!name) {
+      showToast('নাম লিখুন', 'error')
+      return
+    }
+    if (!form.division) {
+      showToast('বিভাগ নির্বাচন করুন', 'error')
+      return
+    }
+    if (!getDistrictsForDivision(form.division).includes(form.district)) {
+      showToast('জেলা নির্বাচন করুন', 'error')
+      return
+    }
+    if (!(DISTRICTS_DATA[form.district] ?? []).includes(form.upazila)) {
+      showToast('উপজেলা নির্বাচন করুন', 'error')
+      return
+    }
     setLoading(true)
     try {
-      await updateUser(user.uid, { name: form.name, division: form.division, district: form.district, area: form.area, upazila: form.upazila })
+      await updateUser(user.uid, {
+        name,
+        division: form.division,
+        district: form.district,
+        area: form.area.trim(),
+        upazila: form.upazila,
+      })
       await refreshUser()
       showToast('প্রোফাইল আপডেট হয়েছে', 'success')
       setEditing(false)
@@ -310,7 +333,7 @@ export default function ProfilePage() {
               <input value={form.name} onChange={set('name')} className="input-field" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#111111] mb-1.5">বিভাগ</label>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">বিভাগ *</label>
               <SelectPicker
                 value={form.division}
                 onChange={(val) => setForm((f) => ({ ...f, division: val, district: '', upazila: '' }))}
@@ -319,7 +342,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা *</label>
               <SelectPicker
                 value={form.district}
                 onChange={(val) => setForm((f) => ({ ...f, district: val, upazila: '' }))}
@@ -329,13 +352,12 @@ export default function ProfilePage() {
             </div>
             {form.district && (
               <div>
-                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা</label>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">উপজেলা *</label>
                 <SelectPicker
                   value={form.upazila}
                   onChange={(val) => setForm((f) => ({ ...f, upazila: val }))}
                   options={DISTRICTS_DATA[form.district] ?? []}
                   placeholder="উপজেলা নির্বাচন করুন"
-                  searchable
                 />
               </div>
             )}
