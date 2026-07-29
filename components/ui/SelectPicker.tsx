@@ -34,6 +34,22 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
 
   useEffect(() => {
     if (!open) return
+    const scrollY = window.scrollY
+    const previousBodyStyles = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      left: document.body.style.left,
+      right: document.body.style.right,
+      width: document.body.style.width,
+      overflow: document.body.style.overflow,
+    }
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.width = '100%'
+    document.body.style.overflow = 'hidden'
+
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false)
     }
@@ -43,6 +59,13 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
     return () => {
       document.removeEventListener('keydown', closeOnEscape)
       window.removeEventListener('resize', closeOnViewportChange)
+      document.body.style.position = previousBodyStyles.position
+      document.body.style.top = previousBodyStyles.top
+      document.body.style.left = previousBodyStyles.left
+      document.body.style.right = previousBodyStyles.right
+      document.body.style.width = previousBodyStyles.width
+      document.body.style.overflow = previousBodyStyles.overflow
+      window.scrollTo(0, scrollY)
     }
   }, [open])
 
@@ -81,7 +104,7 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
 
   const panel = open && mounted ? createPortal(
     <div
-      className="fixed inset-0 z-[120]"
+      className="fixed inset-0 z-[120] bg-black/15 backdrop-blur-[1px]"
       onClick={() => setOpen(false)}
     >
       <div
