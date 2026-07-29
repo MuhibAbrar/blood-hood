@@ -36,6 +36,30 @@ export const DISTRICTS_DATA: Record<string, string[]> = {
 
 export const DISTRICTS = Object.keys(DISTRICTS_DATA)
 
+// Only districts currently supported by Blood Hood are listed here.
+// Add a district to this mapping only when that district is launched in the app.
+export const DIVISION_DISTRICTS: Record<string, string[]> = {
+  'খুলনা': ['খুলনা'],
+  'ঢাকা': ['ঢাকা'],
+  'চট্টগ্রাম': ['চট্টগ্রাম'],
+  'রাজশাহী': ['রাজশাহী'],
+  'সিলেট': ['সিলেট'],
+  'বরিশাল': ['বরিশাল'],
+}
+
+export const DIVISIONS = Object.keys(DIVISION_DISTRICTS)
+
+export function getDivisionForDistrict(district?: string | null): string {
+  const normalized = district?.trim()
+  if (!normalized) return ''
+  return Object.entries(DIVISION_DISTRICTS)
+    .find(([, districts]) => districts.includes(normalized))?.[0] ?? ''
+}
+
+export function getDistrictsForDivision(division?: string | null): string[] {
+  return division ? (DIVISION_DISTRICTS[division] ?? []) : []
+}
+
 // backward compat
 export const KHULNA_UPAZILAS = DISTRICTS_DATA['খুলনা']
 

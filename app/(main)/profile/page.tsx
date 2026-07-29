@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { getOrganizationsForUser, updateUser } from '@/lib/firestore'
 import { logout } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
-import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import { DISTRICTS_DATA, DIVISIONS, getDistrictsForDivision, getDivisionForDistrict } from '@/lib/constants'
 import SelectPicker from '@/components/ui/SelectPicker'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
@@ -27,7 +27,13 @@ export default function ProfilePage() {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ name: user?.name ?? '', district: user?.district ?? '', area: user?.area ?? '', upazila: user?.upazila ?? '' })
+  const [form, setForm] = useState({
+    name: user?.name ?? '',
+    division: user?.division ?? getDivisionForDistrict(user?.district),
+    district: user?.district ?? '',
+    area: user?.area ?? '',
+    upazila: user?.upazila ?? '',
+  })
   const [donationModal, setDonationModal] = useState(false)
   const [donationDate, setDonationDate] = useState('')
   const [donationLoading, setDonationLoading] = useState(false)
@@ -41,6 +47,17 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user?.uid) getBloodRequestCountByUser(user.uid).then(setRequestCount)
   }, [user?.uid])
+
+  useEffect(() => {
+    if (!user || editing) return
+    setForm({
+      name: user.name,
+      division: user.division || getDivisionForDistrict(user.district),
+      district: user.district ?? '',
+      area: user.area ?? '',
+      upazila: user.upazila ?? '',
+    })
+  }, [user, editing])
 
   useEffect(() => {
     if (!user?.uid) return
@@ -85,7 +102,7 @@ export default function ProfilePage() {
     if (!user) return
     setLoading(true)
     try {
-      await updateUser(user.uid, { name: form.name, district: form.district, area: form.area, upazila: form.upazila })
+      await updateUser(user.uid, { name: form.name, division: form.division, district: form.district, area: form.area, upazila: form.upazila })
       await refreshUser()
       showToast('প্রোফাইল আপডেট হয়েছে', 'success')
       setEditing(false)
@@ -293,11 +310,20 @@ export default function ProfilePage() {
               <input value={form.name} onChange={set('name')} className="input-field" />
             </div>
             <div>
+              <label className="block text-sm font-medium text-[#111111] mb-1.5">বিভাগ</label>
+              <SelectPicker
+                value={form.division}
+                onChange={(val) => setForm((f) => ({ ...f, division: val, district: '', upazila: '' }))}
+                options={DIVISIONS}
+                placeholder="বিভাগ নির্বাচন করুন"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
               <SelectPicker
                 value={form.district}
                 onChange={(val) => setForm((f) => ({ ...f, district: val, upazila: '' }))}
-                options={DISTRICTS}
+                options={getDistrictsForDivision(form.division)}
                 placeholder="জেলা নির্বাচন করুন"
               />
             </div>
@@ -325,6 +351,7 @@ export default function ProfilePage() {
           <div className="card divide-y divide-[#F0F0F0]">
             <InfoRow label="রক্তের গ্রুপ" value={user.bloodGroup} />
             <InfoRow label="বয়স" value={`${user.age} বছর`} />
+            {getDivisionForDistrict(user.district) && <InfoRow label="বিভাগ" value={user.division || getDivisionForDistrict(user.district)} />}
             {user.district && <InfoRow label="জেলা" value={user.district} />}
             <InfoRow label="উপজেলা" value={user.upazila} />
             {user.area && <InfoRow label="এলাকা" value={user.area} />}

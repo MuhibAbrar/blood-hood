@@ -14,6 +14,7 @@ export interface User {
   name: string
   phone: string
   bloodGroup: BloodGroup
+  division?: string
   district?: string
   area: string
   upazila: string
@@ -80,6 +81,7 @@ export interface Organization {
   id: string
   name: string
   type: OrgType
+  division?: string
   district?: string
   area: string
   adminIds: string[]

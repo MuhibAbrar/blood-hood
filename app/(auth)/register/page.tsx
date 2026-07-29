@@ -8,7 +8,7 @@ import { createUser } from '@/lib/firestore'
 import { formatPhone, validateBDPhone } from '@/lib/auth'
 import { auth } from '@/lib/firebase'
 import { useToast } from '@/components/ui/Toast'
-import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import { DIVISIONS, DISTRICTS_DATA, getDistrictsForDivision } from '@/lib/constants'
 import { BLOOD_GROUPS, BLOOD_GROUP_COLORS } from '@/lib/bloodCompatibility'
 import SelectPicker from '@/components/ui/SelectPicker'
 import type { BloodGroup, Gender } from '@/types'
@@ -41,6 +41,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     name: '',
     bloodGroup: '' as BloodGroup | '',
+    division: '',
     district: '',
     area: '',
     upazila: '',
@@ -178,6 +179,7 @@ export default function RegisterPage() {
         name: form.name,
         phone: authPhone,
         bloodGroup: form.bloodGroup as BloodGroup,
+        division: form.division,
         district: form.district,
         area: form.area,
         upazila: form.upazila,
@@ -425,11 +427,20 @@ export default function RegisterPage() {
       {step === 3 && (
         <div className="space-y-4">
           <div>
+            <label className="block text-sm font-medium text-[#111111] mb-1.5">বিভাগ *</label>
+            <SelectPicker
+              value={form.division}
+              onChange={(val) => setForm((f) => ({ ...f, division: val, district: '', upazila: '' }))}
+              options={DIVISIONS}
+              placeholder="বিভাগ নির্বাচন করুন"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা *</label>
             <SelectPicker
               value={form.district}
               onChange={(val) => setForm((f) => ({ ...f, district: val, upazila: '' }))}
-              options={DISTRICTS}
+              options={getDistrictsForDivision(form.division)}
               placeholder="জেলা নির্বাচন করুন"
             />
           </div>
@@ -456,6 +467,7 @@ export default function RegisterPage() {
             <button onClick={() => setStep(2)} className="btn-ghost flex-1 border border-[#E5E5E5]">← পিছনে</button>
             <button
               onClick={() => {
+                if (!form.division) { showToast('বিভাগ নির্বাচন করুন', 'error'); return }
                 if (!form.district) { showToast('জেলা নির্বাচন করুন', 'error'); return }
                 if (!form.upazila) { showToast('উপজেলা নির্বাচন করুন', 'error'); return }
                 handleSubmit()

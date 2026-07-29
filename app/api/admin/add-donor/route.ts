@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { authErrorResponse, requireOrgAdmin, requireRole } from '@/lib/api-auth'
+import { getDivisionForDistrict } from '@/lib/constants'
 
 // POST /api/admin/add-donor
 // Body: { name, phone, bloodGroup, upazila, area, gender, age? }
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
       name,
       phone,
       bloodGroup,
+      division: getDivisionForDistrict(district),
       district: district ?? '',
       upazila,
       area: area ?? '',

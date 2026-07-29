@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import { getOrganizations, createOrganization, updateOrganization, getAllUsers } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/Toast'
-import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
+import { DISTRICTS_DATA, DIVISIONS, getDistrictsForDivision, getDivisionForDistrict } from '@/lib/constants'
 import SelectPicker from '@/components/ui/SelectPicker'
 import type { Organization, OrgType, User } from '@/types'
 import { authenticatedFetch } from '@/lib/api-client'
 
-const emptyForm = { name: '', type: 'community' as OrgType, district: '', area: '', isVerified: false, adminIds: [] as string[], logo: null as null }
+const emptyForm = { name: '', type: 'community' as OrgType, division: '', district: '', area: '', isVerified: false, adminIds: [] as string[], logo: null as null }
 
 const orgTypes: { value: OrgType; label: string; icon: string }[] = [
   { value: 'community', label: 'কমিউনিটি', icon: '🏘️' },
@@ -51,7 +51,7 @@ export default function AdminOrgsPage() {
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (org: Organization) => {
     setEditing(org)
-    setForm({ name: org.name, type: org.type, district: org.district ?? '', area: org.area, isVerified: org.isVerified, adminIds: org.adminIds, logo: null })
+    setForm({ name: org.name, type: org.type, division: org.division || getDivisionForDistrict(org.district), district: org.district ?? '', area: org.area, isVerified: org.isVerified, adminIds: org.adminIds, logo: null })
     setShowModal(true)
   }
 
@@ -59,15 +59,15 @@ export default function AdminOrgsPage() {
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   const handleSave = async () => {
-    if (!form.name || !form.district || !form.area) { showToast('নাম, জেলা ও এলাকা পূরণ করুন', 'error'); return }
+    if (!form.name || !form.division || !form.district || !form.area) { showToast('নাম, বিভাগ, জেলা ও এলাকা পূরণ করুন', 'error'); return }
     if (!user) return
     setSaving(true)
     try {
       if (editing) {
-        await updateOrganization(editing.id, { name: form.name, type: form.type, district: form.district, area: form.area, isVerified: form.isVerified })
+        await updateOrganization(editing.id, { name: form.name, type: form.type, division: form.division, district: form.district, area: form.area, isVerified: form.isVerified })
         showToast('সংগঠন আপডেট হয়েছে', 'success')
       } else {
-        await createOrganization({ name: form.name, type: form.type, district: form.district, area: form.area, isVerified: form.isVerified, adminIds: [user.uid], logo: null })
+        await createOrganization({ name: form.name, type: form.type, division: form.division, district: form.district, area: form.area, isVerified: form.isVerified, adminIds: [user.uid], logo: null })
         showToast('নতুন সংগঠন তৈরি হয়েছে', 'success')
       }
       setShowModal(false)
@@ -226,11 +226,20 @@ export default function AdminOrgsPage() {
                 </div>
               </div>
               <div>
+                <label className="block text-sm font-medium text-[#111111] mb-1.5">বিভাগ</label>
+                <SelectPicker
+                  value={form.division}
+                  onChange={(val) => setForm(f => ({ ...f, division: val, district: '', area: '' }))}
+                  options={DIVISIONS}
+                  placeholder="বিভাগ নির্বাচন করুন"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-[#111111] mb-1.5">জেলা</label>
                 <SelectPicker
                   value={form.district}
                   onChange={(val) => setForm(f => ({ ...f, district: val, area: '' }))}
-                  options={DISTRICTS}
+                  options={getDistrictsForDivision(form.division)}
                   placeholder="জেলা নির্বাচন করুন"
                 />
               </div>
