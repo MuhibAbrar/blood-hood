@@ -14,6 +14,17 @@ import TopBar from '@/components/layout/TopBar'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
 import { RequestCardSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { BloodRequest, User, Organization, ResponseType } from '@/types'
+import {
+  CalendarIcon,
+  DropIcon,
+  FileTextIcon,
+  HandHeartIcon,
+  HospitalIcon,
+  MapPinIcon,
+  PhoneIcon,
+  StethoscopeIcon,
+  UserRoundIcon,
+} from '@/components/ui/Icons'
 
 export default function RequestDetailClient() {
   const { id } = useParams<{ id: string }>()
@@ -245,7 +256,7 @@ export default function RequestDetailClient() {
         <div className={`card p-5 ${request.urgency === 'urgent' ? 'border-2 border-[#D92B2B]' : ''}`}>
           {request.urgency === 'urgent' && (
             <div className="bg-[#D92B2B] text-white text-sm font-semibold px-3 py-1.5 rounded-lg mb-4 flex items-center gap-2">
-              🔴 জরুরি রক্তের প্রয়োজন!
+              <DropIcon className="h-4 w-4 shrink-0 stroke-white" /> জরুরি রক্তের প্রয়োজন!
             </div>
           )}
           <div className="flex items-start gap-4">
@@ -265,39 +276,39 @@ export default function RequestDetailClient() {
             <div className="grid grid-cols-2 gap-px bg-[#E8E8E8]">
               <div className="col-span-2 bg-[#FAFAFA] p-3">
                 <p className="text-[11px] text-[#777]">হাসপাতাল</p>
-                <p className="mt-0.5 text-sm font-semibold text-[#222]">🏥 {request.hospital}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-[#222]"><HospitalIcon className="h-4 w-4 shrink-0 stroke-[#888]" /> {request.hospital}</p>
               </div>
               <div className="bg-[#FAFAFA] p-3">
                 <p className="text-[11px] text-[#777]">উপজেলা / থানা</p>
-                <p className="mt-0.5 text-sm font-semibold text-[#222]">📍 {request.area || 'উল্লেখ নেই'}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-[#222]"><MapPinIcon className="h-4 w-4 shrink-0 stroke-[#888]" /> {request.area || 'উল্লেখ নেই'}</p>
               </div>
               <div className="bg-red-50 p-3">
                 <p className="text-[11px] text-[#9A5555]">প্রয়োজন</p>
-                <p className="mt-0.5 text-sm font-bold text-[#D92B2B]">🩸 {request.bags || 1} ব্যাগ</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-bold text-[#D92B2B]"><DropIcon className="h-4 w-4 shrink-0 stroke-current" /> {request.bags || 1} ব্যাগ</p>
               </div>
               {request.patientProblem && (
                 <div className="bg-[#FAFAFA] p-3">
                   <p className="text-[11px] text-[#777]">রোগীর সমস্যা</p>
-                  <p className="mt-0.5 text-sm font-semibold text-[#222]">🩺 {request.patientProblem}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-[#222]"><StethoscopeIcon className="h-4 w-4 shrink-0 stroke-[#888]" /> {request.patientProblem}</p>
                 </div>
               )}
               {request.neededAt && (
                 <div className="bg-amber-50 p-3">
                   <p className="text-[11px] text-amber-700">রক্ত লাগবে</p>
-                  <p className="mt-0.5 text-sm font-semibold text-amber-800">📅 {formatBanglaDate(request.neededAt.toDate())}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-amber-800"><CalendarIcon className="h-4 w-4 shrink-0 stroke-current" /> {formatBanglaDate(request.neededAt.toDate())}</p>
                 </div>
               )}
               {request.requesterRelation && (
                 <div className="col-span-2 bg-[#FAFAFA] p-3">
                   <p className="text-[11px] text-[#777]">যোগাযোগকারীর পরিচয়</p>
-                  <p className="mt-0.5 text-sm font-semibold text-[#222]">👤 {request.requesterRelation}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-[#222]"><UserRoundIcon className="h-4 w-4 shrink-0 stroke-[#888]" /> {request.requesterRelation}</p>
                 </div>
               )}
             </div>
           </div>
           {request.note && (
             <div className="mt-3 rounded-xl border border-[#E8E8E8] bg-gray-50 p-3">
-              <p className="text-[11px] font-semibold text-[#777]">বিস্তারিত তথ্য</p>
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#777]"><FileTextIcon className="h-3.5 w-3.5 stroke-current" /> বিস্তারিত তথ্য</p>
               <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#444]">{request.note}</p>
             </div>
           )}
@@ -371,8 +382,8 @@ export default function RequestDetailClient() {
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
             <p className="text-[#1A9E6B] font-semibold text-lg">✓ এই অনুরোধ পূর্ণ হয়েছে</p>
             {isOwner && request.fulfilledByName && (
-              <p className="text-sm font-semibold text-[#111111] mt-2">
-                🩸 রক্ত দিয়েছেন: {request.fulfilledByName}
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-[#111111]">
+                <DropIcon className="h-4 w-4 shrink-0 stroke-[#D92B2B]" /> রক্ত দিয়েছেন: {request.fulfilledByName}
               </p>
             )}
             {request.fulfilledAt && (
@@ -406,7 +417,7 @@ export default function RequestDetailClient() {
                   disabled={actionLoading || !canCurrentUserDonate}
                   className="w-full text-left p-3 rounded-xl border-2 border-red-100 bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <p className="font-semibold text-[#D92B2B]">🩸 আমি নিজে রক্ত দেব</p>
+                  <p className="flex items-center gap-1.5 font-semibold text-[#D92B2B]"><DropIcon className="h-4 w-4 shrink-0 stroke-current" /> আমি নিজে রক্ত দেব</p>
                   <p className="text-xs text-[#555555] mt-1">
                     {canCurrentUserDonate
                       ? 'আপনার রক্তের গ্রুপ মিলেছে এবং আপনি বর্তমানে available।'
@@ -418,14 +429,14 @@ export default function RequestDetailClient() {
                   disabled={actionLoading}
                   className="w-full text-left p-3 rounded-xl border-2 border-green-100 bg-green-50 disabled:opacity-60"
                 >
-                  <p className="font-semibold text-[#1A9E6B]">🤝 Donor খুঁজে/ব্যবস্থা করে দেব</p>
+                  <p className="flex items-center gap-1.5 font-semibold text-[#1A9E6B]"><HandHeartIcon className="h-4 w-4 shrink-0 stroke-current" /> Donor খুঁজে/ব্যবস্থা করে দেব</p>
                   <p className="text-xs text-[#555555] mt-1">আপনার blood group না মিললেও পরিচিত donor ব্যবস্থা করে সাহায্য করতে পারবেন।</p>
                 </button>
                 {actionLoading && <p className="text-xs text-center text-[#555555]">সাড়া পাঠানো হচ্ছে...</p>}
               </div>
             ) : (
               <a href={`tel:${request.contactPhone}`} className="btn-primary w-full">
-                📞 এখনই ফোন করুন — {request.contactPhone}
+                <span className="flex items-center justify-center gap-1.5"><PhoneIcon className="h-4 w-4 shrink-0 stroke-white" /> এখনই ফোন করুন — {request.contactPhone}</span>
               </a>
             )}
           </div>
@@ -494,7 +505,7 @@ export default function RequestDetailClient() {
                       href={`tel:${r.phone}`}
                       className="shrink-0 flex items-center gap-1.5 bg-[#D92B2B] text-white text-xs font-semibold px-3 py-2 rounded-xl"
                     >
-                      📞 কল
+                      <span className="flex items-center justify-center gap-1"><PhoneIcon className="h-3.5 w-3.5 shrink-0 stroke-current" /> কল</span>
                     </a>
                   </div>
                 ))}
@@ -535,8 +546,8 @@ export default function RequestDetailClient() {
               {/* Responders list */}
               {selfResponders.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-[#111111] mb-2">
-                    🩸 নিজে রক্ত দেবেন ({selfResponders.length} জন)
+                  <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-[#111111]">
+                    <DropIcon className="h-4 w-4 shrink-0 stroke-[#D92B2B]" /> নিজে রক্ত দেবেন ({selfResponders.length} জন)
                   </p>
                   <div className="space-y-2">
                     {selfResponders.map(r => {
@@ -573,7 +584,7 @@ export default function RequestDetailClient() {
 
               {/* Phone search */}
               <div>
-                <p className="text-sm font-semibold text-[#111111] mb-2">📞 ফোন নম্বর দিয়ে খুঁজুন</p>
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-[#111111]"><PhoneIcon className="h-4 w-4 shrink-0 stroke-[#777]" /> ফোন নম্বর দিয়ে খুঁজুন</p>
                 <div className="flex gap-2">
                   <input
                     type="tel"
@@ -635,7 +646,9 @@ export default function RequestDetailClient() {
                   }`}>
                     {selectedDonor === 'external' && <span className="text-white text-[10px] font-bold">✓</span>}
                   </div>
-                  <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-lg shrink-0">👤</div>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100">
+                    <UserRoundIcon className="h-5 w-5 stroke-[#777]" />
+                  </div>
                   <div className="flex-1">
                     <p className="font-semibold text-sm text-[#111111]">অন্য কেউ দান করেছেন</p>
                     <p className="text-xs text-[#555555]">App এ নেই এমন কেউ রক্ত দিয়েছেন</p>

@@ -61,6 +61,68 @@ export function PhoneIcon({ className }: IconProps) {
   )
 }
 
+export function CalendarIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path strokeLinecap="round" d="M16 3v4M8 3v4M3 10h18" />
+    </svg>
+  )
+}
+
+export function MapPinIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  )
+}
+
+export function StethoscopeIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 3v5a6 6 0 0 0 12 0V3M4 3h4M16 3h4M12 14v2a5 5 0 0 0 10 0v-1" />
+      <circle cx="21" cy="13" r="2" />
+    </svg>
+  )
+}
+
+export function UserRoundIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <circle cx="12" cy="8" r="4" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 21a8 8 0 0 1 16 0" />
+    </svg>
+  )
+}
+
+export function FileTextIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h8l4 4v16H6zM14 2v5h5M9 13h6M9 17h6M9 9h2" />
+    </svg>
+  )
+}
+
+export function SmartphoneIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <rect x="6" y="2" width="12" height="20" rx="2" />
+      <path strokeLinecap="round" d="M10 18h4" />
+    </svg>
+  )
+}
+
+export function HandHeartIcon({ className }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.5 10.7 7.2a3 3 0 0 0-4.2 4.3L12 17l5.5-5.5a3 3 0 0 0-4.2-4.3L12 8.5Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 19h3l2 2h7l6-4a2 2 0 0 0-2-3l-4 2H9" />
+    </svg>
+  )
+}
+
 export function ChartBarIcon({ className }: IconProps) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">

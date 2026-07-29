@@ -6,7 +6,18 @@ import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import { triggerInstall } from '@/lib/installPrompt'
 import { formatBanglaDate } from '@/lib/constants'
 import type { BloodRequest } from '@/types'
-import { HospitalIcon, DropIcon, PhoneIcon, UsersIcon } from '@/components/ui/Icons'
+import {
+  CalendarIcon,
+  DropIcon,
+  FileTextIcon,
+  HandHeartIcon,
+  HospitalIcon,
+  PhoneIcon,
+  SmartphoneIcon,
+  StethoscopeIcon,
+  UserRoundIcon,
+  UsersIcon,
+} from '@/components/ui/Icons'
 
 interface RequestCardProps {
   request: BloodRequest
@@ -89,7 +100,7 @@ export default function RequestCard({ request }: RequestCardProps) {
         </p>
         {request.patientProblem && (
           <p className="flex items-center gap-2 text-sm text-[#555555]">
-            <span className="flex w-4 shrink-0 justify-center">🩺</span>
+            <StethoscopeIcon className="h-4 w-4 shrink-0 stroke-[#999]" />
             <span className="truncate"><span className="text-[#777]">সমস্যা:</span> {request.patientProblem}</span>
           </p>
         )}
@@ -100,19 +111,21 @@ export default function RequestCard({ request }: RequestCardProps) {
           </span>
           {neededDate && (
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700">
-              📅 {formatBanglaDate(neededDate)}
+              <CalendarIcon className="h-3.5 w-3.5 shrink-0 stroke-current" />
+              {formatBanglaDate(neededDate)}
             </span>
           )}
         </div>
         {request.requesterRelation && (
           <p className="flex items-center gap-2 text-sm text-[#555555]">
-            <span className="flex w-4 shrink-0 justify-center">👤</span>
+            <UserRoundIcon className="h-4 w-4 shrink-0 stroke-[#999]" />
             <span><span className="text-[#777]">যোগাযোগকারী:</span> {request.requesterRelation}</span>
           </p>
         )}
         {request.note && (
-          <p className="line-clamp-2 rounded-xl border border-[#EEEEEE] bg-[#F8F8F8] px-3 py-2 text-sm leading-relaxed text-[#555555]">
-            <span className="font-semibold text-[#333]">বিস্তারিত: </span>{request.note}
+          <p className="flex items-start gap-2 rounded-xl border border-[#EEEEEE] bg-[#F8F8F8] px-3 py-2 text-sm leading-relaxed text-[#555555]">
+            <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 stroke-[#888]" />
+            <span className="line-clamp-2"><span className="font-semibold text-[#333]">বিস্তারিত: </span>{request.note}</span>
           </p>
         )}
       </div>
@@ -144,7 +157,9 @@ export default function RequestCard({ request }: RequestCardProps) {
                 onClick={triggerInstall}
                 className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold text-center transition-colors md:hidden"
               >
-                📲 সাহায্য করতে ইনস্টল করুন
+                <span className="flex items-center justify-center gap-1.5">
+                  <SmartphoneIcon className="h-4 w-4 stroke-white" /> সাহায্য করতে ইনস্টল করুন
+                </span>
               </button>
               {/* PC: login button */}
               <button
@@ -173,7 +188,7 @@ export default function RequestCard({ request }: RequestCardProps) {
               onClick={handleRespond}
               className="flex-1 py-2.5 rounded-xl bg-[#1A9E6B] text-white text-sm font-semibold hover:bg-[#158a5c] transition-colors disabled:opacity-60"
             >
-              <span className="flex items-center justify-center gap-1.5"><DropIcon className="w-4 h-4 stroke-white" /> সাহায্য করুন</span>
+              <span className="flex items-center justify-center gap-1.5"><HandHeartIcon className="w-4 h-4 stroke-white" /> সাহায্য করুন</span>
             </button>
           )}
         </div>
