@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const fontData = readFileSync(join(process.cwd(), 'public', 'fonts', 'NotoSansBengali-Bold.ttf'))
