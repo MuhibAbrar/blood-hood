@@ -55,15 +55,14 @@ export const getUserFromServer = async (uid: string): Promise<User | null> => {
 }
 
 export const updateUser = async (uid: string, data: Partial<User>) => {
-  const searchFields = data.name !== undefined || data.district !== undefined
-    ? {
-        ...(data.name !== undefined ? { searchName: normalizeSearchName(data.name) } : {}),
-        ...(data.name !== undefined && data.district !== undefined
-          ? { districtSearchName: buildDistrictSearchName(data.district, data.name) }
-          : {}),
-      }
-    : {}
-  await updateDoc(doc(db, 'users', uid), { ...data, ...searchFields, updatedAt: Timestamp.now() })
+  void uid // The authenticated server route always updates the caller's own document.
+  const response = await authenticatedFetch('/api/profile/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to update profile')
 }
 
 export const getDonors = async (filters?: {
@@ -126,22 +125,16 @@ export const subscribeToUser = (uid: string, cb: (user: User | null) => void) =>
 // --- Blood Requests ---
 
 export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'createdAt' | 'fulfilledAt' | 'respondedBy' | 'responseTypes' | 'fulfilledBy' | 'fulfilledByName' | 'fulfilledByPhone' | 'status'>): Promise<string> => {
-  const expiresAt = Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
-  const now = Timestamp.now()
-  const ref = await addDoc(collection(db, 'bloodRequests'), {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    ...data,
-    status: 'open',
-    respondedBy: [],
-    responseTypes: {},
-    fulfilledBy: null,
-    fulfilledByName: null,
-    fulfilledByPhone: null,
-    fulfilledAt: null,
-    expiresAt,
-    createdAt: now,
-    updatedAt: now,
+  const response = await authenticatedFetch('/api/requests/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...data,
+      neededAtMs: data.neededAt?.toMillis?.() ?? null,
+    }),
   })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to create request')
 
   // Notify compatible donors (fire-and-forget)
   authenticatedFetch('/api/notify', {
@@ -150,7 +143,7 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
     body: JSON.stringify({
       type: 'blood_request',
       data: {
-        requestId: ref.id,
+        requestId: result.id,
         bloodGroup: data.bloodGroup,
         hospital: data.hospital,
         area: data.area,
@@ -160,7 +153,7 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
     }),
   }).catch(() => {}) // silently ignore if notification fails
 
-  return ref.id
+  return result.id
 }
 
 export const getBloodRequests = async (status?: BloodRequest['status'], district?: string): Promise<BloodRequest[]> => {

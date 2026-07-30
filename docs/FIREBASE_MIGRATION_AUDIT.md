@@ -52,7 +52,9 @@ The audit covers:
 1. User documents use the Firebase UID as their document ID in current creation paths.
 2. No primary collection currently has a consistent `schemaVersion` field.
 3. `createdAt` and `updatedAt` are not consistent across all primary entities.
-4. Several operational writes still happen from the browser through `lib/firestore.ts`.
+4. Blood-request creation and self profile/availability/token updates now use
+   authenticated server APIs. A smaller set of lower-risk operational writes
+   still remains in the browser service layer.
 5. Organization membership is duplicated between `users.organizations[]` and
    `organizations.memberIds/adminIds`, so reconciliation is required.
 6. Status unions exist in TypeScript, but legacy Firestore values still require a
@@ -80,6 +82,23 @@ The following sensitive mutations now use authenticated server APIs:
 Legacy direct-write security-rule compatibility remains temporarily enabled for
 older cached PWA clients. Rules should only be tightened after the new API
 version is stable in production.
+
+The latest server-side migration step also covers:
+
+- new blood-request creation, with server-owned requester identity, district,
+  timestamps, status, expiry, and validation;
+- a user's own profile, availability, and notification-token updates, with
+  server-side field allowlisting and location validation.
+
+## Static client-access audit
+
+```powershell
+node scripts/audit-client-firestore.mjs
+```
+
+This source-only command reports pages/components that import the browser
+Firestore SDK directly and flags direct write primitives. It does not connect
+to Firebase or consume Firestore quota.
 
 ## Server-side read progress
 
