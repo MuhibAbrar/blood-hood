@@ -20,6 +20,20 @@ Safety mode: read-only until an explicitly reviewed migration is approved
 Production was not audited because the local Admin credentials point to the dev
 project. No production data was read or changed.
 
+## First dev migration result
+
+- Dry-run planned writes: 32
+- Manual-review records: 0
+- Applied project: `blood-hood-dev`
+- Applied writes: 32
+- Post-migration dry-run pending writes: 0
+- Production writes: 0
+
+The dev migration added only schema metadata, missing historical timestamps
+derived from existing timestamps, and division values derived from supported
+districts. It did not change donation totals, memberships, request statuses,
+names, phone numbers, or other personal values.
+
 ## Scope
 
 The audit covers:
@@ -60,6 +74,26 @@ node scripts/audit-firestore.mjs
 The command uses aggregation counts plus a bounded sample (default 200,
 maximum 500 per collection). It does not write or delete data and does not
 print personal record values.
+
+## Dry-run migration command
+
+```powershell
+node scripts/migrate-firestore-schema.mjs
+```
+
+Dry-run is the default. It reports planned field changes without writing data.
+The tool is bounded to 200 documents per collection by default and never
+accepts a value above 500 in one run.
+
+Apply mode requires the exact Firebase project ID:
+
+```powershell
+node scripts/migrate-firestore-schema.mjs --apply --confirm-project=blood-hood-dev
+```
+
+For any project whose ID does not contain `dev`, apply mode is blocked unless
+`--backup-confirmed` is also supplied. This is a safety gate, not a substitute
+for verifying a real, restorable backup.
 
 ## Safe implementation order
 
