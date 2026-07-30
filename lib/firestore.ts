@@ -29,6 +29,30 @@ import { belongsToDistrict } from './location'
 import { CURRENT_SCHEMA_VERSION, USER_SCHEMA_VERSION } from './schema-version'
 import { buildDistrictSearchName, normalizeSearchName } from './search-normalization'
 
+const readCache = new Map<string, { expiresAt: number; value: unknown }>()
+const pendingReads = new Map<string, Promise<unknown>>()
+
+const cachedRead = async <T>(key: string, ttlMs: number, loader: () => Promise<T>): Promise<T> => {
+  const cached = readCache.get(key)
+  if (cached && cached.expiresAt > Date.now()) return cached.value as T
+  const pending = pendingReads.get(key)
+  if (pending) return pending as Promise<T>
+  const request = loader()
+    .then((value) => {
+      readCache.set(key, { expiresAt: Date.now() + ttlMs, value })
+      return value
+    })
+    .finally(() => pendingReads.delete(key))
+  pendingReads.set(key, request)
+  return request
+}
+
+const clearCachedReads = (...prefixes: string[]) => {
+  for (const key of Array.from(readCache.keys())) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) readCache.delete(key)
+  }
+}
+
 // --- Users ---
 
 export const createUser = async (uid: string, data: Omit<User, 'uid' | 'createdAt' | 'updatedAt'>) => {
@@ -135,6 +159,7 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to create request')
+  clearCachedReads('bloodRequests:')
 
   // Notify compatible donors (fire-and-forget)
   authenticatedFetch('/api/notify', {
@@ -157,15 +182,18 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
 }
 
 export const getBloodRequests = async (status?: BloodRequest['status'], district?: string): Promise<BloodRequest[]> => {
-  const ref = collection(db, 'bloodRequests')
-  // Fetch before filtering so legacy records without a district remain visible.
-  const q = query(ref, orderBy('createdAt', 'desc'), limit(100))
-  const snap = await getDocs(q)
-  const all = snap.docs
-    .map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
-    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
-  const inDistrict = all.filter((request) => belongsToDistrict(request, district))
-  return status ? inDistrict.filter(r => r.status === status) : inDistrict
+  const cacheKey = `bloodRequests:${status ?? 'all'}:${district ?? 'all'}`
+  return cachedRead(cacheKey, 60_000, async () => {
+    const ref = collection(db, 'bloodRequests')
+    // Fetch before filtering so legacy records without a district remain visible.
+    const q = query(ref, orderBy('createdAt', 'desc'), limit(100))
+    const snap = await getDocs(q)
+    const all = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as BloodRequest))
+      .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+    const inDistrict = all.filter((request) => belongsToDistrict(request, district))
+    return status ? inDistrict.filter(r => r.status === status) : inDistrict
+  })
 }
 
 export const getBloodRequestsByOrg = async (orgId: string): Promise<BloodRequest[]> => {
@@ -235,6 +263,7 @@ export const fulfillRequest = async (
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to fulfill request')
+  clearCachedReads('bloodRequests:', 'organizations:')
 }
 
 export const getDonationsByOrg = async (orgId: string): Promise<Donation[]> => {
@@ -346,6 +375,7 @@ export const cancelRequest = async (requestId: string) => {
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to cancel request')
+  clearCachedReads('bloodRequests:')
 }
 
 export const subscribeToRequests = (cb: (requests: BloodRequest[]) => void) => {
@@ -381,8 +411,10 @@ export const getDonationsByUser = async (uid: string): Promise<Donation[]> => {
 // --- Organizations ---
 
 export const getOrganizations = async (): Promise<Organization[]> => {
-  const snap = await getDocs(query(collection(db, 'organizations'), orderBy('createdAt', 'desc')))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Organization))
+  return cachedRead('organizations:all', 5 * 60_000, async () => {
+    const snap = await getDocs(query(collection(db, 'organizations'), orderBy('createdAt', 'desc')))
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Organization))
+  })
 }
 
 export const getOrganization = async (id: string): Promise<Organization | null> => {
@@ -433,8 +465,10 @@ export const joinOrganization = async (orgId: string, uid: string) => {
 // --- Camps ---
 
 export const getCamps = async (): Promise<Camp[]> => {
-  const snap = await getDocs(query(collection(db, 'camps'), orderBy('date', 'asc')))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Camp))
+  return cachedRead('camps:all', 5 * 60_000, async () => {
+    const snap = await getDocs(query(collection(db, 'camps'), orderBy('date', 'asc')))
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Camp))
+  })
 }
 
 export const getCamp = async (id: string): Promise<Camp | null> => {
@@ -476,6 +510,7 @@ export const createCamp = async (data: Omit<Camp, 'id' | 'createdAt' | 'register
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to create camp')
+  clearCachedReads('camps:')
   return result.id
 }
 
@@ -491,6 +526,7 @@ export const updateCamp = async (id: string, data: Partial<Camp>) => {
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to update camp')
+  clearCachedReads('camps:')
 }
 
 export const deleteCamp = async (id: string) => {
@@ -501,6 +537,7 @@ export const deleteCamp = async (id: string) => {
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to delete camp')
+  clearCachedReads('camps:')
 }
 
 // --- Admin: Organizations ---
@@ -513,6 +550,7 @@ export const createOrganization = async (data: Omit<Organization, 'id' | 'create
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to create organization')
+  clearCachedReads('organizations:')
   return result.id
 }
 
@@ -524,6 +562,7 @@ export const updateOrganization = async (id: string, data: Partial<Organization>
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to update organization')
+  clearCachedReads('organizations:')
 }
 
 export const deleteOrganization = async (id: string) => {
@@ -892,8 +931,10 @@ export interface SocialLinks {
 }
 
 export const getSocialLinks = async (): Promise<SocialLinks> => {
-  const snap = await getDoc(doc(db, 'settings', 'social'))
-  return snap.exists() ? (snap.data() as SocialLinks) : {}
+  return cachedRead('settings:social', 10 * 60_000, async () => {
+    const snap = await getDoc(doc(db, 'settings', 'social'))
+    return snap.exists() ? (snap.data() as SocialLinks) : {}
+  })
 }
 
 export const saveSocialLinks = async (links: SocialLinks): Promise<void> => {
@@ -904,6 +945,7 @@ export const saveSocialLinks = async (links: SocialLinks): Promise<void> => {
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to save social links')
+  clearCachedReads('settings:social')
 }
 
 // --- Helpline Organizations (settings/helplines) ---
@@ -915,8 +957,10 @@ export interface HelplineOrg {
 }
 
 export const getHelplines = async (): Promise<HelplineOrg[]> => {
-  const snap = await getDoc(doc(db, 'settings', 'helplines'))
-  return snap.exists() ? (snap.data().orgs as HelplineOrg[]) ?? [] : []
+  return cachedRead('settings:helplines', 10 * 60_000, async () => {
+    const snap = await getDoc(doc(db, 'settings', 'helplines'))
+    return snap.exists() ? (snap.data().orgs as HelplineOrg[]) ?? [] : []
+  })
 }
 
 export const saveHelplines = async (orgs: HelplineOrg[]): Promise<void> => {
@@ -927,4 +971,5 @@ export const saveHelplines = async (orgs: HelplineOrg[]): Promise<void> => {
   })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error || 'Unable to save helplines')
+  clearCachedReads('settings:helplines')
 }

@@ -19,21 +19,28 @@ export default function DonationFollowUpModal() {
   useEffect(() => {
     if (!user) return
 
-    let lastCheck = 0
+    const checkIntervalMs = 6 * 60 * 60 * 1000
+    const storageKey = `bloodhood:followup-check:${user.uid}`
+    let checking = false
     const check = () => {
       const now = Date.now()
-      if (now - lastCheck < 10_000) return
-      lastCheck = now
-      getPendingContactEvents(user.uid).then(setEvents).catch(() => {})
+      const lastCheck = Number(window.localStorage.getItem(storageKey) ?? 0)
+      if (checking || now - lastCheck < checkIntervalMs) return
+      checking = true
+      getPendingContactEvents(user.uid)
+        .then((pending) => {
+          setEvents(pending)
+          window.localStorage.setItem(storageKey, String(Date.now()))
+        })
+        .catch(() => {})
+        .finally(() => { checking = false })
     }
 
     check()
     window.addEventListener('focus', check)
-    const interval = setInterval(check, 60_000)
 
     return () => {
       window.removeEventListener('focus', check)
-      clearInterval(interval)
     }
   }, [user])
 

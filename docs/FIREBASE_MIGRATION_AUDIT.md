@@ -105,6 +105,13 @@ This source-only command reports pages/components that import the browser
 Firestore SDK directly and flags direct write primitives. It does not connect
 to Firebase or consume Firestore quota.
 
+## Free-tier read audit
+
+See `docs/FREE_TIER_READ_USAGE_AUDIT.md` for the current 1,000-daily-active-user
+model, high-read paths, and operating thresholds. The minute-by-minute donation
+follow-up query has been replaced with a six-hour per-account check, and common
+list/settings reads use short client-side deduplication caches.
+
 ## Server-side read progress
 
 Donor list/search now uses an authenticated API with:
