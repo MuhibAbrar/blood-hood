@@ -182,23 +182,41 @@ for (const document of usersSample.docs) {
 const donorQueryChecks = {}
 const sampleUser = usersSample.docs[0]?.data()
 if (sampleUser?.district) {
+  const donorBase = () => db.collection('users')
+    .where('role', 'in', ['donor', 'admin', 'superadmin'])
+    .where('district', '==', sampleUser.district)
   const checks = {
-    district: db.collection('users')
-      .where('district', '==', sampleUser.district)
+    district: donorBase()
       .orderBy(FieldPath.documentId())
       .limit(2),
-    bloodGroup: db.collection('users')
-      .where('district', '==', sampleUser.district)
+    bloodGroup: donorBase()
       .where('bloodGroup', '==', sampleUser.bloodGroup)
       .orderBy(FieldPath.documentId())
       .limit(2),
-    availability: db.collection('users')
-      .where('district', '==', sampleUser.district)
+    upazila: donorBase()
+      .where('upazila', '==', sampleUser.upazila)
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    availability: donorBase()
       .where('isAvailable', '==', Boolean(sampleUser.isAvailable))
       .orderBy(FieldPath.documentId())
       .limit(2),
-    combined: db.collection('users')
-      .where('district', '==', sampleUser.district)
+    bloodGroupUpazila: donorBase()
+      .where('bloodGroup', 'in', [sampleUser.bloodGroup])
+      .where('upazila', '==', sampleUser.upazila)
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    bloodGroupAvailability: donorBase()
+      .where('bloodGroup', 'in', [sampleUser.bloodGroup])
+      .where('isAvailable', '==', Boolean(sampleUser.isAvailable))
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    upazilaAvailability: donorBase()
+      .where('upazila', '==', sampleUser.upazila)
+      .where('isAvailable', '==', Boolean(sampleUser.isAvailable))
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    combined: donorBase()
       .where('bloodGroup', 'in', [sampleUser.bloodGroup])
       .where('upazila', '==', sampleUser.upazila)
       .where('isAvailable', '==', Boolean(sampleUser.isAvailable))

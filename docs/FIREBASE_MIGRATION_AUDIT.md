@@ -61,8 +61,9 @@ The audit covers:
    read-only live audit before enforcement.
 7. Location values are centralized for the six supported districts, but legacy
    documents can still be missing division/district fields.
-8. The repository has Firestore rules but no checked-in Firestore index
-   configuration, reducing reproducibility for a future backend migration.
+8. Firestore rules and the composite indexes required by the current app
+   queries are checked into the repository, making query infrastructure
+   reproducible in another Firebase project.
 9. Retention cleanup preserves fulfilled requests and donation history.
 10. Managed backup/export is not configured in the repository and needs a
     billing-enabled, tested restore plan.
