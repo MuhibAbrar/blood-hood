@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
-import { getAnnouncements, createAnnouncement, deleteAnnouncement } from '@/lib/firestore'
+import { getAnnouncements } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import { formatBanglaDate } from '@/lib/constants'
 import type { Announcement } from '@/types'
@@ -37,7 +37,13 @@ export default function OrgAnnouncementsPage() {
 
     setSaving(true)
     try {
-      await createAnnouncement({ orgId: org.id, title: form.title, message: form.message, createdBy: user.uid })
+      const response = await authenticatedFetch('/api/organizations/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', orgId: org.id, title: form.title, message: form.message }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to create announcement')
 
       // Notify members
       if (org.memberIds.length > 0) {
@@ -66,9 +72,15 @@ export default function OrgAnnouncementsPage() {
   }
 
   const handleDelete = async () => {
-    if (!confirmDelete) return
+    if (!confirmDelete || !org) return
     try {
-      await deleteAnnouncement(confirmDelete.id)
+      const response = await authenticatedFetch('/api/organizations/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', orgId: org.id, announcementId: confirmDelete.id }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to delete announcement')
       setConfirmDelete(null)
       await load()
       showToast('ঘোষণা মুছে ফেলা হয়েছে', 'success')

@@ -4,30 +4,20 @@ import {
   getDoc,
   getDocFromServer,
   getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   limit,
   onSnapshot,
   Timestamp,
-  addDoc,
-  arrayUnion,
-  arrayRemove,
-  increment,
-  writeBatch,
   DocumentSnapshot,
   QuerySnapshot,
   getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { authenticatedFetch } from './api-client'
-import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent, ResponseType } from '@/types'
+import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Announcement, Notification, JoinRequest, ContactEvent, ResponseType } from '@/types'
 import { belongsToDistrict } from './location'
-import { CURRENT_SCHEMA_VERSION, USER_SCHEMA_VERSION } from './schema-version'
-import { buildDistrictSearchName, normalizeSearchName } from './search-normalization'
 
 const readCache = new Map<string, { expiresAt: number; value: unknown }>()
 const pendingReads = new Map<string, Promise<unknown>>()
@@ -54,19 +44,6 @@ const clearCachedReads = (...prefixes: string[]) => {
 }
 
 // --- Users ---
-
-export const createUser = async (uid: string, data: Omit<User, 'uid' | 'createdAt' | 'updatedAt'>) => {
-  const now = Timestamp.now()
-  await setDoc(doc(db, 'users', uid), {
-    schemaVersion: USER_SCHEMA_VERSION,
-    uid,
-    ...data,
-    searchName: normalizeSearchName(data.name),
-    districtSearchName: buildDistrictSearchName(data.district, data.name),
-    createdAt: now,
-    updatedAt: now,
-  })
-}
 
 export const getUser = async (uid: string): Promise<User | null> => {
   const snap = await getDoc(doc(db, 'users', uid))
@@ -327,75 +304,6 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
   return snap.docs[0].data() as User
 }
 
-export const addManualDonor = async (data: {
-  name: string
-  phone: string
-  bloodGroup: BloodGroup
-  upazila: string
-  area: string
-  gender: Gender
-  age?: number
-}) => {
-  // Check if phone already exists
-  const existing = await getUserByPhone(data.phone)
-  if (existing) throw new Error('phone-exists')
-
-  const uid = `manual_${data.phone}`
-  const now = Timestamp.now()
-  await setDoc(doc(db, 'users', uid), {
-    schemaVersion: USER_SCHEMA_VERSION,
-    uid,
-    name: data.name,
-    searchName: normalizeSearchName(data.name),
-    districtSearchName: buildDistrictSearchName('', data.name),
-    phone: data.phone,
-    bloodGroup: data.bloodGroup,
-    upazila: data.upazila,
-    area: data.area,
-    gender: data.gender,
-    age: data.age ?? 0,
-    isAvailable: true,
-    lastDonatedAt: null,
-    totalDonations: 0,
-    organizations: [],
-    role: 'donor',
-    fcmToken: null,
-    isVerified: false,
-    profilePhoto: null,
-    manuallyAdded: true,
-    createdAt: now,
-    updatedAt: now,
-  })
-}
-
-export const mergeManualDonor = async (
-  newUid: string,
-  oldUid: string,
-  profileData: Omit<User, 'uid' | 'createdAt' | 'updatedAt' | 'manuallyAdded'>
-) => {
-  const oldDoc = await getDoc(doc(db, 'users', oldUid))
-  const oldData = oldDoc.exists() ? (oldDoc.data() as User) : null
-
-  const now = Timestamp.now()
-  // Create new doc with Firebase Auth UID, carry over historical data
-  await setDoc(doc(db, 'users', newUid), {
-    schemaVersion: USER_SCHEMA_VERSION,
-    ...profileData,
-    searchName: normalizeSearchName(profileData.name),
-    districtSearchName: buildDistrictSearchName(profileData.district, profileData.name),
-    uid: newUid,
-    totalDonations: oldData?.totalDonations ?? 0,
-    isVerified: oldData?.isVerified ?? false,
-    organizations: oldData?.organizations ?? [],
-    lastDonatedAt: oldData?.lastDonatedAt ?? null,
-    manuallyAdded: false,
-    createdAt: oldData?.createdAt ?? now,
-    updatedAt: now,
-  })
-  // Delete old manual doc
-  await deleteDoc(doc(db, 'users', oldUid))
-}
-
 export const cancelRequest = async (requestId: string) => {
   const response = await authenticatedFetch('/api/requests/cancel', {
     method: 'POST',
@@ -477,20 +385,6 @@ export const getOrganizationsForUser = async (uid: string, organizationIds: stri
   return Array.from(organizations.values())
 }
 
-export const joinOrganization = async (orgId: string, uid: string) => {
-  // Enforce 1 org per user
-  const userSnap = await getDoc(doc(db, 'users', uid))
-  const userOrgs: string[] = userSnap.data()?.organizations ?? []
-  if (userOrgs.length > 0 && !userOrgs.includes(orgId)) throw new Error('already-in-org')
-
-  await updateDoc(doc(db, 'organizations', orgId), {
-    memberIds: arrayUnion(uid),
-  })
-  await updateDoc(doc(db, 'users', uid), {
-    organizations: arrayUnion(orgId),
-  })
-}
-
 // --- Camps ---
 
 export const getCamps = async (): Promise<Camp[]> => {
@@ -520,10 +414,6 @@ export const registerForCamp = async (campId: string) => {
 export const getAllUsers = async (): Promise<User[]> => {
   const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')))
   return snap.docs.map((d) => d.data() as User)
-}
-
-export const deleteUserDoc = async (uid: string) => {
-  await deleteDoc(doc(db, 'users', uid))
 }
 
 // --- Admin: Camps ---
@@ -594,10 +484,6 @@ export const updateOrganization = async (id: string, data: Partial<Organization>
   clearCachedReads('organizations:')
 }
 
-export const deleteOrganization = async (id: string) => {
-  await deleteDoc(doc(db, 'organizations', id))
-}
-
 // --- Org Admin ---
 
 export const getOrgByAdmin = async (uid: string): Promise<Organization | null> => {
@@ -630,16 +516,6 @@ export const removeMember = async (orgId: string, uid: string) => {
   if (!response.ok) throw new Error(result.error || 'Unable to remove member')
 }
 
-export const leaveOrganization = async (orgId: string, uid: string) => {
-  await updateDoc(doc(db, 'organizations', orgId), {
-    memberIds: arrayRemove(uid),
-  })
-  await updateDoc(doc(db, 'users', uid), {
-    organizations: arrayRemove(orgId),
-    updatedAt: Timestamp.now(),
-  })
-}
-
 export const getCampsByOrg = async (orgId: string): Promise<Camp[]> => {
   const snap = await getDocs(query(collection(db, 'camps'), where('organizationId', '==', orgId)))
   const camps = snap.docs.map(d => ({ id: d.id, ...d.data() } as Camp))
@@ -650,27 +526,6 @@ export const getAnnouncements = async (orgId: string): Promise<Announcement[]> =
   const snap = await getDocs(query(collection(db, 'announcements'), where('orgId', '==', orgId)))
   const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement))
   return list.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
-}
-
-export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'createdAt'>): Promise<string> => {
-  const now = Timestamp.now()
-  const ref = await addDoc(collection(db, 'announcements'), {
-    ...data,
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    createdAt: now,
-    updatedAt: now,
-  })
-  return ref.id
-}
-
-export const deleteAnnouncement = async (id: string) => {
-  await deleteDoc(doc(db, 'announcements', id))
-}
-
-export const checkInCamp = async (campId: string, uid: string) => {
-  await updateDoc(doc(db, 'camps', campId), {
-    checkedIn: arrayUnion(uid),
-  })
 }
 
 export const recordCampDonation = async (campId: string, donorId: string, orgId: string) => {
@@ -858,46 +713,7 @@ export const getDistrictAnalytics = async (): Promise<DistrictStat[]> => {
 
 // --- Contact Rate Limit ---
 
-const DAILY_CONTACT_LIMIT = 10
-
-/** Returns true and increments if under daily limit, false if limit reached. */
-export const checkAndIncrementDailyContact = async (seekerId: string): Promise<boolean> => {
-  const today = new Date().toISOString().slice(0, 10)
-  const ref = doc(db, 'contactLimits', `${seekerId}_${today}`)
-  const snap = await getDoc(ref)
-  const count = snap.exists() ? (snap.data().count ?? 0) : 0
-  if (count >= DAILY_CONTACT_LIMIT) return false
-  await setDoc(ref, { seekerId, date: today, count: count + 1 }, { merge: true })
-  return true
-}
-
 // --- Contact Events ---
-
-/** Called when a seeker reveals a donor's phone number. */
-export const logContactEvent = async (
-  seekerId: string,
-  donor: Pick<User, 'uid' | 'name' | 'bloodGroup' | 'area'>
-): Promise<void> => {
-  // Don't duplicate if already logged and still pending
-  const dupeQ = query(
-    collection(db, 'contactEvents'),
-    where('seekerId', '==', seekerId),
-    where('donorId', '==', donor.uid),
-    where('status', '==', 'contacted')
-  )
-  const existing = await getDocs(dupeQ)
-  if (!existing.empty) return
-
-  await addDoc(collection(db, 'contactEvents'), {
-    seekerId,
-    donorId:        donor.uid,
-    donorName:      donor.name,
-    donorBloodGroup: donor.bloodGroup,
-    donorArea:      donor.area ?? '',
-    contactedAt:    Timestamp.now(),
-    status:         'contacted',
-  })
-}
 
 /**
  * Returns contactEvents for a seeker that are still "contacted" and older
@@ -922,31 +738,6 @@ export const getPendingContactEvents = async (seekerId: string): Promise<Contact
  * - All others are marked "not_donated"
  * - If someone donated, their totalDonations counter is incremented
  */
-export const resolveContactEvents = async (
-  allEventIds:     string[],
-  donatedEventId:  string | null,
-  donorId:         string | null
-): Promise<void> => {
-  const batch = writeBatch(db)
-
-  for (const eventId of allEventIds) {
-    const ref = doc(db, 'contactEvents', eventId)
-    batch.update(ref, {
-      status: eventId === donatedEventId ? 'donated' : 'not_donated',
-    })
-  }
-
-  if (donatedEventId && donorId) {
-    batch.update(doc(db, 'users', donorId), {
-      totalDonations: increment(1),
-      lastDonatedAt: Timestamp.now(),
-      isAvailable: false,
-    })
-  }
-
-  await batch.commit()
-}
-
 // --- Social Links (settings/social) ---
 
 export interface SocialLinks {

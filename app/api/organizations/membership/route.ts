@@ -7,7 +7,7 @@ import { resolveOrganizationDistrict } from '@/lib/location'
 export async function POST(req: NextRequest) {
   try {
     const { action, orgId, uid, requestId, isAvailable } = await req.json()
-    if (!['accept', 'reject', 'remove', 'availability'].includes(action) || typeof orgId !== 'string') {
+    if (!['accept', 'reject', 'remove', 'availability', 'manual-add'].includes(action) || typeof orgId !== 'string') {
       return NextResponse.json({ error: 'Invalid membership action' }, { status: 400 })
     }
     if (action === 'availability' && typeof isAvailable !== 'boolean') {
@@ -30,6 +30,29 @@ export async function POST(req: NextRequest) {
         return
       }
       if (!userRef || !userSnap?.exists) throw new ApiAuthError(404, 'User not found')
+      if (action === 'manual-add') {
+        const userDistrict = userSnap.data()?.district?.trim?.() ?? ''
+        const orgDistrict = resolveOrganizationDistrict(orgSnap.data()!)
+        if (!userDistrict || !orgDistrict || userDistrict !== orgDistrict) {
+          throw new ApiAuthError(409, 'User and organization districts do not match')
+        }
+        const organizations: string[] = userSnap.data()?.organizations ?? []
+        const otherOrgIds = organizations.filter(id => typeof id === 'string' && id && id !== orgId)
+        if (otherOrgIds.length > 0) {
+          const otherOrgSnaps = await Promise.all(
+            otherOrgIds.map(id => tx.get(db.collection('organizations').doc(id)))
+          )
+          const belongsToAnotherOrg = otherOrgSnaps.some(snap => {
+            if (!snap.exists) return false
+            const data = snap.data()
+            return data?.memberIds?.includes(uid) || data?.adminIds?.includes(uid)
+          })
+          if (belongsToAnotherOrg) throw new ApiAuthError(409, 'User already belongs to another organization')
+        }
+        tx.update(orgRef, { memberIds: FieldValue.arrayUnion(uid), updatedAt: FieldValue.serverTimestamp() })
+        tx.update(userRef, { organizations: [orgId], updatedAt: FieldValue.serverTimestamp() })
+        return
+      }
       if (action === 'availability') {
         const org = orgSnap.data()!
         const user = userSnap.data()!

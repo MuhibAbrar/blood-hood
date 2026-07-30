@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useOrgAdmin } from '@/context/OrgAdminContext'
-import { getOrgMembers, removeMember, getUserByPhone, joinOrganization, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
+import { getOrgMembers, removeMember, getUserByPhone, getJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
@@ -94,7 +94,13 @@ export default function OrgMembersPage() {
     if (!org || !searchResult || typeof searchResult === 'string') return
     setAdding(true)
     try {
-      await joinOrganization(org.id, searchResult.uid)
+      const response = await authenticatedFetch('/api/organizations/membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'manual-add', orgId: org.id, uid: searchResult.uid }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to add member')
       await load(org)
       showToast(`${searchResult.name}-কে যোগ করা হয়েছে ✓`, 'success')
       setShowAddModal(false)

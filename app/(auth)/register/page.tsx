@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signInWithCustomToken } from 'firebase/auth'
 import { useAuth } from '@/context/AuthContext'
-import { createUser } from '@/lib/firestore'
 import { formatPhone, validateBDPhone } from '@/lib/auth'
 import { auth } from '@/lib/firebase'
 import { useToast } from '@/components/ui/Toast'
@@ -196,7 +195,13 @@ export default function RegisterPage() {
       }
 
       // Always create the new user doc first
-      await createUser(firebaseUser.uid, profileData)
+      const profileRes = await authenticatedFetch('/api/profile/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData),
+      })
+      const profileResult = await profileRes.json()
+      if (!profileRes.ok) throw new Error(profileResult.error || 'Unable to create profile')
 
       // Then check if a manual entry exists for this phone and merge via API
       const mergeRes = await authenticatedFetch('/api/merge-donor', {
