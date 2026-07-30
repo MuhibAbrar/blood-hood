@@ -10,6 +10,7 @@ export type CampStatus = 'upcoming' | 'ongoing' | 'completed'
 export type OrgType = 'college' | 'university' | 'ngo' | 'hospital' | 'community'
 
 export interface User {
+  schemaVersion?: number
   uid: string
   name: string
   phone: string
@@ -35,6 +36,7 @@ export interface User {
 }
 
 export interface BloodRequest {
+  schemaVersion?: number
   id: string
   patientName: string
   patientProblem?: string
@@ -59,10 +61,12 @@ export interface BloodRequest {
   neededAt?: Timestamp | null
   confirmedAccurate?: boolean
   createdAt: Timestamp
+  updatedAt?: Timestamp
   fulfilledAt: Timestamp | null
 }
 
 export interface Donation {
+  schemaVersion?: number
   id: string
   donorId: string
   donorName: string
@@ -75,9 +79,12 @@ export interface Donation {
   campId: string | null
   orgId: string | null
   externalDonorPhone: string | null
+  createdAt?: Timestamp
+  updatedAt?: Timestamp
 }
 
 export interface Organization {
+  schemaVersion?: number
   id: string
   name: string
   type: OrgType
@@ -91,9 +98,11 @@ export interface Organization {
   logo: string | null
   phone?: string
   createdAt: Timestamp
+  updatedAt?: Timestamp
 }
 
 export interface Camp {
+  schemaVersion?: number
   id: string
   title: string
   organizationId: string
@@ -105,18 +114,22 @@ export interface Camp {
   status: CampStatus
   createdBy: string
   createdAt: Timestamp
+  updatedAt?: Timestamp
 }
 
 export interface Announcement {
+  schemaVersion?: number
   id: string
   orgId: string
   title: string
   message: string
   createdBy: string
   createdAt: Timestamp
+  updatedAt?: Timestamp
 }
 
 export interface JoinRequest {
+  schemaVersion?: number
   id: string
   orgId: string
   userId: string
@@ -125,6 +138,7 @@ export interface JoinRequest {
   userBloodGroup: string
   status: 'pending' | 'accepted' | 'rejected'
   createdAt: Timestamp
+  updatedAt?: Timestamp
 }
 
 export interface ContactEvent {

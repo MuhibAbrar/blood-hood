@@ -27,12 +27,14 @@ import { db } from './firebase'
 import { authenticatedFetch } from './api-client'
 import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent, ResponseType } from '@/types'
 import { belongsToDistrict } from './location'
+import { CURRENT_SCHEMA_VERSION } from './schema-version'
 
 // --- Users ---
 
 export const createUser = async (uid: string, data: Omit<User, 'uid' | 'createdAt' | 'updatedAt'>) => {
   const now = Timestamp.now()
   await setDoc(doc(db, 'users', uid), {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     uid,
     ...data,
     createdAt: now,
@@ -87,7 +89,9 @@ export const subscribeToUser = (uid: string, cb: (user: User | null) => void) =>
 
 export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'createdAt' | 'fulfilledAt' | 'respondedBy' | 'responseTypes' | 'fulfilledBy' | 'fulfilledByName' | 'fulfilledByPhone' | 'status'>): Promise<string> => {
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+  const now = Timestamp.now()
   const ref = await addDoc(collection(db, 'bloodRequests'), {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     ...data,
     status: 'open',
     respondedBy: [],
@@ -97,7 +101,8 @@ export const createBloodRequest = async (data: Omit<BloodRequest, 'id' | 'create
     fulfilledByPhone: null,
     fulfilledAt: null,
     expiresAt,
-    createdAt: Timestamp.now(),
+    createdAt: now,
+    updatedAt: now,
   })
 
   // Notify compatible donors (fire-and-forget)
@@ -249,6 +254,7 @@ export const addManualDonor = async (data: {
   const uid = `manual_${data.phone}`
   const now = Timestamp.now()
   await setDoc(doc(db, 'users', uid), {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     uid,
     name: data.name,
     phone: data.phone,
@@ -282,6 +288,7 @@ export const mergeManualDonor = async (
   const now = Timestamp.now()
   // Create new doc with Firebase Auth UID, carry over historical data
   await setDoc(doc(db, 'users', newUid), {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     ...profileData,
     uid: newUid,
     totalDonations: oldData?.totalDonations ?? 0,
@@ -414,17 +421,20 @@ export const deleteUserDoc = async (uid: string) => {
 // --- Admin: Camps ---
 
 export const createCamp = async (data: Omit<Camp, 'id' | 'createdAt' | 'registeredDonors' | 'totalCollected'>): Promise<string> => {
+  const now = Timestamp.now()
   const ref = await addDoc(collection(db, 'camps'), {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     ...data,
     registeredDonors: [],
     totalCollected: 0,
-    createdAt: Timestamp.now(),
+    createdAt: now,
+    updatedAt: now,
   })
   return ref.id
 }
 
 export const updateCamp = async (id: string, data: Partial<Camp>) => {
-  await updateDoc(doc(db, 'camps', id), data)
+  await updateDoc(doc(db, 'camps', id), { ...data, updatedAt: Timestamp.now() })
 }
 
 export const deleteCamp = async (id: string) => {
@@ -434,11 +444,14 @@ export const deleteCamp = async (id: string) => {
 // --- Admin: Organizations ---
 
 export const createOrganization = async (data: Omit<Organization, 'id' | 'createdAt' | 'memberIds' | 'totalDonations'>): Promise<string> => {
+  const now = Timestamp.now()
   const ref = await addDoc(collection(db, 'organizations'), {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     ...data,
     memberIds: [],
     totalDonations: 0,
-    createdAt: Timestamp.now(),
+    createdAt: now,
+    updatedAt: now,
   })
   // Add orgId to each admin's organizations field so their donations count for the org
   for (const adminUid of (data.adminIds ?? [])) {
@@ -453,7 +466,7 @@ export const createOrganization = async (data: Omit<Organization, 'id' | 'create
 }
 
 export const updateOrganization = async (id: string, data: Partial<Organization>) => {
-  await updateDoc(doc(db, 'organizations', id), data)
+  await updateDoc(doc(db, 'organizations', id), { ...data, updatedAt: Timestamp.now() })
 }
 
 export const deleteOrganization = async (id: string) => {
@@ -515,7 +528,13 @@ export const getAnnouncements = async (orgId: string): Promise<Announcement[]> =
 }
 
 export const createAnnouncement = async (data: Omit<Announcement, 'id' | 'createdAt'>): Promise<string> => {
-  const ref = await addDoc(collection(db, 'announcements'), { ...data, createdAt: Timestamp.now() })
+  const now = Timestamp.now()
+  const ref = await addDoc(collection(db, 'announcements'), {
+    ...data,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    createdAt: now,
+    updatedAt: now,
+  })
   return ref.id
 }
 

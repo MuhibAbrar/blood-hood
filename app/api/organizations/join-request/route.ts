@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { ApiAuthError, authErrorResponse, requireUser } from '@/lib/api-auth'
 import { resolveOrganizationDistrict } from '@/lib/location'
+import { CURRENT_SCHEMA_VERSION } from '@/lib/schema-version'
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
       }
 
       tx.set(requestRef, {
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         orgId,
         userId: actor.uid,
         userName: user.name ?? '',

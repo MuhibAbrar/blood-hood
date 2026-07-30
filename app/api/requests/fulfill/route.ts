@@ -3,6 +3,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { ApiAuthError, authErrorResponse, requireUser } from '@/lib/api-auth'
 import { resolveUserOrganizationId } from '@/lib/organization-membership-admin'
+import { CURRENT_SCHEMA_VERSION } from '@/lib/schema-version'
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
 
       if (orgId) tx.update(db.collection('organizations').doc(orgId), { totalDonations: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() })
       tx.update(requestRef, { status: 'fulfilled', fulfilledBy: donorRef ? donorUid : null, fulfilledAt: now, fulfilledByName: donorName === 'Anonymous' ? null : donorName, fulfilledByPhone: donorPhone, updatedAt: FieldValue.serverTimestamp() })
-      tx.create(donationRef, { donorId, donorName, requestId, recipientName: request.patientName ?? '', hospital: request.hospital ?? '', bloodGroup: request.bloodGroup ?? '', donatedAt: now, verifiedBy: actor.uid, campId: null, orgId, externalDonorPhone: donorId === 'external' ? donorPhone : null, createdAt: FieldValue.serverTimestamp() })
+      tx.create(donationRef, { schemaVersion: CURRENT_SCHEMA_VERSION, donorId, donorName, requestId, recipientName: request.patientName ?? '', hospital: request.hospital ?? '', bloodGroup: request.bloodGroup ?? '', donatedAt: now, verifiedBy: actor.uid, campId: null, orgId, externalDonorPhone: donorId === 'external' ? donorPhone : null, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
     })
     return NextResponse.json({ success: true })
   } catch (error) {

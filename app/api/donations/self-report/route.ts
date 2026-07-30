@@ -3,6 +3,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { authErrorResponse, requireUser } from '@/lib/api-auth'
 import { resolveUserOrganizationId } from '@/lib/organization-membership-admin'
+import { CURRENT_SCHEMA_VERSION } from '@/lib/schema-version'
 
 const WAIT_MS = 90 * 24 * 60 * 60 * 1000
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       if (lastDonationMs && donatedAtMs - lastDonationMs < WAIT_MS) throw new Error('Donation interval must be at least 90 days')
       const orgId = resolvedOrgId
       const donatedAt = Timestamp.fromMillis(donatedAtMs)
-      tx.create(donationRef, { donorId: actor.uid, donorName: user.name ?? '', requestId: null, recipientName: 'নিজে রিপোর্ট', hospital: 'অজানা', bloodGroup: user.bloodGroup ?? '', donatedAt, verifiedBy: null, verificationStatus: 'self-reported', campId: null, orgId, externalDonorPhone: null, createdAt: FieldValue.serverTimestamp() })
+      tx.create(donationRef, { schemaVersion: CURRENT_SCHEMA_VERSION, donorId: actor.uid, donorName: user.name ?? '', requestId: null, recipientName: 'নিজে রিপোর্ট', hospital: 'অজানা', bloodGroup: user.bloodGroup ?? '', donatedAt, verifiedBy: null, verificationStatus: 'self-reported', campId: null, orgId, externalDonorPhone: null, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
       tx.update(userRef, {
         totalDonations: FieldValue.increment(1),
         lastDonatedAt: donatedAt,

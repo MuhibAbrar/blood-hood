@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { authErrorResponse, requireOrgAdmin, requireRole } from '@/lib/api-auth'
 import { getDivisionForDistrict } from '@/lib/constants'
+import { CURRENT_SCHEMA_VERSION } from '@/lib/schema-version'
 
 // POST /api/admin/add-donor
 // Body: { name, phone, bloodGroup, upazila, area, gender, age? }
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
     const now = FieldValue.serverTimestamp()
 
     await db.collection('users').doc(uid).set({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       uid,
       name,
       phone,

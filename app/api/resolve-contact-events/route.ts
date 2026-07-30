@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { authErrorResponse, ApiAuthError, requireUser } from '@/lib/api-auth'
 import { resolveUserOrganizationId } from '@/lib/organization-membership-admin'
+import { CURRENT_SCHEMA_VERSION } from '@/lib/schema-version'
 
 // POST /api/resolve-contact-events
 // Body: { eventIds, donatedEventId, donorId, seekerId }
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
       // Create a donations document so monthly stats pick it up
       const donationRef = db.collection('donations').doc()
       batch.set(donationRef, {
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         donorId,
         donorName:          eventData?.donorName   ?? '',
         requestId:          null,
@@ -65,6 +67,8 @@ export async function POST(req: NextRequest) {
         campId:             null,
         orgId,
         externalDonorPhone: null,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       })
     }
 
