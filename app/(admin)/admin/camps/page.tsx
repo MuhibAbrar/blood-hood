@@ -193,7 +193,6 @@ export default function AdminCampsPage() {
                     onChange={(val) => setForm(f => ({ ...f, area: val }))}
                     options={DISTRICTS_DATA[form.district] ?? []}
                     placeholder="উপজেলা নির্বাচন করুন"
-                    searchable
                   />
                 </Field>
               )}

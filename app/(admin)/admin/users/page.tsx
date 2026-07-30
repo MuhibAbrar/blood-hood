@@ -396,7 +396,6 @@ export default function AdminUsersPage() {
                     onChange={(val) => setAddForm(f => ({ ...f, upazila: val }))}
                     options={DISTRICTS_DATA[addForm.district] ?? []}
                     placeholder="উপজেলা নির্বাচন করুন"
-                    searchable
                   />
                 </div>
               )}

@@ -8,12 +8,10 @@ interface SelectPickerProps {
   onChange: (val: string) => void
   options: string[]
   placeholder: string
-  searchable?: boolean
 }
 
-export default function SelectPicker({ value, onChange, options, placeholder, searchable = false }: SelectPickerProps) {
+export default function SelectPicker({ value, onChange, options, placeholder }: SelectPickerProps) {
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
   const [mounted, setMounted] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [position, setPosition] = useState<{
@@ -23,10 +21,6 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
     width: number
     maxHeight: number
   } | null>(null)
-
-  const filtered = searchable && search
-    ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
-    : options
 
   useEffect(() => {
     setMounted(true)
@@ -92,14 +86,12 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
         ? { top: rect.bottom + gap }
         : { bottom: window.innerHeight - rect.top + gap }),
     })
-    setSearch('')
     setOpen(true)
   }
 
   const choose = (option: string) => {
     onChange(option)
     setOpen(false)
-    setSearch('')
   }
 
   const panel = open && mounted ? createPortal(
@@ -114,22 +106,11 @@ export default function SelectPicker({ value, onChange, options, placeholder, se
         style={position ?? undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        {searchable && (
-          <div className="shrink-0 border-b border-[#F0F0F0] p-3">
-            <input
-              autoFocus
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="খুঁজুন..."
-              className="w-full rounded-xl bg-[#F5F5F5] px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-100"
-            />
-          </div>
-        )}
         <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain p-2">
-          {filtered.length === 0 ? (
+          {options.length === 0 ? (
             <p className="py-6 text-center text-sm text-[#AAAAAA]">কিছু পাওয়া যায়নি</p>
           ) : (
-            filtered.map((option) => (
+            options.map((option) => (
               <button
                 key={option}
                 type="button"

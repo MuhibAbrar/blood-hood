@@ -570,7 +570,6 @@ export default function OrgMembersPage() {
                     onChange={(val) => setManualForm(f => ({ ...f, upazila: val }))}
                     options={DISTRICTS_DATA[manualForm.district] ?? []}
                     placeholder="উপজেলা নির্বাচন করুন"
-                    searchable
                   />
                 </div>
               )}

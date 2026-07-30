@@ -457,7 +457,6 @@ export default function RegisterPage() {
                 onChange={(val) => setForm((f) => ({ ...f, upazila: val }))}
                 options={DISTRICTS_DATA[form.district] ?? []}
                 placeholder="উপজেলা নির্বাচন করুন"
-                searchable
               />
             </div>
           )}

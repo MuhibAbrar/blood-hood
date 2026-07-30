@@ -167,7 +167,6 @@ export default function DonorsPage() {
                 onChange={(v) => { setUpazilaFilter(v); updateParams({ upazila: v }) }}
                 options={upazilaOptions}
                 placeholder="সব উপজেলা"
-                searchable
               />
             </div>
           )}
