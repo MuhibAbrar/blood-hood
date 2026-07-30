@@ -81,6 +81,20 @@ Legacy direct-write security-rule compatibility remains temporarily enabled for
 older cached PWA clients. Rules should only be tightened after the new API
 version is stable in production.
 
+## Server-side read progress
+
+Donor list/search now uses an authenticated API with:
+
+- account-district enforcement on the server;
+- a hard maximum of 50 donors per request;
+- 30-donor pages in the main donor screen;
+- cursor-based pagination instead of offsets;
+- server-side blood group, upazila, and availability filters;
+- compatible blood-group filtering for request assistance;
+- no phone number, FCM token, or profile photo in list responses.
+
+The previous 500-document donor page fetch has been removed.
+
 ## Read-only audit command
 
 ```powershell

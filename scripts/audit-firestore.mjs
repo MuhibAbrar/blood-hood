@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { FieldPath, getFirestore, Timestamp } from 'firebase-admin/firestore'
 
 const parseEnvFile = (filePath) => {
   try {
@@ -179,6 +179,42 @@ for (const document of usersSample.docs) {
   if (!Array.isArray(data.organizations)) invalidOrganizationsShape += 1
 }
 
+const donorQueryChecks = {}
+const sampleUser = usersSample.docs[0]?.data()
+if (sampleUser?.district) {
+  const checks = {
+    district: db.collection('users')
+      .where('district', '==', sampleUser.district)
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    bloodGroup: db.collection('users')
+      .where('district', '==', sampleUser.district)
+      .where('bloodGroup', '==', sampleUser.bloodGroup)
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    availability: db.collection('users')
+      .where('district', '==', sampleUser.district)
+      .where('isAvailable', '==', Boolean(sampleUser.isAvailable))
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    combined: db.collection('users')
+      .where('district', '==', sampleUser.district)
+      .where('bloodGroup', 'in', [sampleUser.bloodGroup])
+      .where('upazila', '==', sampleUser.upazila)
+      .where('isAvailable', '==', Boolean(sampleUser.isAvailable))
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+  }
+  for (const [name, query] of Object.entries(checks)) {
+    try {
+      await query.get()
+      donorQueryChecks[name] = 'ok'
+    } catch (error) {
+      donorQueryChecks[name] = `error:${error?.code ?? 'unknown'}`
+    }
+  }
+}
+
 const report = {
   generatedAt: new Date().toISOString(),
   mode: 'read-only',
@@ -190,6 +226,7 @@ const report = {
     duplicatePhoneGroupsInSample: [...normalizedPhones.values()].filter((count) => count > 1).length,
     usersMissingDistrictInSample: missingDistrict,
     usersWithInvalidOrganizationsShapeInSample: invalidOrganizationsShape,
+    donorQueryChecks,
   },
   privacy: 'No document IDs, names, phone numbers, tokens, or record contents are included.',
 }

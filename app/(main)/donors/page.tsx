@@ -6,7 +6,6 @@ import { getDonors, getOrganizations } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import { DISTRICTS_DATA } from '@/lib/constants'
-import { belongsToDistrict } from '@/lib/location'
 import SelectPicker from '@/components/ui/SelectPicker'
 import DonorCard from '@/components/donor/DonorCard'
 import { DonorCardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -42,7 +41,7 @@ export default function DonorsPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
-  const [lastDoc, setLastDoc] = useState<import('firebase/firestore').DocumentSnapshot | null>(null)
+  const [lastDoc, setLastDoc] = useState<string | null>(null)
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>(() => (searchParams.get('blood') ?? '') as BloodGroup | '')
   const [upazilaFilter, setUpazilaFilter] = useState(() => searchParams.get('upazila') ?? '')
@@ -55,10 +54,11 @@ export default function DonorsPage() {
   }, [router, searchParams])
 
   useEffect(() => {
-    Promise.all([getDonors({ pageSize: 500 }), getOrganizations()]).then(([{ donors: d, hasMore: more, lastDoc: last }, orgs]) => {
-      setDonors(d)
-      setHasMore(more)
-      setLastDoc(last)
+    if (!user) {
+      setLoading(false)
+      return
+    }
+    getOrganizations().then((orgs) => {
       const map: Record<string, string> = {}
       const adminMap: Record<string, string> = {}
       orgs.forEach(o => {
@@ -67,14 +67,49 @@ export default function DonorsPage() {
       })
       setOrgMap(map)
       setAdminToOrgMap(adminMap)
-      setLoading(false)
+    }).catch(() => {
+      setOrgMap({})
+      setAdminToOrgMap({})
     })
-  }, [])
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    setLoading(true)
+    setDonors([])
+    setLastDoc(null)
+    getDonors({
+      pageSize: 30,
+      bloodGroup: bloodFilter || undefined,
+      area: upazilaFilter || undefined,
+      isAvailable: availableOnly ? true : undefined,
+    }).then(({ donors: page, hasMore: more, lastDoc: cursor }) => {
+      if (!active) return
+      setDonors(page)
+      setHasMore(more)
+      setLastDoc(cursor)
+    }).catch(() => {
+      if (!active) return
+      setDonors([])
+      setHasMore(false)
+      setLastDoc(null)
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [user, bloodFilter, upazilaFilter, availableOnly])
 
   const loadMore = () => {
     if (!hasMore || loadingMore || !lastDoc) return
     setLoadingMore(true)
-    getDonors({ lastDoc }).then(({ donors: more, hasMore: moreLeft, lastDoc: newLast }) => {
+    getDonors({
+      pageSize: 30,
+      lastDoc,
+      bloodGroup: bloodFilter || undefined,
+      area: upazilaFilter || undefined,
+      isAvailable: availableOnly ? true : undefined,
+    }).then(({ donors: more, hasMore: moreLeft, lastDoc: newLast }) => {
       setDonors(prev => [...prev, ...more])
       setHasMore(moreLeft)
       setLastDoc(newLast)
@@ -84,16 +119,12 @@ export default function DonorsPage() {
 
   useEffect(() => {
     let result = [...donors]
-    if (userDistrict) result = result.filter((d) => belongsToDistrict(d, userDistrict))
-    if (bloodFilter) result = result.filter((d) => d.bloodGroup === bloodFilter)
-    if (upazilaFilter) result = result.filter((d) => d.upazila === upazilaFilter)
-    if (availableOnly) result = result.filter((d) => d.isAvailable)
     if (search) {
       const q = search.toLowerCase()
       result = result.filter((d) => d.name.toLowerCase().includes(q) || d.upazila.toLowerCase().includes(q))
     }
     setFiltered(weightedShuffle(result))
-  }, [donors, userDistrict, bloodFilter, upazilaFilter, availableOnly, search])
+  }, [donors, search])
 
   const getOrgName = (donor: User) => {
     if (donor.organizations?.length) return orgMap[donor.organizations[0]]

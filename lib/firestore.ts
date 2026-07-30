@@ -21,7 +21,6 @@ import {
   DocumentSnapshot,
   QuerySnapshot,
   getCountFromServer,
-  startAfter,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { authenticatedFetch } from './api-client'
@@ -58,24 +57,50 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
 
 export const getDonors = async (filters?: {
   bloodGroup?: BloodGroup
+  bloodGroups?: BloodGroup[]
   area?: string
   isAvailable?: boolean
   pageSize?: number
-  lastDoc?: DocumentSnapshot
-}): Promise<{ donors: User[]; lastDoc: DocumentSnapshot | null; hasMore: boolean }> => {
-  const size = filters?.pageSize ?? 100
-  let q = query(collection(db, 'users'), where('role', 'in', ['donor', 'admin', 'superadmin']), limit(size + 1))
-  if (filters?.bloodGroup) q = query(q, where('bloodGroup', '==', filters.bloodGroup))
-  if (filters?.area) q = query(q, where('area', '==', filters.area))
-  if (filters?.isAvailable !== undefined) q = query(q, where('isAvailable', '==', filters.isAvailable))
-  if (filters?.lastDoc) q = query(q, startAfter(filters.lastDoc))
-  const snap = await getDocs(q)
-  const hasMore = snap.docs.length > size
-  const docs = hasMore ? snap.docs.slice(0, size) : snap.docs
+  lastDoc?: string | null
+}): Promise<{ donors: User[]; lastDoc: string | null; hasMore: boolean }> => {
+  const params = new URLSearchParams()
+  params.set('limit', String(Math.min(50, Math.max(1, filters?.pageSize ?? 30))))
+  const bloodGroups = filters?.bloodGroups?.length
+    ? filters.bloodGroups
+    : filters?.bloodGroup
+      ? [filters.bloodGroup]
+      : []
+  if (bloodGroups.length) params.set('bloodGroups', bloodGroups.join(','))
+  if (filters?.area) params.set('upazila', filters.area)
+  if (filters?.isAvailable !== undefined) params.set('available', String(filters.isAvailable))
+  if (filters?.lastDoc) params.set('cursor', filters.lastDoc)
+  const response = await authenticatedFetch(`/api/donors/list?${params.toString()}`, {
+    cache: 'no-store',
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to load donors')
+  const donors = (result.donors as Array<Record<string, unknown>>).map((donor) => ({
+    ...donor,
+    phone: '',
+    fcmToken: null,
+    profilePhoto: null,
+    lastDonatedAt: typeof donor.lastDonatedAtMs === 'number'
+      ? Timestamp.fromMillis(donor.lastDonatedAtMs)
+      : null,
+    nextAvailableAt: typeof donor.nextAvailableAtMs === 'number'
+      ? Timestamp.fromMillis(donor.nextAvailableAtMs)
+      : null,
+    createdAt: typeof donor.createdAtMs === 'number'
+      ? Timestamp.fromMillis(donor.createdAtMs)
+      : Timestamp.fromMillis(0),
+    updatedAt: typeof donor.updatedAtMs === 'number'
+      ? Timestamp.fromMillis(donor.updatedAtMs)
+      : Timestamp.fromMillis(0),
+  })) as User[]
   return {
-    donors: docs.map((d) => d.data() as User),
-    lastDoc: docs[docs.length - 1] ?? null,
-    hasMore,
+    donors,
+    lastDoc: result.nextCursor ?? null,
+    hasMore: Boolean(result.hasMore),
   }
 }
 

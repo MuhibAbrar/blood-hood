@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import BloodGroupBadge from '@/components/ui/BloodGroupBadge'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import DonorCard from '@/components/donor/DonorCard'
-import { canDonate } from '@/lib/bloodCompatibility'
+import { canDonate, getCompatibleDonors } from '@/lib/bloodCompatibility'
 import { belongsToDistrict, resolveDistrict } from '@/lib/location'
 import TopBar from '@/components/layout/TopBar'
 import { daysSince, formatBanglaDate } from '@/lib/constants'
@@ -63,7 +63,11 @@ export default function RequestDetailClient() {
       setRequest(r)
       setLoading(false)
       if (r) {
-        const { donors } = await getDonors({ isAvailable: true })
+        const { donors } = await getDonors({
+          isAvailable: true,
+          bloodGroups: getCompatibleDonors(r.bloodGroup),
+          pageSize: 20,
+        })
         const requestDistrict = resolveDistrict(r)
         setCompatibleDonors(
           requestDistrict
