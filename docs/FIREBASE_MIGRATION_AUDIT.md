@@ -34,6 +34,22 @@ derived from existing timestamps, and division values derived from supported
 districts. It did not change donation totals, memberships, request statuses,
 names, phone numbers, or other personal values.
 
+## Relationship consistency audit
+
+- Project: `blood-hood-dev`
+- Audit date: 2026-07-30
+- Mode: read-only
+- Coverage: all current users, organizations, blood requests, donations,
+  camps, and join requests
+- Extra point-reference reads used: 0
+- Unresolved references: 0
+- Missing referenced records: 0
+- User/organization reverse-link mismatches: 0
+- Invalid request/donation/camp/join-request relationships: 0
+- Direct browser-side Firestore write files: 0
+
+No Firebase records were changed by this audit.
+
 ## Scope
 
 The audit covers:
@@ -52,9 +68,10 @@ The audit covers:
 1. User documents use the Firebase UID as their document ID in current creation paths.
 2. No primary collection currently has a consistent `schemaVersion` field.
 3. `createdAt` and `updatedAt` are not consistent across all primary entities.
-4. Blood-request creation and self profile/availability/token updates now use
-   authenticated server APIs. A smaller set of lower-risk operational writes
-   still remains in the browser service layer.
+4. Active browser-side Firestore writes have been removed from registration,
+   organization membership, announcements, blood requests, profile/settings,
+   notifications, camps, and donation flows. These mutations now use
+   authenticated server APIs.
 5. Organization membership is duplicated between `users.organizations[]` and
    `organizations.memberIds/adminIds`, so reconciliation is required.
 6. Status unions exist in TypeScript, but legacy Firestore values still require a
@@ -94,6 +111,11 @@ The latest server-side migration step also covers:
   notification ownership;
 - social-link and helpline setting writes, restricted to authenticated platform
   admins and validated on the server.
+- registration profile creation with server-derived division/search fields;
+- organization-admin manual member addition with district and single-membership
+  enforcement;
+- organization announcement creation/deletion with organization-admin
+  authorization and bounded text validation.
 
 ## Static client-access audit
 
@@ -146,8 +168,16 @@ node scripts/audit-firestore.mjs
 ```
 
 The command uses aggregation counts plus a bounded sample (default 200,
-maximum 500 per collection). It does not write or delete data and does not
-print personal record values.
+maximum 500 per collection). It also checks sampled user/organization,
+request, donation, camp, and join-request references. Additional point reads
+are capped at 200 by default and can be lowered:
+
+```powershell
+node scripts/audit-firestore.mjs --sample=100 --max-reference-reads=100
+```
+
+It does not write or delete data and does not print personal record values or
+document IDs.
 
 ## Dry-run migration command
 
