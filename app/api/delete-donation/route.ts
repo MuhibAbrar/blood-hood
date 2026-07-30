@@ -18,13 +18,19 @@ export async function DELETE(req: NextRequest) {
 
     if (!donationSnap.exists) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-    const { donorId } = donationSnap.data()!
+    const { donorId, orgId } = donationSnap.data()!
 
     const batch = db.batch()
     batch.delete(donationRef)
 
-    if (donorId) {
+    if (donorId && !['external', 'anonymous'].includes(donorId)) {
       batch.update(db.collection('users').doc(donorId), {
+        totalDonations: FieldValue.increment(-1),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+    }
+    if (orgId) {
+      batch.update(db.collection('organizations').doc(orgId), {
         totalDonations: FieldValue.increment(-1),
         updatedAt: FieldValue.serverTimestamp(),
       })

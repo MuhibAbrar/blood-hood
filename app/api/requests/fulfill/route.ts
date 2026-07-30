@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/firebase-admin'
 import { ApiAuthError, authErrorResponse, requireUser } from '@/lib/api-auth'
+import { resolveUserOrganizationId } from '@/lib/organization-membership-admin'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +16,9 @@ export async function POST(req: NextRequest) {
     const actorRef = db.collection('users').doc(actor.uid)
     const donorRef = typeof donorUid === 'string' && donorUid ? db.collection('users').doc(donorUid) : null
     const externalOrgRef = typeof externalOrgId === 'string' && externalOrgId ? db.collection('organizations').doc(externalOrgId) : null
+    const resolvedDonorOrgId = donorRef
+      ? await resolveUserOrganizationId(db, donorUid)
+      : null
 
     await db.runTransaction(async tx => {
       const [requestSnap, donationSnap, actorSnap, donorSnap, externalOrgSnap] = await Promise.all([
@@ -45,8 +49,15 @@ export async function POST(req: NextRequest) {
         donorId = donorUid
         donorName = donor.name ?? 'Unknown'
         donorPhone = donor.phone ?? null
-        orgId = donor.organizations?.[0] ?? null
-        tx.update(donorRef, { totalDonations: FieldValue.increment(1), lastDonatedAt: now, nextAvailableAt: Timestamp.fromMillis(now.toMillis() + 90 * 24 * 60 * 60 * 1000), isAvailable: false, updatedAt: FieldValue.serverTimestamp() })
+        orgId = resolvedDonorOrgId
+        tx.update(donorRef, {
+          totalDonations: FieldValue.increment(1),
+          lastDonatedAt: now,
+          nextAvailableAt: Timestamp.fromMillis(now.toMillis() + 90 * 24 * 60 * 60 * 1000),
+          isAvailable: false,
+          ...(orgId ? { organizations: [orgId] } : {}),
+          updatedAt: FieldValue.serverTimestamp(),
+        })
       } else if (externalDonor && typeof externalDonor.name === 'string' && externalDonor.name.trim()) {
         donorId = 'external'
         donorName = externalDonor.name.trim().slice(0, 80)

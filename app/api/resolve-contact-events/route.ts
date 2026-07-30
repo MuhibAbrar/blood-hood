@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { authErrorResponse, ApiAuthError, requireUser } from '@/lib/api-auth'
+import { resolveUserOrganizationId } from '@/lib/organization-membership-admin'
 
 // POST /api/resolve-contact-events
 // Body: { eventIds, donatedEventId, donorId, seekerId }
@@ -32,18 +33,15 @@ export async function POST(req: NextRequest) {
 
       const eventData  = eventSnap.data()
       const seekerName = seekerSnap.data()?.name ?? 'অজানা'
-      let orgId: string | null = donorSnap.data()?.organizations?.[0] ?? null
-      if (!orgId) {
-        const adminOrgSnap = await db.collection('organizations')
-          .where('adminIds', 'array-contains', donorId).limit(1).get()
-        if (!adminOrgSnap.empty) orgId = adminOrgSnap.docs[0].id
-      }
+      const orgId = await resolveUserOrganizationId(db, donorId as string, donorSnap.data())
 
       // Update donor's stats
       batch.update(db.collection('users').doc(donorId as string), {
         totalDonations: FieldValue.increment(1),
         lastDonatedAt:  FieldValue.serverTimestamp(),
         isAvailable:    false,
+        ...(orgId ? { organizations: [orgId] } : {}),
+        updatedAt: FieldValue.serverTimestamp(),
       })
 
       // Update org's donation count
