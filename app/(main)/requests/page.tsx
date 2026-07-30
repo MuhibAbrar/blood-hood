@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getBloodRequests } from '@/lib/firestore'
+import { getBloodRequestsPage } from '@/lib/firestore'
 import { useAuth } from '@/context/AuthContext'
 import { BLOOD_GROUPS } from '@/lib/bloodCompatibility'
 import RequestCard from '@/components/request/RequestCard'
@@ -15,11 +15,15 @@ export default function RequestsPage() {
   const { user, loading: authLoading } = useAuth()
   const [requests, setRequests] = useState<BloodRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
   const [filter, setFilter] = useState<'open' | 'fulfilled' | 'all'>('open')
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>('')
 
   useEffect(() => {
     if (authLoading) return
+    let active = true
     const district = user?.district?.trim()
     if (!district) {
       setRequests([])
@@ -27,20 +31,51 @@ export default function RequestsPage() {
       return
     }
     setLoading(true)
-    getBloodRequests(undefined, district).then((reqs) => {
-      setRequests(reqs.filter((request) => request.requestedBy !== 'deleted-user'))
-      setLoading(false)
+    setRequests([])
+    setCursor(null)
+    getBloodRequestsPage({
+      status: filter === 'all' ? undefined : filter,
+      bloodGroup: bloodFilter || undefined,
+      pageSize: 30,
+    }).then(({ requests: page, cursor: nextCursor, hasMore: more }) => {
+      if (!active) return
+      setRequests(page.filter((request) => request.requestedBy !== 'deleted-user'))
+      setCursor(nextCursor)
+      setHasMore(more)
+    }).catch(() => {
+      if (!active) return
+      setRequests([])
+      setCursor(null)
+      setHasMore(false)
+    }).finally(() => {
+      if (active) setLoading(false)
     })
-  }, [authLoading, user?.district])
+    return () => { active = false }
+  }, [authLoading, user?.district, filter, bloodFilter])
+
+  const loadMore = () => {
+    if (!cursor || !hasMore || loadingMore) return
+    setLoadingMore(true)
+    getBloodRequestsPage({
+      status: filter === 'all' ? undefined : filter,
+      bloodGroup: bloodFilter || undefined,
+      pageSize: 30,
+      cursor,
+    }).then(({ requests: page, cursor: nextCursor, hasMore: more }) => {
+      setRequests((current) => [
+        ...current,
+        ...page.filter((request) => request.requestedBy !== 'deleted-user'),
+      ])
+      setCursor(nextCursor)
+      setHasMore(more)
+    }).finally(() => setLoadingMore(false))
+  }
 
   const isExpired = (r: BloodRequest) =>
     r.status === 'open' && r.expiresAt != null && r.expiresAt.toDate() < new Date()
 
   const filtered = requests.filter((r) => {
-    if (filter === 'open') {
-      if (r.status !== 'open' || isExpired(r)) return false
-    } else if (filter !== 'all' && r.status !== filter) return false
-    if (bloodFilter && r.bloodGroup !== bloodFilter) return false
+    if (filter === 'open' && isExpired(r)) return false
     return true
   })
 
@@ -104,7 +139,19 @@ export default function RequestsPage() {
               <Link href="/requests/new" className="btn-primary">নতুন অনুরোধ করুন</Link>
             } />
           ) : (
-            filtered.map((r) => <RequestCard key={r.id} request={r} />)
+            <>
+              {filtered.map((r) => <RequestCard key={r.id} request={r} />)}
+              {hasMore && (
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="w-full rounded-xl border border-[#D92B2B] bg-white py-3 text-sm font-semibold text-[#D92B2B] disabled:opacity-60"
+                >
+                  {loadingMore ? 'লোড হচ্ছে...' : 'আরো দেখুন'}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

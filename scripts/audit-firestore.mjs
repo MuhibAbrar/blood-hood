@@ -180,6 +180,7 @@ for (const document of usersSample.docs) {
 }
 
 const donorQueryChecks = {}
+const requestQueryChecks = {}
 const sampleUser = usersSample.docs[0]?.data()
 if (sampleUser?.district) {
   const donorBase = () => db.collection('users')
@@ -239,6 +240,42 @@ if (sampleUser?.district) {
   }
 }
 
+if (sampleUser?.district) {
+  const requestChecks = {
+    districtRecent: db.collection('bloodRequests')
+      .where('district', '==', sampleUser.district)
+      .orderBy('createdAt', 'desc')
+      .limit(2),
+    districtStatusRecent: db.collection('bloodRequests')
+      .where('district', '==', sampleUser.district)
+      .where('status', '==', 'open')
+      .orderBy('createdAt', 'desc')
+      .limit(2),
+    districtBloodRecent: db.collection('bloodRequests')
+      .where('district', '==', sampleUser.district)
+      .where('bloodGroup', '==', sampleUser.bloodGroup)
+      .orderBy('createdAt', 'desc')
+      .limit(2),
+    districtStatusBloodRecent: db.collection('bloodRequests')
+      .where('district', '==', sampleUser.district)
+      .where('status', '==', 'open')
+      .where('bloodGroup', '==', sampleUser.bloodGroup)
+      .orderBy('createdAt', 'desc')
+      .limit(2),
+  }
+  for (const [name, query] of Object.entries(requestChecks)) {
+    try {
+      await query.get()
+      requestQueryChecks[name] = 'ok'
+    } catch (error) {
+      requestQueryChecks[name] = {
+        status: `error:${error?.code ?? 'unknown'}`,
+        message: String(error?.message ?? '').replace(/https?:\/\/\S+/g, '[console-link]').slice(0, 220),
+      }
+    }
+  }
+}
+
 const report = {
   generatedAt: new Date().toISOString(),
   mode: 'read-only',
@@ -251,6 +288,7 @@ const report = {
     usersMissingDistrictInSample: missingDistrict,
     usersWithInvalidOrganizationsShapeInSample: invalidOrganizationsShape,
     donorQueryChecks,
+    requestQueryChecks,
   },
   privacy: 'No document IDs, names, phone numbers, tokens, or record contents are included.',
 }

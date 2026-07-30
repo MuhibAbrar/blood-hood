@@ -196,6 +196,35 @@ export const getBloodRequests = async (status?: BloodRequest['status'], district
   })
 }
 
+export const getBloodRequestsPage = async (filters?: {
+  status?: BloodRequest['status']
+  bloodGroup?: BloodGroup
+  pageSize?: number
+  cursor?: string | null
+}): Promise<{ requests: BloodRequest[]; cursor: string | null; hasMore: boolean }> => {
+  const params = new URLSearchParams()
+  params.set('limit', String(Math.min(30, Math.max(1, filters?.pageSize ?? 30))))
+  if (filters?.status) params.set('status', filters.status)
+  if (filters?.bloodGroup) params.set('bloodGroup', filters.bloodGroup)
+  if (filters?.cursor) params.set('cursor', filters.cursor)
+  const response = await authenticatedFetch(`/api/requests/list?${params.toString()}`, { cache: 'no-store' })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to load requests')
+  const requests = (result.requests as Array<Record<string, unknown>>).map((request) => ({
+    ...request,
+    createdAt: Timestamp.fromMillis(Number(request.createdAtMs) || 0),
+    updatedAt: request.updatedAtMs ? Timestamp.fromMillis(Number(request.updatedAtMs)) : undefined,
+    neededAt: request.neededAtMs ? Timestamp.fromMillis(Number(request.neededAtMs)) : null,
+    expiresAt: request.expiresAtMs ? Timestamp.fromMillis(Number(request.expiresAtMs)) : null,
+    fulfilledAt: request.fulfilledAtMs ? Timestamp.fromMillis(Number(request.fulfilledAtMs)) : null,
+  })) as BloodRequest[]
+  return {
+    requests,
+    cursor: result.nextCursor ?? null,
+    hasMore: Boolean(result.hasMore),
+  }
+}
+
 export const getBloodRequestsByOrg = async (orgId: string): Promise<BloodRequest[]> => {
   const q = query(
     collection(db, 'bloodRequests'),

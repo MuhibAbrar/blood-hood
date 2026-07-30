@@ -16,7 +16,8 @@ daily active users, pages opened, record counts, retries, and cached sessions.
 1. The donation follow-up component queried Firestore every minute while the
    app remained open. It now checks at most once per six hours per account and
    re-checks on focus only after that interval.
-2. Blood-request lists read up to 100 documents per fresh page load.
+2. The main blood-request list now reads 30 district/filter-matched documents
+   per page and loads the next 30 only when the user presses “আরো দেখুন”.
 3. The donor screen reads up to 51 donor documents plus authentication/context
    reads for each initial 50-person page.
 4. The dashboard uses one Vercel invocation and several bounded Firestore
@@ -39,7 +40,8 @@ dashboard once:
 Optional page usage changes the result substantially:
 
 - one donor-page visit by every user: about 51,000+ additional reads/day;
-- one request-list visit by every user: up to 100,000 additional reads/day;
+- one initial request-list visit by every user: about 31,000 additional
+  reads/day, with more reads only when users load additional pages;
 - organization and camp lists add the number of returned documents per fresh
   client session.
 
@@ -56,8 +58,7 @@ invocations.
 - Warning: 600,000 Vercel invocations/month (60%).
 - Action required: 800,000 Vercel invocations/month (80%).
 
-Before reaching the Firestore threshold, the next optimization should be a
-district/status paginated request list (20-30 records per page) and careful
-measurement of donor-page usage. Do not move every read to Vercel merely to
-reduce client SDK usage; that consumes both Firestore reads and Vercel
-invocations.
+Before reaching the Firestore threshold, carefully measure donor-page and
+request-page usage and paginate other growing lists. Do not move every read to
+Vercel merely to reduce client SDK usage; that consumes both Firestore reads
+and Vercel invocations.

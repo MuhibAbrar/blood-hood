@@ -130,6 +130,11 @@ Donor list/search now uses an authenticated API with:
 
 The previous 500-document donor page fetch has been removed.
 
+The main blood-request list also uses an authenticated, account-district
+enforced API with 30-document cursor pages. Status and blood-group filters run
+in Firestore before pagination, and the next page is only read after the user
+presses “আরো দেখুন”.
+
 User documents use schema version 2 and include `searchName` plus
 `districtSearchName`. The bounded migration was applied to the dev project
 only; its post-migration dry-run reported zero pending user updates.
