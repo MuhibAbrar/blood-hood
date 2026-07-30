@@ -97,9 +97,11 @@ The following sensitive mutations now use authenticated server APIs:
 - camp donation recording as one atomic transaction;
 - donation deletion with user, organization, and camp counter reconciliation.
 
-Legacy direct-write security-rule compatibility remains temporarily enabled for
-older cached PWA clients. Rules should only be tightened after the new API
-version is stable in production.
+Dev security rules now deny browser-side writes for all application
+collections. Authenticated reads remain available where current screens still
+use the browser SDK. The stricter rules are validated on dev first; production
+rules must only be deployed together with the tested app version so an older
+cached PWA is not left on a partially migrated write path.
 
 The latest server-side migration step also covers:
 
