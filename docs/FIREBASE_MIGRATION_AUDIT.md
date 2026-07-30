@@ -65,6 +65,22 @@ The audit covers:
 10. Managed backup/export is not configured in the repository and needs a
     billing-enabled, tested restore plan.
 
+## Server-side mutation progress
+
+The following sensitive mutations now use authenticated server APIs:
+
+- blood request cancellation;
+- camp registration;
+- camp create, update, and delete;
+- organization create and update;
+- organization admin assignment with reverse user-link synchronization;
+- camp donation recording as one atomic transaction;
+- donation deletion with user, organization, and camp counter reconciliation.
+
+Legacy direct-write security-rule compatibility remains temporarily enabled for
+older cached PWA clients. Rules should only be tightened after the new API
+version is stable in production.
+
 ## Read-only audit command
 
 ```powershell

@@ -304,7 +304,13 @@ export const mergeManualDonor = async (
 }
 
 export const cancelRequest = async (requestId: string) => {
-  await updateDoc(doc(db, 'bloodRequests', requestId), { status: 'cancelled' })
+  const response = await authenticatedFetch('/api/requests/cancel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to cancel request')
 }
 
 export const subscribeToRequests = (cb: (requests: BloodRequest[]) => void) => {
@@ -401,10 +407,14 @@ export const getCamp = async (id: string): Promise<Camp | null> => {
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Camp) : null
 }
 
-export const registerForCamp = async (campId: string, uid: string) => {
-  await updateDoc(doc(db, 'camps', campId), {
-    registeredDonors: arrayUnion(uid),
+export const registerForCamp = async (campId: string) => {
+  const response = await authenticatedFetch('/api/camps/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campId }),
   })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to register for camp')
 }
 
 // --- Admin: Users ---
@@ -421,52 +431,64 @@ export const deleteUserDoc = async (uid: string) => {
 // --- Admin: Camps ---
 
 export const createCamp = async (data: Omit<Camp, 'id' | 'createdAt' | 'registeredDonors' | 'totalCollected'>): Promise<string> => {
-  const now = Timestamp.now()
-  const ref = await addDoc(collection(db, 'camps'), {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    ...data,
-    registeredDonors: [],
-    totalCollected: 0,
-    createdAt: now,
-    updatedAt: now,
+  const response = await authenticatedFetch('/api/camps/manage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create',
+      data: { ...data, date: data.date.toDate().toISOString() },
+    }),
   })
-  return ref.id
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to create camp')
+  return result.id
 }
 
 export const updateCamp = async (id: string, data: Partial<Camp>) => {
-  await updateDoc(doc(db, 'camps', id), { ...data, updatedAt: Timestamp.now() })
+  const response = await authenticatedFetch('/api/camps/manage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'update',
+      campId: id,
+      data: { ...data, ...(data.date ? { date: data.date.toDate().toISOString() } : {}) },
+    }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to update camp')
 }
 
 export const deleteCamp = async (id: string) => {
-  await deleteDoc(doc(db, 'camps', id))
+  const response = await authenticatedFetch('/api/camps/manage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete', campId: id }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to delete camp')
 }
 
 // --- Admin: Organizations ---
 
 export const createOrganization = async (data: Omit<Organization, 'id' | 'createdAt' | 'memberIds' | 'totalDonations'>): Promise<string> => {
-  const now = Timestamp.now()
-  const ref = await addDoc(collection(db, 'organizations'), {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    ...data,
-    memberIds: [],
-    totalDonations: 0,
-    createdAt: now,
-    updatedAt: now,
+  const response = await authenticatedFetch('/api/organizations/manage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'create', data }),
   })
-  // Add orgId to each admin's organizations field so their donations count for the org
-  for (const adminUid of (data.adminIds ?? [])) {
-    try {
-      await updateDoc(doc(db, 'users', adminUid), {
-        organizations: arrayUnion(ref.id),
-        updatedAt: Timestamp.now(),
-      })
-    } catch { /* ignore if user doc doesn't exist */ }
-  }
-  return ref.id
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to create organization')
+  return result.id
 }
 
 export const updateOrganization = async (id: string, data: Partial<Organization>) => {
-  await updateDoc(doc(db, 'organizations', id), { ...data, updatedAt: Timestamp.now() })
+  const response = await authenticatedFetch('/api/organizations/manage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'update', orgId: id, data }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to update organization')
 }
 
 export const deleteOrganization = async (id: string) => {
@@ -549,18 +571,13 @@ export const checkInCamp = async (campId: string, uid: string) => {
 }
 
 export const recordCampDonation = async (campId: string, donorId: string, orgId: string) => {
-  await updateDoc(doc(db, 'camps', campId), {
-    donatedUids: arrayUnion(donorId),
-    totalCollected: increment(1),
+  const response = await authenticatedFetch('/api/camps/donation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campId, donorId, orgId }),
   })
-  await updateDoc(doc(db, 'organizations', orgId), {
-    totalDonations: increment(1),
-  })
-  await updateDoc(doc(db, 'users', donorId), {
-    totalDonations: increment(1),
-    lastDonatedAt: Timestamp.now(),
-    isAvailable: false,
-  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to record camp donation')
 }
 
 // --- Join Requests ---

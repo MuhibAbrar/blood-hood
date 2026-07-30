@@ -28,7 +28,7 @@ export default function CampDetailPage() {
     if (!user || !camp) return
     setRegistering(true)
     try {
-      await registerForCamp(camp.id, user.uid)
+      await registerForCamp(camp.id)
       showToast('সফলভাবে নিবন্ধন হয়েছে!', 'success')
       await reload()
     } catch {
