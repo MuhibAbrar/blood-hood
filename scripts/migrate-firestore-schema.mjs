@@ -15,7 +15,16 @@ import { resolve } from 'node:path'
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 
-const CURRENT_SCHEMA_VERSION = 1
+const SCHEMA_VERSIONS = {
+  users: 2,
+  bloodRequests: 1,
+  donations: 1,
+  organizations: 1,
+  camps: 1,
+  announcements: 1,
+  joinRequests: 1,
+  notifications: 1,
+}
 const COLLECTIONS = [
   'users',
   'bloodRequests',
@@ -114,13 +123,18 @@ const isTimestamp = (value) =>
   || Boolean(value && typeof value.toMillis === 'function')
 
 const timestampFallback = (...values) => values.find((value) => isTimestamp(value))
+const normalizeSearchName = (value) =>
+  typeof value === 'string'
+    ? value.trim().toLocaleLowerCase('bn-BD').replace(/\s+/g, ' ')
+    : ''
 
 const planPatch = (collection, data) => {
   const patch = {}
   const manualReview = []
+  const targetSchemaVersion = SCHEMA_VERSIONS[collection] ?? 1
 
-  if (!Number.isInteger(data.schemaVersion) || data.schemaVersion < CURRENT_SCHEMA_VERSION) {
-    patch.schemaVersion = CURRENT_SCHEMA_VERSION
+  if (!Number.isInteger(data.schemaVersion) || data.schemaVersion < targetSchemaVersion) {
+    patch.schemaVersion = targetSchemaVersion
   }
 
   const createdFallback = timestampFallback(data.createdAt, data.donatedAt, data.contactedAt, data.date)
@@ -139,6 +153,13 @@ const planPatch = (collection, data) => {
     if (expectedDivision && data.division !== expectedDivision) {
       patch.division = expectedDivision
     }
+  }
+  if (collection === 'users') {
+    const searchName = normalizeSearchName(data.name)
+    const district = typeof data.district === 'string' ? data.district.trim() : ''
+    const districtSearchName = district && searchName ? `${district}|${searchName}` : ''
+    if (data.searchName !== searchName) patch.searchName = searchName
+    if (data.districtSearchName !== districtSearchName) patch.districtSearchName = districtSearchName
   }
 
   return { patch, manualReview }
@@ -191,7 +212,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   projectId,
   mode: apply ? 'apply' : 'dry-run',
-  currentSchemaVersion: CURRENT_SCHEMA_VERSION,
+  schemaVersions: SCHEMA_VERSIONS,
   perCollectionLimit: limit,
   totalPlannedWrites,
   collections: reports,

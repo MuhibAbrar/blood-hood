@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { authErrorResponse, requireRole } from '@/lib/api-auth'
+import { FieldValue } from 'firebase-admin/firestore'
+import { USER_SCHEMA_VERSION } from '@/lib/schema-version'
+import { buildDistrictSearchName, normalizeSearchName } from '@/lib/search-normalization'
 
 // POST /api/admin/update-user
 // Body: { uid, data: Partial<User> }
@@ -31,9 +34,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'no allowed fields' }, { status: 400 })
     }
 
+    const merged = { ...targetSnap.data(), ...safeData }
     await db.collection('users').doc(uid).update({
       ...safeData,
-      updatedAt: new Date(),
+      schemaVersion: USER_SCHEMA_VERSION,
+      searchName: normalizeSearchName(merged.name),
+      districtSearchName: buildDistrictSearchName(merged.district, merged.name),
+      updatedAt: FieldValue.serverTimestamp(),
     })
 
     return NextResponse.json({ success: true })

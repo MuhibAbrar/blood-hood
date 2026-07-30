@@ -13,6 +13,8 @@ export interface User {
   schemaVersion?: number
   uid: string
   name: string
+  searchName?: string
+  districtSearchName?: string
   phone: string
   bloodGroup: BloodGroup
   division?: string

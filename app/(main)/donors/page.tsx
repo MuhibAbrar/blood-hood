@@ -43,6 +43,7 @@ export default function DonorsPage() {
   const [hasMore, setHasMore] = useState(false)
   const [lastDoc, setLastDoc] = useState<string | null>(null)
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
+  const [debouncedSearch, setDebouncedSearch] = useState(search)
   const [bloodFilter, setBloodFilter] = useState<BloodGroup | ''>(() => (searchParams.get('blood') ?? '') as BloodGroup | '')
   const [upazilaFilter, setUpazilaFilter] = useState(() => searchParams.get('upazila') ?? '')
   const [availableOnly, setAvailableOnly] = useState(() => searchParams.get('available') === '1')
@@ -74,16 +75,22 @@ export default function DonorsPage() {
   }, [user])
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 350)
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
     if (!user) return
     let active = true
     setLoading(true)
     setDonors([])
     setLastDoc(null)
     getDonors({
-      pageSize: 30,
+      pageSize: 50,
       bloodGroup: bloodFilter || undefined,
       area: upazilaFilter || undefined,
       isAvailable: availableOnly ? true : undefined,
+      search: debouncedSearch || undefined,
     }).then(({ donors: page, hasMore: more, lastDoc: cursor }) => {
       if (!active) return
       setDonors(page)
@@ -98,17 +105,18 @@ export default function DonorsPage() {
       if (active) setLoading(false)
     })
     return () => { active = false }
-  }, [user, bloodFilter, upazilaFilter, availableOnly])
+  }, [user, bloodFilter, upazilaFilter, availableOnly, debouncedSearch])
 
   const loadMore = () => {
     if (!hasMore || loadingMore || !lastDoc) return
     setLoadingMore(true)
     getDonors({
-      pageSize: 30,
+      pageSize: 50,
       lastDoc,
       bloodGroup: bloodFilter || undefined,
       area: upazilaFilter || undefined,
       isAvailable: availableOnly ? true : undefined,
+      search: debouncedSearch || undefined,
     }).then(({ donors: more, hasMore: moreLeft, lastDoc: newLast }) => {
       setDonors(prev => [...prev, ...more])
       setHasMore(moreLeft)
@@ -118,13 +126,8 @@ export default function DonorsPage() {
   }
 
   useEffect(() => {
-    let result = [...donors]
-    if (search) {
-      const q = search.toLowerCase()
-      result = result.filter((d) => d.name.toLowerCase().includes(q) || d.upazila.toLowerCase().includes(q))
-    }
-    setFiltered(weightedShuffle(result))
-  }, [donors, search])
+    setFiltered(weightedShuffle([...donors]))
+  }, [donors])
 
   const getOrgName = (donor: User) => {
     if (donor.organizations?.length) return orgMap[donor.organizations[0]]
@@ -146,7 +149,7 @@ export default function DonorsPage() {
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); updateParams({ q: e.target.value }) }}
-            placeholder="নাম বা এলাকা দিয়ে খুঁজুন"
+            placeholder="নাম দিয়ে খুঁজুন"
             className="input-field pl-10"
           />
         </div>

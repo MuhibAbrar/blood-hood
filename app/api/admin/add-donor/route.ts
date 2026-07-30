@@ -3,7 +3,8 @@ import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { authErrorResponse, requireOrgAdmin, requireRole } from '@/lib/api-auth'
 import { getDivisionForDistrict } from '@/lib/constants'
-import { CURRENT_SCHEMA_VERSION } from '@/lib/schema-version'
+import { USER_SCHEMA_VERSION } from '@/lib/schema-version'
+import { buildDistrictSearchName, normalizeSearchName } from '@/lib/search-normalization'
 
 // POST /api/admin/add-donor
 // Body: { name, phone, bloodGroup, upazila, area, gender, age? }
@@ -31,9 +32,11 @@ export async function POST(req: NextRequest) {
     const now = FieldValue.serverTimestamp()
 
     await db.collection('users').doc(uid).set({
-      schemaVersion: CURRENT_SCHEMA_VERSION,
+      schemaVersion: USER_SCHEMA_VERSION,
       uid,
       name,
+      searchName: normalizeSearchName(name),
+      districtSearchName: buildDistrictSearchName(district, name),
       phone,
       bloodGroup,
       division: getDivisionForDistrict(district),

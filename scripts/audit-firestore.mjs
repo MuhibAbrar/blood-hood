@@ -70,7 +70,7 @@ const db = getFirestore(app)
 
 const schemas = {
   users: {
-    required: ['uid', 'name', 'phone', 'bloodGroup', 'area', 'upazila', 'age', 'gender', 'isAvailable', 'totalDonations', 'organizations', 'role', 'createdAt', 'updatedAt'],
+    required: ['uid', 'name', 'searchName', 'districtSearchName', 'phone', 'bloodGroup', 'area', 'upazila', 'age', 'gender', 'isAvailable', 'totalDonations', 'organizations', 'role', 'createdAt', 'updatedAt'],
     timestamp: ['createdAt', 'updatedAt'],
   },
   bloodRequests: {
@@ -202,6 +202,12 @@ if (sampleUser?.district) {
       .where('bloodGroup', 'in', [sampleUser.bloodGroup])
       .where('upazila', '==', sampleUser.upazila)
       .where('isAvailable', '==', Boolean(sampleUser.isAvailable))
+      .orderBy(FieldPath.documentId())
+      .limit(2),
+    namePrefix: db.collection('users')
+      .where('districtSearchName', '>=', `${sampleUser.district}|${String(sampleUser.searchName).slice(0, 2)}`)
+      .where('districtSearchName', '<=', `${sampleUser.district}|${String(sampleUser.searchName).slice(0, 2)}\uf8ff`)
+      .orderBy('districtSearchName')
       .orderBy(FieldPath.documentId())
       .limit(2),
   }

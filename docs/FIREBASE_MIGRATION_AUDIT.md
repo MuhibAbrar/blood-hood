@@ -87,13 +87,21 @@ Donor list/search now uses an authenticated API with:
 
 - account-district enforcement on the server;
 - a hard maximum of 50 donors per request;
-- 30-donor pages in the main donor screen;
+- 50-donor pages in the main donor screen;
 - cursor-based pagination instead of offsets;
+- a fresh randomized starting point for each new donor-page visit, with
+  duplicate-free continuation through “আরো দেখুন”;
+- district-wide normalized name-prefix search, independent of the donors
+  already loaded on screen;
 - server-side blood group, upazila, and availability filters;
 - compatible blood-group filtering for request assistance;
 - no phone number, FCM token, or profile photo in list responses.
 
 The previous 500-document donor page fetch has been removed.
+
+User documents use schema version 2 and include `searchName` plus
+`districtSearchName`. The bounded migration was applied to the dev project
+only; its post-migration dry-run reported zero pending user updates.
 
 ## Read-only audit command
 

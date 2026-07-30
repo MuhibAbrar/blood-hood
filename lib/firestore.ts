@@ -26,16 +26,19 @@ import { db } from './firebase'
 import { authenticatedFetch } from './api-client'
 import type { User, BloodRequest, Donation, Organization, Camp, BloodGroup, Gender, Announcement, Notification, JoinRequest, ContactEvent, ResponseType } from '@/types'
 import { belongsToDistrict } from './location'
-import { CURRENT_SCHEMA_VERSION } from './schema-version'
+import { CURRENT_SCHEMA_VERSION, USER_SCHEMA_VERSION } from './schema-version'
+import { buildDistrictSearchName, normalizeSearchName } from './search-normalization'
 
 // --- Users ---
 
 export const createUser = async (uid: string, data: Omit<User, 'uid' | 'createdAt' | 'updatedAt'>) => {
   const now = Timestamp.now()
   await setDoc(doc(db, 'users', uid), {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: USER_SCHEMA_VERSION,
     uid,
     ...data,
+    searchName: normalizeSearchName(data.name),
+    districtSearchName: buildDistrictSearchName(data.district, data.name),
     createdAt: now,
     updatedAt: now,
   })
@@ -52,13 +55,22 @@ export const getUserFromServer = async (uid: string): Promise<User | null> => {
 }
 
 export const updateUser = async (uid: string, data: Partial<User>) => {
-  await updateDoc(doc(db, 'users', uid), { ...data, updatedAt: Timestamp.now() })
+  const searchFields = data.name !== undefined || data.district !== undefined
+    ? {
+        ...(data.name !== undefined ? { searchName: normalizeSearchName(data.name) } : {}),
+        ...(data.name !== undefined && data.district !== undefined
+          ? { districtSearchName: buildDistrictSearchName(data.district, data.name) }
+          : {}),
+      }
+    : {}
+  await updateDoc(doc(db, 'users', uid), { ...data, ...searchFields, updatedAt: Timestamp.now() })
 }
 
 export const getDonors = async (filters?: {
   bloodGroup?: BloodGroup
   bloodGroups?: BloodGroup[]
   area?: string
+  search?: string
   isAvailable?: boolean
   pageSize?: number
   lastDoc?: string | null
@@ -72,6 +84,7 @@ export const getDonors = async (filters?: {
       : []
   if (bloodGroups.length) params.set('bloodGroups', bloodGroups.join(','))
   if (filters?.area) params.set('upazila', filters.area)
+  if (filters?.search) params.set('search', filters.search)
   if (filters?.isAvailable !== undefined) params.set('available', String(filters.isAvailable))
   if (filters?.lastDoc) params.set('cursor', filters.lastDoc)
   const response = await authenticatedFetch(`/api/donors/list?${params.toString()}`, {
@@ -279,9 +292,11 @@ export const addManualDonor = async (data: {
   const uid = `manual_${data.phone}`
   const now = Timestamp.now()
   await setDoc(doc(db, 'users', uid), {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: USER_SCHEMA_VERSION,
     uid,
     name: data.name,
+    searchName: normalizeSearchName(data.name),
+    districtSearchName: buildDistrictSearchName('', data.name),
     phone: data.phone,
     bloodGroup: data.bloodGroup,
     upazila: data.upazila,
@@ -313,8 +328,10 @@ export const mergeManualDonor = async (
   const now = Timestamp.now()
   // Create new doc with Firebase Auth UID, carry over historical data
   await setDoc(doc(db, 'users', newUid), {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: USER_SCHEMA_VERSION,
     ...profileData,
+    searchName: normalizeSearchName(profileData.name),
+    districtSearchName: buildDistrictSearchName(profileData.district, profileData.name),
     uid: newUid,
     totalDonations: oldData?.totalDonations ?? 0,
     isVerified: oldData?.isVerified ?? false,
