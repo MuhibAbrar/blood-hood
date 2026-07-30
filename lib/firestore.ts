@@ -689,13 +689,24 @@ export const getNotifications = async (uid: string): Promise<Notification[]> => 
 }
 
 export const markNotificationRead = async (id: string) => {
-  await updateDoc(doc(db, 'notifications', id), { read: true })
+  const response = await authenticatedFetch('/api/notifications/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to update notification')
 }
 
 export const markAllNotificationsRead = async (uid: string) => {
-  const q = query(collection(db, 'notifications'), where('userId', '==', uid), where('read', '==', false))
-  const snap = await getDocs(q)
-  await Promise.all(snap.docs.map(d => updateDoc(d.ref, { read: true })))
+  void uid // The server derives the notification owner from the verified token.
+  const response = await authenticatedFetch('/api/notifications/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ all: true }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to update notifications')
 }
 
 // --- Stats ---
@@ -886,7 +897,13 @@ export const getSocialLinks = async (): Promise<SocialLinks> => {
 }
 
 export const saveSocialLinks = async (links: SocialLinks): Promise<void> => {
-  await setDoc(doc(db, 'settings', 'social'), links, { merge: true })
+  const response = await authenticatedFetch('/api/admin/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'social', links }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to save social links')
 }
 
 // --- Helpline Organizations (settings/helplines) ---
@@ -903,5 +920,11 @@ export const getHelplines = async (): Promise<HelplineOrg[]> => {
 }
 
 export const saveHelplines = async (orgs: HelplineOrg[]): Promise<void> => {
-  await setDoc(doc(db, 'settings', 'helplines'), { orgs })
+  const response = await authenticatedFetch('/api/admin/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'helplines', orgs }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error || 'Unable to save helplines')
 }

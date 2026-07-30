@@ -88,7 +88,11 @@ The latest server-side migration step also covers:
 - new blood-request creation, with server-owned requester identity, district,
   timestamps, status, expiry, and validation;
 - a user's own profile, availability, and notification-token updates, with
-  server-side field allowlisting and location validation.
+  server-side field allowlisting and location validation;
+- single and bulk notification read-state updates, with server-enforced
+  notification ownership;
+- social-link and helpline setting writes, restricted to authenticated platform
+  admins and validated on the server.
 
 ## Static client-access audit
 
