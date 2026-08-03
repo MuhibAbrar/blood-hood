@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAllUsers } from '@/lib/firestore'
 import { useToast } from '@/components/ui/Toast'
 import DefaultAvatar from '@/components/ui/DefaultAvatar'
 import { DISTRICTS, DISTRICTS_DATA } from '@/lib/constants'
@@ -22,6 +21,11 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [district, setDistrict] = useState('')
+  const [districtCounts, setDistrictCounts] = useState<Record<string, number>>({})
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null)
   const [roleModal, setRoleModal] = useState<User | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -32,19 +36,36 @@ export default function AdminUsersPage() {
     district: '', upazila: '', area: '', gender: '' as Gender | '', age: '',
   })
 
-  const load = async () => {
-    const u = await getAllUsers()
-    setUsers(u)
-    setLoading(false)
+  const load = async (append = false, cursor?: string | null) => {
+    if (append) setLoadingMore(true)
+    else setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (district) params.set('district', district)
+      if (search.trim()) params.set('search', search.trim())
+      if (cursor) params.set('cursor', cursor)
+      const res = await authenticatedFetch(`/api/admin/users?${params.toString()}`)
+      if (!res.ok) throw new Error('Unable to load users')
+      const data = await res.json()
+      setUsers(current => append ? [...current, ...data.users] : data.users)
+      setDistrictCounts(data.districtCounts ?? {})
+      setTotalUsers(data.total ?? 0)
+      setNextCursor(data.nextCursor ?? null)
+    } catch {
+      showToast('ব্যবহারকারীর তালিকা লোড করা যায়নি', 'error')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setTimeout(() => { load() }, search ? 350 : 0)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [district, search])
 
-  const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.phone.includes(search) ||
-    u.bloodGroup.includes(search)
-  )
+  const filtered = users
 
   const adminUpdate = async (uid: string, data: object) => {
     const res = await authenticatedFetch('/api/admin/update-user', {
@@ -172,14 +193,16 @@ export default function AdminUsersPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-[#111111]">ব্যবহারকারী</h1>
-          <p className="text-[#555555] text-sm mt-1">মোট {users.length} জন সদস্য</p>
+          <p className="text-[#555555] text-sm mt-1">
+            {district ? `${district} জেলায় ${districtCounts[district] ?? 0} জন` : `মোট ${totalUsers} জন সদস্য`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="নাম, ফোন বা রক্তের গ্রুপ..."
+            placeholder="নাম দিয়ে খুঁজুন..."
             className="border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm w-56 focus:outline-none focus:border-[#D92B2B] bg-white"
           />
           <button
@@ -188,6 +211,48 @@ export default function AdminUsersPage() {
           >
             + ডোনার যোগ করুন
           </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-[#E5E5E5] p-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <div>
+            <h2 className="font-bold text-[#111111]">জেলাভিত্তিক ব্যবহারকারী</h2>
+            <p className="text-xs text-[#777777] mt-0.5">জেলায় ক্লিক করলে সেই জেলার সদস্যরা দেখা যাবে</p>
+          </div>
+          <div className="w-full sm:w-60">
+            <SelectPicker
+              value={district}
+              onChange={setDistrict}
+              options={DISTRICTS}
+              placeholder="সব জেলা"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+          <button
+            type="button"
+            onClick={() => setDistrict('')}
+            className={`text-left rounded-xl border p-3 transition-colors ${
+              !district ? 'border-[#D92B2B] bg-red-50' : 'border-[#E5E5E5] hover:border-red-200'
+            }`}
+          >
+            <span className="block text-xs text-[#666666]">সব জেলা</span>
+            <span className="block text-xl font-bold text-[#111111] mt-1">{totalUsers}</span>
+          </button>
+          {DISTRICTS.map(item => (
+            <button
+              type="button"
+              key={item}
+              onClick={() => setDistrict(item)}
+              className={`text-left rounded-xl border p-3 transition-colors ${
+                district === item ? 'border-[#D92B2B] bg-red-50' : 'border-[#E5E5E5] hover:border-red-200'
+              }`}
+            >
+              <span className="block text-xs text-[#666666]">{item}</span>
+              <span className="block text-xl font-bold text-[#111111] mt-1">{districtCounts[item] ?? 0}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -203,7 +268,7 @@ export default function AdminUsersPage() {
             <table className="w-full">
               <thead className="bg-[#F8F8F8] border-b border-[#E5E5E5]">
                 <tr>
-                  {['ব্যবহারকারী', 'ফোন', 'রক্তের গ্রুপ', 'উপজেলা', 'Role', 'অ্যাকশন'].map(h => (
+                  {['ব্যবহারকারী', 'ফোন', 'রক্তের গ্রুপ', 'জেলা', 'উপজেলা', 'Role', 'অ্যাকশন'].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-[#555555] px-5 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -228,6 +293,7 @@ export default function AdminUsersPage() {
                     <td className="px-5 py-3">
                       <span className="bg-red-100 text-[#D92B2B] text-xs font-bold px-2 py-0.5 rounded-full">{u.bloodGroup}</span>
                     </td>
+                    <td className="px-5 py-3 text-sm text-[#555555]">{u.district || 'খুলনা'}</td>
                     <td className="px-5 py-3 text-sm text-[#555555]">{u.upazila}</td>
 
                     {/* Role — clickable badge */}
@@ -281,6 +347,18 @@ export default function AdminUsersPage() {
                 ))}
               </tbody>
             </table>
+            {nextCursor && (
+              <div className="p-4 border-t border-[#E5E5E5] flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => load(true, nextCursor)}
+                  disabled={loadingMore}
+                  className="px-5 py-2.5 rounded-xl border border-[#D92B2B] text-[#D92B2B] text-sm font-semibold hover:bg-red-50 disabled:opacity-60"
+                >
+                  {loadingMore ? 'লোড হচ্ছে...' : 'আরও ৫০ জন দেখুন'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
